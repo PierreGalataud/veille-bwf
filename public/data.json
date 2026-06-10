@@ -1,67 +1,107 @@
 {
-  "generatedAt": "2026-06-10T12:54:08.517233997Z",
-  "weekLabel": "Semaine du 9 – 14 juin 2026",
-  "current": [
-    {
-      "name": "SATHIO GROUP Australian Open",
-      "tier": "500",
-      "location": "Sydney Olympic Park, Australie",
-      "dates": "9 – 14 juin 2026",
-      "prize": "500 000 $",
-      "timezone": "UTC+10",
-      "dayLabel": "Jour 2 / 6 · 10 juin",
-      "seeds": [
-        { "rank": "TS1", "name": "Anders Antonsen (DEN)" },
-        { "rank": "TS2", "name": "Chou Tien-chen (TPE)" },
-        { "rank": "—", "name": "Lin Chun-yi (TPE)" },
-        { "rank": "SD", "name": "Akane Yamaguchi (JPN), P.V. Sindhu (IND), Pornpawee Chochuwong (THA)" }
-      ],
-      "frenchStatus": {
-        "present": false,
-        "title": "Aucun Français dans le tableau",
-        "note": "Lanier et les frères Popov ne figurent pas dans les aperçus ni le rapport du jour 1 — déplacement probablement écarté après la tournée asiatique. À valider sur le tableau officiel.",
-        "confirm": true
-      }
+  "generatedAt" : "2026-06-10T14:27:43.506029900Z",
+  "weekLabel" : "Semaine du 8 – 14 juin 2026",
+  "current" : [ {
+    "name" : "SATHIO GROUP Australian Badminton Open 2026",
+    "tier" : "500",
+    "location" : "Sydney, AUS",
+    "dates" : "9 – 14 juin 2026",
+    "prize" : "—",
+    "timezone" : "—",
+    "dayLabel" : "Jour 2 / 6 · 10 juin",
+    "seeds" : [ ],
+    "frenchStatus" : {
+      "present" : false,
+      "title" : "Présence française à vérifier",
+      "note" : "Le collecteur ne lit pas encore les tableaux (draws) : présence des Français à confirmer sur le tableau officiel.",
+      "confirm" : true
     }
-  ],
-  "players": [
-    {
-      "name": "Alex Lanier",
-      "rank": "#8 mondial",
-      "lines": [
-        { "label": "Dernier", "value": "Vainqueur — Open de Singapour (S750)", "tone": "win" },
-        { "label": "Puis", "value": "éliminé — Open d'Indonésie (S1000)", "tone": "out" },
-        { "label": "Prochain", "value": "Macau Open (S300) — engagement à confirmer", "tone": null }
-      ]
-    },
-    {
-      "name": "Christo Popov",
-      "rank": "#7 mondial",
-      "lines": [
-        { "label": "Dernier", "value": "sorti au 1er tour — Open d'Indonésie (S1000)", "tone": "out" },
-        { "label": "Prochain", "value": "Macau Open (S300) — à confirmer", "tone": null }
-      ]
-    },
-    {
-      "name": "Toma Junior Popov",
-      "rank": "",
-      "lines": [
-        { "label": "Référence", "value": "finaliste de l'Orléans Masters (S300)", "tone": null },
-        { "label": "Prochain", "value": "calendrier à confirmer (entry lists non publiées)", "tone": null }
-      ]
-    },
-    {
-      "name": "Gicquel / Delrue",
-      "rank": "double mixte",
-      "lines": [
-        { "label": "Dernier", "value": "quart de finale — Open d'Indonésie (S1000)", "tone": "out" }
-      ]
-    }
-  ],
-  "upcoming": [
-    { "dates": "16 – 21 juin", "name": "Macau Open", "tier": "300", "french": "FR : à confirmer" },
-    { "dates": "23 – 28 juin", "name": "US Open", "tier": "300", "french": "FR : à confirmer" },
-    { "dates": "30 juin – 5 juil.", "name": "Canada Open", "tier": "300", "french": "FR : à confirmer" },
-    { "dates": "Juillet", "name": "China Open", "tier": "1000", "french": "FR : à confirmer" }
-  ]
+  } ],
+  "players" : [ ],
+  "upcoming" : [ {
+    "dates" : "16 – 21 juin",
+    "name" : "SANDS CHINA LTD. Macau Open 2026",
+    "tier" : "300",
+    "french" : "FR : à confirmer"
+  }, {
+    "dates" : "23 – 28 juin",
+    "name" : "YONEX US Open 2026",
+    "tier" : "300",
+    "french" : "FR : à confirmer"
+  }, {
+    "dates" : "30 juin – 5 juillet",
+    "name" : "YONEX Canada Open 2026",
+    "tier" : "300",
+    "french" : "FR : à confirmer"
+  }, {
+    "dates" : "14 – 19 juillet",
+    "name" : "DAIHATSU Japan Open 2026",
+    "tier" : "750",
+    "french" : "FR : à confirmer"
+  }, {
+    "dates" : "21 – 26 juillet",
+    "name" : "VICTOR China Open 2026",
+    "tier" : "1000",
+    "french" : "FR : à confirmer"
+  }, {
+    "dates" : "28 juillet – 2 août",
+    "name" : "YONEX Taipei Open 2026",
+    "tier" : "300",
+    "french" : "FR : à confirmer"
+  }, {
+    "dates" : "4 – 9 août",
+    "name" : "VICTOR Korea Masters 2026",
+    "tier" : "300",
+    "french" : "FR : à confirmer"
+  }, {
+    "dates" : "1 – 6 septembre",
+    "name" : "LI-NING China Masters 2026",
+    "tier" : "750",
+    "french" : "FR : à confirmer"
+  }, {
+    "dates" : "6 – 11 octobre",
+    "name" : "Arctic Open 2026 powered by YONEX",
+    "tier" : "500",
+    "french" : "FR : à confirmer"
+  }, {
+    "dates" : "13 – 18 octobre",
+    "name" : "VICTOR Denmark Open 2026",
+    "tier" : "750",
+    "french" : "FR : à confirmer"
+  }, {
+    "dates" : "20 – 25 octobre",
+    "name" : "YONEX French Open 2026",
+    "tier" : "750",
+    "french" : "FR : à confirmer"
+  }, {
+    "dates" : "27 octobre – 1 novembre",
+    "name" : "HYLO Open 2026",
+    "tier" : "500",
+    "french" : "FR : à confirmer"
+  }, {
+    "dates" : "3 – 8 novembre",
+    "name" : "Korea Open 2026",
+    "tier" : "500",
+    "french" : "FR : à confirmer"
+  }, {
+    "dates" : "10 – 15 novembre",
+    "name" : "Kumamoto Masters Japan 2026",
+    "tier" : "500",
+    "french" : "FR : à confirmer"
+  }, {
+    "dates" : "17 – 22 novembre",
+    "name" : "Hong Kong Open 2026",
+    "tier" : "500",
+    "french" : "FR : à confirmer"
+  }, {
+    "dates" : "24 – 29 novembre",
+    "name" : "Syed Modi India International 2026",
+    "tier" : "300",
+    "french" : "FR : à confirmer"
+  }, {
+    "dates" : "9 – 13 décembre",
+    "name" : "HSBC BWF World Tour Finals 2026",
+    "tier" : "wtf",
+    "french" : "FR : à confirmer"
+  } ]
 }
