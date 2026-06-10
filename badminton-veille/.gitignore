@@ -1,0 +1,10 @@
+# Node / Vite
+node_modules/
+dist/
+*.local
+.env
+.env.*
+
+# Java / Maven
+collector/target/
+*.class
