@@ -25,6 +25,14 @@ function toneClass(tone) {
   return "";
 }
 
+// Statut français à trois états : true = présents (tricolore), false = aucun
+// (confirmé, gris), null/undefined = inconnu (distinct, pas un « aucun » confirmé).
+function frBannerClass(present) {
+  if (present === true) return "";
+  if (present === false) return " none";
+  return " unknown";
+}
+
 export default function App() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -135,9 +143,9 @@ export default function App() {
               )}
 
               {t.frenchStatus && (
-                <div className={"fr-banner" + (t.frenchStatus.present ? "" : " none")}>
+                <div className={"fr-banner" + frBannerClass(t.frenchStatus.present)}>
                   <h5>
-                    🇫🇷 {t.frenchStatus.title}
+                    {t.frenchStatus.present === null ? "❔" : "🇫🇷"} {t.frenchStatus.title}
                     {t.frenchStatus.confirm && <span className="tag-confirm">à confirmer</span>}
                   </h5>
                   <p>{t.frenchStatus.note}</p>

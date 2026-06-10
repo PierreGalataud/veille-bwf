@@ -75,6 +75,9 @@ html, body, #root { margin: 0; min-height: 100%; background: var(--bg); }
 .fr-banner { margin-top: 18px; border-radius: 10px; padding: 14px 16px 14px 18px; position: relative; background: var(--surface-2); border: 1px solid var(--line); }
 .fr-banner::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; border-radius: 5px 0 0 5px; background: linear-gradient(var(--fr-blue) 0 33%, #f2f4f8 33% 66%, var(--fr-red) 66% 100%); }
 .fr-banner.none::before { background: var(--muted-2); }
+/* Statut inconnu : ni présents, ni « aucun » confirmé — liseré rayé + bordure pointillée, distinct du gris plein de .none. */
+.fr-banner.unknown::before { background: repeating-linear-gradient(45deg, var(--muted-2) 0 5px, transparent 5px 10px); }
+.fr-banner.unknown { border-style: dashed; }
 .fr-banner h5 { margin: 0 0 4px; font-size: 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .fr-banner p { margin: 0; font-size: 13px; color: var(--muted); }
 .tag-confirm { font-family: 'Oswald', sans-serif; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--live); border: 1px solid var(--live-dim); padding: 2px 7px; border-radius: 5px; }

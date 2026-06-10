@@ -1,20 +1,20 @@
 {
-  "generatedAt" : "2026-06-10T15:46:13.166595394Z",
+  "generatedAt" : "2026-06-10T14:27:43.506029900Z",
   "weekLabel" : "Semaine du 8 – 14 juin 2026",
   "current" : [ {
     "name" : "SATHIO GROUP Australian Badminton Open 2026",
     "tier" : "500",
     "location" : "Sydney, AUS",
     "dates" : "9 – 14 juin 2026",
-    "prize" : "—",
+    "prize" : "500 000 $",
     "timezone" : "—",
     "dayLabel" : "Jour 2 / 6 · 10 juin",
     "seeds" : [ ],
     "frenchStatus" : {
       "present" : false,
-      "title" : "Aucun Français attendu",
-      "note" : "Aucune page de suivi sur equipe-france.fr pour ce tournoi — aucun Français annoncé (à confirmer).",
-      "confirm" : true
+      "title" : "Aucun Français engagé",
+      "note" : "equipe-france : Aucun français ne participe à cette compétition.",
+      "confirm" : false
     }
   } ],
   "players" : [ ],

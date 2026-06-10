@@ -43,6 +43,10 @@ collector/src/main/java/veille/Collector.java -> le collecteur
 ## Le contrat `data.json`
 
 `tier` ∈ `"wtf" | "1000" | "750" | "500" | "300"`. `tone` ∈ `"win" | "out" | null`.
+`frenchStatus.present` est À TROIS ÉTATS : `true` (Français engagés), `false`
+(page equipe-france lue, « aucun Français »), `null` (aucune page appariée →
+statut INCONNU, à ne jamais confondre avec un `false` confirmé). Le front
+distingue visuellement le `null` (bandeau rayé) du `false` (bandeau gris plein).
 
 ```json
 {

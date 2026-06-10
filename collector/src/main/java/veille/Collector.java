@@ -9,10 +9,13 @@ import java.text.Normalizer;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -119,18 +122,35 @@ public class Collector {
 
     /** Un tournoi World Tour extrait du calendrier. */
     private record Tournament(
-            String name, String tier, String location,
+            String name, String tier, String location, String prize,
             LocalDate start, LocalDate end) {}
 
-    /** Statut français d'un tournoi (alimente {@code frenchStatus}). */
-    private record FrenchStatus(boolean present, String title, String note, boolean confirm) {
-        /** Valeur par défaut quand equipe-france est indisponible. */
-        static final FrenchStatus UNKNOWN = new FrenchStatus(false,
-                "Présence française à vérifier",
-                "Suivi equipe-france momentanément indisponible — à confirmer.", true);
+    /**
+     * Statut français d'un tournoi (alimente {@code frenchStatus}).
+     *
+     * {@code present} est un {@link Boolean} À TROIS ÉTATS, distincts par contrat
+     * avec le front (cf. App.jsx) :
+     * <ul>
+     *   <li>{@code TRUE}  — page equipe-france appariée, des Français engagés ;</li>
+     *   <li>{@code FALSE} — page appariée, mention explicite « aucun Français » ;</li>
+     *   <li>{@code null}  — aucune page appariée (ou source indisponible) :
+     *       statut INCONNU, à ne jamais confondre avec un « aucun » confirmé.</li>
+     * </ul>
+     */
+    private record FrenchStatus(Boolean present, String title, String note, boolean confirm) {
+        /** Aucune page appariée / source indisponible → statut inconnu (null). */
+        static FrenchStatus unknown(String note) {
+            return new FrenchStatus(null, "Statut français inconnu", note, true);
+        }
+        /** equipe-france totalement indisponible : statut inconnu par défaut. */
+        static final FrenchStatus SOURCE_DOWN = unknown(
+                "Suivi equipe-france momentanément indisponible — statut inconnu.");
     }
 
-    /** Une entrée du calendrier equipe-france. {@code start}/{@code end} = {mois, jour}. */
+    /**
+     * Une page tournoi equipe-france candidate. {@code start}/{@code end} =
+     * {mois, jour} ({@code {0,0}} si dates inconnues, ex. lien glané sur l'accueil).
+     */
     private record EfEntry(String name, String url, int[] start, int[] end) {}
 
     private static String buildData() throws Exception {
@@ -180,11 +200,11 @@ public class Collector {
             o.put("tier", t.tier());
             o.put("location", t.location());
             o.put("dates", dateRange(t.start(), t.end(), true));
-            o.put("prize", "—");
-            o.put("timezone", "—");
+            o.put("prize", t.prize());
+            o.put("timezone", "—"); // absent du calendrier BWF (cf. parseTournaments)
             o.put("dayLabel", dayLabel(t.start(), t.end(), today));
             o.put("seeds", new ArrayList<>());
-            FrenchStatus fs = frByName.getOrDefault(t.name(), FrenchStatus.UNKNOWN);
+            FrenchStatus fs = frByName.getOrDefault(t.name(), FrenchStatus.SOURCE_DOWN);
             Map<String, Object> fr = new LinkedHashMap<>();
             fr.put("present", fs.present());
             fr.put("title", fs.title());
@@ -281,10 +301,38 @@ public class Collector {
                 String city = cityEl != null ? cityEl.text().trim() : "";
                 String location = buildLocation(city, country);
 
-                out.add(new Tournament(name, tier, location, start, end));
+                // La dotation est dans la ligne détail (repérée par data-target).
+                // NB : les têtes de série et le fuseau n'y figurent pas (ils
+                // dépendent des tableaux / pages de résultats) → laissés neutres.
+                String prize = parsePrize(row, section);
+
+                out.add(new Tournament(name, tier, location, prize, start, end));
             }
         }
         return out;
+    }
+
+    /** Lit la dotation dans la ligne détail liée par {@code data-target="#id"}. */
+    private static String parsePrize(Element row, Element section) {
+        Element expander = row.selectFirst("a.bwf-calendar_expander[data-target]");
+        if (expander == null) return "—";
+        String id = expander.attr("data-target").replace("#", "").trim();
+        if (id.isEmpty()) return "—";
+        Element detail = section.getElementById(id);
+        if (detail == null) return "—";
+        for (Element btn : detail.select(".bwf-button")) {
+            String txt = btn.text();
+            if (txt.toUpperCase(Locale.ROOT).contains("PRIZE")) {
+                Matcher m = Pattern.compile("([\\d][\\d.,]*)").matcher(txt);
+                if (m.find()) {
+                    String digits = m.group(1).replaceAll("[.,]", "");
+                    // Regroupe les milliers par espace insécable fine : « 500 000 $ ».
+                    String grouped = digits.replaceAll("\\B(?=(\\d{3})+(?!\\d))", " ");
+                    return grouped + " $";
+                }
+            }
+        }
+        return "—";
     }
 
     /** Mappe la catégorie BWF vers un tier, ou null si hors World Tour suivi. */
@@ -357,11 +405,22 @@ public class Collector {
     //  ÉTAPE 1 — statut français des tournoi en cours
     // ============================================================
 
+    /** Pages equipe-france à ignorer (joueurs, classements, pages utilitaires). */
+    private static final Set<String> SKIP_SLUGS = new HashSet<>(List.of(
+            "calendrier", "amp", "classement-des-joueurs-feminin",
+            "classement-des-joueurs-masculin", "feminin", "masculin",
+            "jeux-olympiques-d-ete"));
+    /** Borne de politesse : nb max de pages tournoi sondées par tournoi BWF
+     *  (couvre le saut page pérenne → édition datée). */
+    private static final int MAX_EF_TRIES = 5;
+
     /**
-     * Pour chaque tournoi en cours, retrouve sa page equipe-france (réconciliation
-     * nom + dates) et en lit la phrase de participation. Source secondaire :
-     * tout échec retombe silencieusement sur {@link FrenchStatus#UNKNOWN} sans
-     * empêcher l'écriture du data.json (on ne blanchit jamais le site).
+     * Pour chaque tournoi en cours, retrouve sa page equipe-france par
+     * réconciliation (dates d'abord, nom/lieu en appoint) et en lit la phrase de
+     * participation. Trois issues distinctes (cf. {@link FrenchStatus}) :
+     * present TRUE / FALSE / null. « Pas trouvé » (null) ≠ « trouvé, aucun »
+     * (false). Source secondaire : tout échec retombe sur un statut null
+     * (inconnu) sans empêcher l'écriture du data.json — on ne blanchit rien.
      *
      * @return statut indexé par {@code Tournament.name()} (clé identique au JSON).
      */
@@ -369,41 +428,117 @@ public class Collector {
         Map<String, FrenchStatus> result = new HashMap<>();
         if (current.isEmpty()) return result;
 
-        List<EfEntry> entries;
-        try {
-            entries = parseEfCalendar(fetch(EF_CAL_URL));
-        } catch (Exception e) {
-            System.err.println("equipe-france (calendrier) indisponible — frenchStatus à vérifier : " + e);
-            return result; // tous les tournois retombent sur UNKNOWN
+        // Le calendrier equipe-france ne liste QUE les tournois à venir ; un
+        // tournoi déjà en cours (ex. l'Open d'Australie) n'y est pas mais sa page
+        // existe et est liée depuis l'accueil. On agrège donc les deux index.
+        List<EfEntry> candidates = harvestCandidates();
+        if (candidates.isEmpty()) {
+            System.err.println("equipe-france indisponible — statut français inconnu.");
+            return result; // tous les tournois retombent sur SOURCE_DOWN (null)
         }
 
+        Map<String, Document> cache = new HashMap<>();
         for (Tournament t : current) {
             try {
-                EfEntry match = matchEntry(t, entries);
-                if (match == null) {
-                    result.put(t.name(), new FrenchStatus(false,
-                            "Aucun Français attendu",
-                            "Aucune page de suivi sur equipe-france.fr pour ce tournoi — "
-                                    + "aucun Français annoncé (à confirmer).", true));
-                    continue;
-                }
-                Thread.sleep(EF_THROTTLE_MS); // requêtes espacées (garde-fous)
-                String url = match.url().startsWith("http") ? match.url() : EF_BASE + match.url();
-                Document page = fetch(url);
-                if (!confirmsMatch(t, page)) {
-                    // La page candidate ne correspond pas vraiment au tournoi BWF.
-                    result.put(t.name(), new FrenchStatus(false,
-                            "Aucun Français attendu",
-                            "Pas de correspondance fiable sur equipe-france.fr — à confirmer.", true));
-                    continue;
-                }
-                result.put(t.name(), parseParticipation(page));
+                result.put(t.name(), resolveFrenchStatus(t, candidates, cache));
             } catch (Exception e) {
                 System.err.println("equipe-france KO pour « " + t.name() + " » : " + e);
-                // tournoi laissé sur UNKNOWN
+                result.put(t.name(), FrenchStatus.unknown(
+                        "Statut inconnu : erreur de lecture equipe-france."));
             }
         }
         return result;
+    }
+
+    /**
+     * Apparie un tournoi BWF à une page equipe-france et en déduit le statut.
+     * Classe les candidats (dates = signal fort, nom/lieu = appoint), sonde les
+     * meilleurs, et NE retient qu'une page CONFIRMÉE par ses propres dates +
+     * l'alias anglais. Aucune confirmation → present:null (jamais false).
+     *
+     * Deux sauts : l'accueil ne lie souvent que la page « pérenne » sans année
+     * (ex. /open-d-australie, sans dates) ; on suit alors son lien vers l'édition
+     * datée de l'année visée (/open-d-australie-2026) pour confirmer.
+     */
+    private static FrenchStatus resolveFrenchStatus(
+            Tournament t, List<EfEntry> candidates, Map<String, Document> cache) throws Exception {
+        Set<String> bwfTokens = nameTokens(t.name() + " " + t.location());
+        int year = t.start().getYear();
+
+        List<EfEntry> ranked = new ArrayList<>(candidates);
+        ranked.sort((a, b) -> Integer.compare(score(t, bwfTokens, b), score(t, bwfTokens, a)));
+
+        Deque<String> queue = new ArrayDeque<>();
+        Set<String> seen = new LinkedHashSet<>();
+        for (EfEntry e : ranked) {
+            if (score(t, bwfTokens, e) <= 0) break; // plus aucun signal de nom/date
+            String u = efUrl(e.url());
+            if (seen.add(u)) queue.add(u);
+        }
+
+        int tried = 0;
+        while (!queue.isEmpty() && tried < MAX_EF_TRIES) {
+            Document page = getPage(queue.poll(), cache);
+            tried++;
+            if (page == null) continue;
+
+            // Confirmation : les DATES de la page font foi (chevauchement avec le
+            // tournoi BWF) ET l'alias anglais (h1 + intro + meta) partage un jeton.
+            boolean dateOk = datesOverlapRange(t, parsePageDates(page));
+            int aliasShare = sharedTokens(bwfTokens, pageIdentityTokens(page));
+            if (dateOk && aliasShare >= 1) {
+                return parseParticipation(page);
+            }
+            // Page pérenne sans dates : suivre son édition datée de l'année visée.
+            for (String edition : editionLinks(page, year, bwfTokens)) {
+                if (seen.add(edition)) queue.addFirst(edition); // prioritaire
+            }
+        }
+        return FrenchStatus.unknown(
+                "Statut inconnu : aucune page equipe-france appariée (réconciliation à affiner).");
+    }
+
+    /** Liens d'édition datée (/badminton/<stem>-YYYY) liés depuis une page pérenne. */
+    private static List<String> editionLinks(Document page, int year, Set<String> bwfTokens) {
+        List<String> out = new ArrayList<>();
+        Pattern p = Pattern.compile("^/badminton/([a-z0-9-]+)-" + year + "$");
+        for (Element a : page.select("a[href]")) {
+            String href = a.attr("href").replaceAll("[?#].*$", "");
+            Matcher m = p.matcher(href);
+            if (!m.matches()) continue;
+            // On ne suit que les éditions dont le nom recoupe le tournoi BWF.
+            if (sharedTokens(bwfTokens, nameTokens(m.group(1))) >= 1) {
+                out.add(EF_BASE + href);
+            }
+        }
+        return out;
+    }
+
+    /** Score d'appariement : dates dominantes, similarité nom/lieu en appoint. */
+    private static int score(Tournament t, Set<String> bwfTokens, EfEntry e) {
+        int s = 10 * sharedTokens(bwfTokens, nameTokens(e.name()));
+        if (datesOverlap(t, e)) s += 100; // chevauchement de dates = signal fort
+        return s;
+    }
+
+    /** Agrège les pages tournoi candidates : calendrier (daté) + accueil. */
+    private static List<EfEntry> harvestCandidates() {
+        Map<String, EfEntry> byPath = new LinkedHashMap<>();
+        try { // calendrier : entrées datées (prioritaires en cas de doublon)
+            for (EfEntry e : parseEfCalendar(fetch(EF_CAL_URL))) {
+                byPath.putIfAbsent(pathOf(e.url()), e);
+            }
+        } catch (Exception ex) {
+            System.err.println("equipe-france (calendrier) KO : " + ex);
+        }
+        try { // accueil : liens tournoi non datés (complète les tournois en cours)
+            for (EfEntry e : parseHomeLinks(fetch(EF_BASE + "/badminton"))) {
+                byPath.putIfAbsent(pathOf(e.url()), e);
+            }
+        } catch (Exception ex) {
+            System.err.println("equipe-france (accueil) KO : " + ex);
+        }
+        return new ArrayList<>(byPath.values());
     }
 
     private static Document fetch(String url) throws Exception {
@@ -412,6 +547,29 @@ public class Collector {
                 .timeout(TIMEOUT_MS)
                 .maxBodySize(0)
                 .get();
+    }
+
+    /** Récupère une page (avec cache et pause de politesse). null si échec. */
+    private static Document getPage(String url, Map<String, Document> cache) throws InterruptedException {
+        if (cache.containsKey(url)) return cache.get(url);
+        Thread.sleep(EF_THROTTLE_MS);
+        Document d = null;
+        try {
+            d = fetch(url);
+        } catch (Exception e) {
+            System.err.println("equipe-france page KO (" + url + ") : " + e);
+        }
+        cache.put(url, d);
+        return d;
+    }
+
+    private static String efUrl(String url) {
+        return url.startsWith("http") ? url : EF_BASE + url;
+    }
+
+    private static String pathOf(String url) {
+        String u = url.replaceFirst("^https?://[^/]+", "");
+        return u.replaceAll("[?#].*$", "").replaceAll("/+$", "");
     }
 
     /** Extrait les lignes du calendrier equipe-france (tables groupées par mois). */
@@ -437,6 +595,22 @@ public class Collector {
             out.add(new EfEntry(name, url, range[0], range[1]));
         }
         return out;
+    }
+
+    /** Glane les liens vers des pages tournoi sur l'accueil badminton (non datés). */
+    private static List<EfEntry> parseHomeLinks(Document home) {
+        Map<String, EfEntry> byPath = new LinkedHashMap<>();
+        for (Element a : home.select("a[href]")) {
+            String href = a.attr("href").trim();
+            if (!href.startsWith("/badminton/")) continue;
+            String slug = href.substring("/badminton/".length()).replaceAll("[/?#].*$", "");
+            if (slug.isEmpty() || SKIP_SLUGS.contains(slug)) continue;
+            // Le nom dérive du slug ; les dates restent inconnues ({0,0}).
+            String name = slug.replace('-', ' ');
+            byPath.putIfAbsent("/badminton/" + slug,
+                    new EfEntry(name, "/badminton/" + slug, new int[]{0, 0}, new int[]{0, 0}));
+        }
+        return new ArrayList<>(byPath.values());
     }
 
     /**
@@ -471,35 +645,18 @@ public class Collector {
         return new int[][]{{startMonth, startDay}, {endMonth, endDay}};
     }
 
-    /** Choisit l'entrée equipe-france correspondant au tournoi BWF, ou null. */
-    private static EfEntry matchEntry(Tournament t, List<EfEntry> entries) {
-        Set<String> bwfTokens = nameTokens(t.name());
-        EfEntry best = null;
-        int bestScore = 0;
-        for (EfEntry e : entries) {
-            boolean dateOverlap = datesOverlap(t, e);
-            int nameShare = sharedTokens(bwfTokens, nameTokens(e.name()));
-            // Le nom equipe-france est en français (« Open du Canada ») et le nom
-            // BWF en anglais : le recouvrement direct est faible, donc le
-            // chevauchement de dates est le signal principal, le nom un bonus.
-            int score = 0;
-            if (dateOverlap) score += 2;
-            score += nameShare;
-            if (score > bestScore) {
-                bestScore = score;
-                best = e;
-            }
-        }
-        // On exige au minimum un chevauchement de dates OU 2 jetons communs.
-        return bestScore >= 2 ? best : null;
+    /** Dates de la page tournoi, lues dans le 1er paragraphe d'intro (« du … au … »). */
+    private static int[][] parsePageDates(Document page) {
+        Element intro = page.selectFirst("p.intro");
+        return intro == null ? new int[][]{{0, 0}, {0, 0}} : parseEfDates(intro.text());
     }
 
     /**
-     * Confirme la correspondance en comparant le nom BWF à « l'identité » de la
-     * page equipe-france (h1 + 1er paragraphe d'intro, qui contient l'alias
-     * anglais du type « YONEX Canada Open » / « Macau Open »).
+     * « Identité » de la page tournoi : h1 + 1er intro + meta description, qui
+     * contiennent l'alias anglais (« Australian Badminton Open », « Macau Open »,
+     * « YONEX Canada Open »…) — fiable pour confirmer face au nom BWF anglais.
      */
-    private static boolean confirmsMatch(Tournament t, Document page) {
+    private static Set<String> pageIdentityTokens(Document page) {
         StringBuilder bag = new StringBuilder();
         Element h1 = page.selectFirst("h1");
         if (h1 != null) bag.append(' ').append(h1.text());
@@ -507,15 +664,17 @@ public class Collector {
         if (intro != null) bag.append(' ').append(intro.text());
         Element meta = page.selectFirst("meta[name=description]");
         if (meta != null) bag.append(' ').append(meta.attr("content"));
-
-        Set<String> bwfTokens = nameTokens(t.name());
-        Set<String> pageTokens = nameTokens(bag.toString());
-        return sharedTokens(bwfTokens, pageTokens) >= 1;
+        return nameTokens(bag.toString());
     }
 
     /**
      * Lit la phrase de participation des paragraphes {@code p.intro} et en déduit
      * present / title / note. Table de décision déterministe (pas de LLM).
+     *
+     * La page étant appariée, on ne renvoie que TRUE (engagés) ou FALSE (mention
+     * explicite « aucun Français »). Tout cas ambigu (sélection non publiée,
+     * phrase non reconnue) → null : on a la page mais on ne PEUT PAS affirmer
+     * l'absence — à ne jamais transformer en « aucun » confirmé.
      */
     private static FrenchStatus parseParticipation(Document page) {
         String sentence = "";
@@ -535,30 +694,36 @@ public class Collector {
         }
 
         String low = stripAccents(sentence.toLowerCase(Locale.ROOT));
+        // « aucun » d'abord : « Aucun français ne participe » contient « participe ».
         if (low.contains("aucun") && low.contains("franc")) {
-            return new FrenchStatus(false, "Aucun Français engagé", sentence, false);
+            return new FrenchStatus(false, "Aucun Français engagé",
+                    "equipe-france : " + sentence, false);
         }
+        // Sélection non publiée : page trouvée mais présence indéterminée → null.
         if (low.contains("pas disponible") || low.contains("non disponible")) {
-            return new FrenchStatus(false, "Sélection française non publiée", sentence, true);
+            return FrenchStatus.unknown("equipe-france : " + sentence);
         }
-        if (low.contains("engag") || low.contains("selectionn")
-                || low.contains("participe") || low.contains("badiste")) {
-            return new FrenchStatus(true, "Français engagés", sentence, false);
+        if (low.contains("engag") || low.contains("selectionn") || low.contains("badiste")) {
+            return new FrenchStatus(true, "Français engagés",
+                    "equipe-france : " + sentence, false);
         }
-        if (!sentence.isEmpty()) {
-            return new FrenchStatus(false, "Statut français à confirmer", sentence, true);
-        }
-        return new FrenchStatus(false, "Statut français à confirmer",
-                "Information de participation non trouvée sur equipe-france.fr.", true);
+        // Page trouvée mais phrase non reconnue → inconnu (jamais false).
+        return FrenchStatus.unknown(sentence.isEmpty()
+                ? "Page equipe-france trouvée mais participation non lisible."
+                : "equipe-france : " + sentence);
     }
 
-    /** Chevauchement de plages (mois, jour), insensible à l'année (saison 2026). */
+    /** Chevauchement de la plage BWF avec une plage equipe-france {{m,d},{m,d}}. */
     private static boolean datesOverlap(Tournament t, EfEntry e) {
-        if (e.start()[0] == 0 || e.end()[0] == 0) return false; // dates ef absentes
+        return datesOverlapRange(t, new int[][]{e.start(), e.end()});
+    }
+
+    private static boolean datesOverlapRange(Tournament t, int[][] range) {
+        if (range[0][0] == 0 || range[1][0] == 0) return false; // dates absentes
         int bs = ord(t.start().getMonthValue(), t.start().getDayOfMonth());
         int be = ord(t.end().getMonthValue(), t.end().getDayOfMonth());
-        int es = ord(e.start()[0], e.start()[1]);
-        int ee = ord(e.end()[0], e.end()[1]);
+        int es = ord(range[0][0], range[0][1]);
+        int ee = ord(range[1][0], range[1][1]);
         return bs <= ee && es <= be;
     }
 
