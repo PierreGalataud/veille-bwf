@@ -6,7 +6,7 @@ Contexte et règles pour travailler sur ce dépôt. À lire avant toute modifica
 
 Un tableau de bord des tournois de badminton du **BWF World Tour** de la semaine
 en cours, avec suivi prioritaire des joueurs français (Alex Lanier, les frères
-Christo Popov et Toma Junior Popov, le double mixte Gicquel/Delrue).
+Christo Popov et Toma Junior Popov, le double mixte Delrue/Gicquel).
 
 Niveaux suivis (les 5 du World Tour) : **World Tour Finals, Super 1000, Super 750,
 Super 500, Super 300**.
@@ -17,36 +17,32 @@ courante, (2) ceux où des Français sont en lice.
 ## Architecture — la règle d'or
 
 Le projet = **deux programmes indépendants reliés par un seul fichier pivot**.
-Ils ne s'appellent jamais directement ; ils s'accordent uniquement sur la forme
-de `public/data.json`.
+Ils ne s'accordent que sur la forme de `public/data.json`.
 
 ```
-Collecteur Java  ──écrit──▶  public/data.json  ──lu par──▶  Front React
+Collecteur Java  --écrit-->  public/data.json  --lu par-->  Front React
    (collector/)               (LE CONTRAT)                  (src/)
 ```
 
-**Conséquence impérative : ne jamais casser le schéma de `data.json` d'un seul
-côté.** Si tu modifies la structure, tu modifies les DEUX côtés dans le même
-commit (le collecteur qui le produit ET `src/App.jsx` qui le lit), sinon le site
-se vide silencieusement.
+**Ne jamais casser le schéma de `data.json` d'un seul côté.** Si tu modifies la
+structure, tu modifies le collecteur ET `src/App.jsx` dans le même commit.
 
 ## Carte du dépôt
 
 ```
-index.html, vite.config.js, package.json   → config du front (Vite + React)
-src/main.jsx                               → point d'entrée React
-src/App.jsx                                → TOUT l'affichage, piloté par data.json
-src/styles.css                             → thème (maquette validée, ne pas dénaturer)
-public/data.json                           → le contrat de données (instantané courant)
-collector/pom.xml                          → Maven, Java 17 (Jsoup/Anthropic prêts en commentaire)
-collector/src/main/java/veille/Collector.java → le collecteur
-.github/workflows/refresh.yml              → automatisation (voir « Déploiement »)
+index.html, vite.config.js, package.json   -> config du front (Vite + React)
+src/main.jsx                               -> point d'entrée React
+src/App.jsx                                -> TOUT l'affichage, piloté par data.json
+src/styles.css                             -> thème (maquette validée)
+public/data.json                           -> le contrat de données
+collector/pom.xml                          -> Maven, Java 17 (Jsoup activé)
+collector/src/main/java/veille/Collector.java -> le collecteur
+.github/workflows/refresh.yml              -> automatisation (Actions -> commit -> Vercel)
 ```
 
 ## Le contrat `data.json`
 
-Schéma à respecter exactement. `tier` ∈ `"wtf" | "1000" | "750" | "500" | "300"`.
-Le champ `tone` ∈ `"win" | "out" | null`.
+`tier` ∈ `"wtf" | "1000" | "750" | "500" | "300"`. `tone` ∈ `"win" | "out" | null`.
 
 ```json
 {
@@ -55,7 +51,7 @@ Le champ `tone` ∈ `"win" | "out" | null`.
   "current": [
     {
       "name": "…", "tier": "500", "location": "…", "dates": "…",
-      "prize": "…", "timezone": "UTC+…", "dayLabel": "Jour x / y · …",
+      "prize": "…", "timezone": "UTC+…", "dayLabel": "…",
       "seeds": [ { "rank": "TS1", "name": "…" } ],
       "frenchStatus": { "present": false, "title": "…", "note": "…", "confirm": true }
     }
@@ -70,23 +66,44 @@ Le champ `tone` ∈ `"win" | "out" | null`.
 }
 ```
 
-`App.jsx` mappe `tier` vers une couleur et un libellé (`TIER_COLOR`, `TIER_LABEL`,
-`TIER_SHORT`). Si tu ajoutes un niveau, mets ces trois maps à jour.
+`App.jsx` mappe `tier` via `TIER_COLOR` / `TIER_LABEL` / `TIER_SHORT` — mets-les à
+jour si tu ajoutes un niveau.
 
-## État actuel et tâche en cours
+## Carte des sources (VÉRIFIÉ — ne pas dévier)
 
-Le collecteur est en **v1 figée** : `Collector.buildData()` renvoie un instantané
-codé en dur (Open d'Australie + état des Français), seul `generatedAt` change.
-Toute la tuyauterie (Actions → commit → déploiement Vercel) fonctionne déjà.
+| Donnée | Source | Accès |
+|---|---|---|
+| Calendrier + niveaux + prize | corporate.bwfbadminton.com/events/calendar/ | **Jsoup OK** (WordPress rendu serveur) |
+| Statut + résultats des Français | equipe-france.fr/badminton/... | **Jsoup OK** (rendu serveur, FR-centré) |
+| Tableaux / scores live | TournamentSoftware, Flashscore | **INTERDIT** — robots.txt bloque, ne pas scraper |
 
-**Prochaine tâche : remplacer `buildData()` par une collecte réelle.**
-- Commencer par le **calendrier BWF** (lister les tournois de la semaine, filtrer
-  sur les 5 niveaux), AVANT de toucher aux tableaux (draws) de TournamentSoftware,
-  plus complexes.
-- Décommenter les dépendances dans `collector/pom.xml` (Jsoup, puis Jackson).
-- L'IA (SDK `com.anthropic:anthropic-java`) ne sert qu'à 3 choses : extraire des
-  pages HTML instables, réconcilier les noms entre sources, rédiger la synthèse.
-  Tout le reste (filtrage par date/niveau, dédup) doit rester du code déterministe.
+Détails utiles :
+- **Calendrier** : grande table groupée par mois. La colonne CATEGORY donne le
+  niveau en clair (`HSBC BWF World Tour Super 500` -> `500`, etc.). On ne garde que
+  les catégories commençant par `HSBC BWF World Tour`. La ligne détail contient le
+  GUID TournamentSoftware (utile comme identifiant, PAS pour scraper le site).
+- **equipe-france** : page par tournoi avec phrase de participation + fil daté
+  `DATE · TOURNOI · TITRE`. C'est la source de `frenchStatus` et de `players[]`.
+- **Pas de score point par point** : les sources live sont bloquées. On se limite
+  au grain « tour » (sorti / qualifié / en quart), rafraîchi quelques fois par jour.
+
+## État d'avancement
+
+- [x] Tuyau complet : collecteur -> data.json -> Actions -> commit -> Vercel.
+- [x] **Calendrier réel** (Jsoup sur le calendrier BWF) : `current` / `upcoming`.
+- [ ] **Suivi des Français** (en cours) : `buildFrenchStatus()` via equipe-france,
+      remplit `players[]` et `frenchStatus`. Découpage déterministe + table de
+      mots-clés pour classer les titres (win/out/tour). Haiku = filet de sécurité
+      ultérieur, pas maintenant.
+- [ ] Réconciliation des noms de tournois BWF <-> equipe-france (table d'alias ou
+      correspondance par nom + dates).
+
+## Quand l'IA (Claude/Haiku) sert — et quand non
+
+L'IA n'a sa place qu'à 3 endroits : extraire des pages HTML instables, réconcilier
+les noms entre sources, classer un titre en texte libre que les règles ne savent
+pas trancher. **Tout le reste reste du code déterministe** (filtrage par date/niveau,
+découpage du fil, dédup). Ne mets pas d'appel LLM là où une table de mots-clés suffit.
 
 ## Commandes
 
@@ -94,50 +111,42 @@ Toute la tuyauterie (Actions → commit → déploiement Vercel) fonctionne déj
 # Front
 npm install
 npm run dev      # http://localhost:5173
-npm run build    # produit dist/ (ce que Vercel construit)
+npm run build
 
 # Collecteur (régénère public/data.json)
 mvn -f collector/pom.xml compile exec:java -Dexec.args="public/data.json"
 ```
 
-Après avoir modifié le collecteur, **toujours** le relancer et vérifier que
-`public/data.json` reste un JSON valide et conforme au schéma ci-dessus avant de
-committer.
+Après modif du collecteur, **toujours** le relancer et vérifier que `data.json`
+reste valide et conforme au schéma avant de committer.
 
-## Déploiement (ne pas chercher à le contourner)
+## Déploiement
 
 ```
-cron / clic  →  GitHub Actions  →  lance le collecteur  →  commit data.json
-                                                               │ (push)
-                                                               ▼
-                                                  Vercel rebuild + déploie
+cron / clic  ->  GitHub Actions  ->  collecteur  ->  commit data.json
+                                                       | (push)
+                                                       v
+                                          Vercel rebuild + déploie
 ```
 
-- Vercel ne sert que des fichiers statiques. Il **n'exécute jamais** le Java et
-  n'appelle jamais d'API. Ne lui confie aucune logique serveur.
-- **Les secrets (ex. `ANTHROPIC_API_KEY`) vont dans les GitHub Actions secrets**,
-  jamais dans Vercel, jamais dans le code, jamais committés.
+- Vercel ne sert que du statique : **jamais** de Java ni d'appel API côté Vercel.
+- Les secrets (ex. `ANTHROPIC_API_KEY`) vont dans **GitHub Actions secrets**,
+  jamais dans Vercel ni dans le code.
 - Le workflow ne commite que si `data.json` a changé.
 
 ## Garde-fous
 
-- **Ne pas coder en dur de données badminton dans `src/App.jsx`** : tout vient du
-  JSON. Le front doit rester « bête ».
-- **Échec gracieux** : si le scraping échoue, le collecteur ne doit PAS écrire un
-  `data.json` vide ou cassé (cela viderait le site en ligne). Préférer : ne rien
-  réécrire et sortir en erreur, pour que le commit n'efface pas la dernière bonne
-  version.
-- **Pas d'API publique BWF** : usage personnel, requêtes espacées, `User-Agent`
-  explicite, mise en cache. Ne pas marteler les serveurs.
-- **Garder la CI verte** et la fréquence du cron raisonnable (les minutes Actions
-  et déploiements Vercel sont gratuits mais limités). Fréquence plus élevée
-  seulement les jours de tournoi.
-- **Contenu en français, encodage UTF-8** partout (le collecteur écrit en UTF-8 ;
-  le `pom.xml` fixe `project.build.sourceEncoding=UTF-8`).
+- **Ne pas coder en dur de données badminton dans `src/App.jsx`** : tout vient du JSON.
+- **Échec gracieux** : si une source échoue, ne réécris PAS un `data.json` vide ou
+  cassé (cela viderait le site). Garde la dernière bonne version ou sors en erreur.
+- **Ne jamais scraper TournamentSoftware ni Flashscore** (robots.txt).
+- Usage personnel : User-Agent explicite, requêtes espacées, cache, cron raisonnable.
+- Contenu en français, **UTF-8** partout.
 
 ## Identités à ne pas confondre
 
 - C'est **Alex Lanier** (et non « Lasnier »).
-- « Popov » = **deux frères** distincts : **Christo Popov** et **Toma Junior Popov**.
-- La réconciliation de noms entre sources (BWF, Flashscore, FFBaD) est un vrai
-  sujet : prévoir une table d'alias plutôt que des comparaisons exactes.
+- « Popov » = **deux frères** : **Christo Popov** et **Toma Junior Popov**. Un titre
+  qui dit seulement « Popov » est ambigu : privilégier les mentions avec prénom.
+- Le double : **Delphine Delrue / Thom Gicquel** — l'ordre des noms varie selon les
+  sources (« Gicquel-Delrue », « Delrue-Gicquel ») ; matcher sur l'un ou l'autre.
