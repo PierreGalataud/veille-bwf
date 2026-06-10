@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-06-10T14:27:43.506029900Z",
+  "generatedAt" : "2026-06-10T15:33:05.108673122Z",
   "weekLabel" : "Semaine du 8 – 14 juin 2026",
   "current" : [ {
     "name" : "SATHIO GROUP Australian Badminton Open 2026",
@@ -12,8 +12,8 @@
     "seeds" : [ ],
     "frenchStatus" : {
       "present" : false,
-      "title" : "Présence française à vérifier",
-      "note" : "Le collecteur ne lit pas encore les tableaux (draws) : présence des Français à confirmer sur le tableau officiel.",
+      "title" : "Aucun Français attendu",
+      "note" : "Aucune page de suivi sur equipe-france.fr pour ce tournoi — aucun Français annoncé (à confirmer).",
       "confirm" : true
     }
   } ],
