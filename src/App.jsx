@@ -37,15 +37,37 @@ export default function App() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [active, setActive] = useState(new Set(ALL_TIERS));
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    fetch("/data.json", { cache: "no-store" })
-      .then((r) => {
-        if (!r.ok) throw new Error("data.json introuvable");
-        return r.json();
-      })
-      .then(setData)
-      .catch((e) => setError(e.message));
+    let cancelled = false;
+    const load = () =>
+      fetch("/data.json", { cache: "no-store" })
+        .then((r) => {
+          if (!r.ok) throw new Error("data.json introuvable");
+          return r.json();
+        })
+        .then((d) => {
+          if (!cancelled) {
+            setData(d);
+            setError(null);
+          }
+        })
+        .catch((e) => {
+          if (!cancelled) setError(e.message);
+        });
+    load();
+    // Auto-rafraîchissement : le collecteur publie plusieurs fois par jour, la
+    // page suit sans rechargement. Si un refresh échoue, on garde les dernières
+    // données affichées (l'erreur ne s'affiche que si on n'a encore rien reçu).
+    const id = setInterval(() => {
+      setNow(Date.now()); // recalcule aussi la fraîcheur du badge
+      load();
+    }, 15 * 60 * 1000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
   }, []);
 
   function toggle(tier) {
@@ -56,7 +78,7 @@ export default function App() {
     });
   }
 
-  if (error) {
+  if (error && !data) {
     return (
       <div className="vbwf">
         <p className="empty">Impossible de charger les données ({error}). Le collecteur n'a peut-être pas encore publié de data.json.</p>
@@ -82,7 +104,7 @@ export default function App() {
   const stamp = new Date(data.generatedAt).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
   // Badge honnête : les données viennent d'un cron (pas du direct). Au-delà de
   // 12 h sans rafraîchissement, on signale que le collecteur n'a pas publié.
-  const ageHours = (Date.now() - new Date(data.generatedAt).getTime()) / 3600000;
+  const ageHours = (now - new Date(data.generatedAt).getTime()) / 3600000;
   const fresh = Number.isFinite(ageHours) && ageHours < 12;
 
   return (
@@ -128,8 +150,8 @@ export default function App() {
             <div className="card empty">Aucun tournoi de ce niveau en cours cette semaine.</div>
           )}
 
-          {visibleCurrent.map((t, i) => (
-            <div className="card tourn" key={i}>
+          {visibleCurrent.map((t) => (
+            <div className="card tourn" key={t.name}>
               <div className="tourn__top">
                 <span className="tier" style={{ background: TIER_COLOR[t.tier] }}>{TIER_LABEL[t.tier]}</span>
                 <span className="tourn__day">{t.dayLabel}</span>
@@ -173,8 +195,8 @@ export default function App() {
             <div className="card empty">Aucun tournoi de ce niveau au calendrier.</div>
           )}
           <div className="upcoming">
-            {visibleUpcoming.map((u, i) => (
-              <div className="up" key={i}>
+            {visibleUpcoming.map((u) => (
+              <div className="up" key={u.name}>
                 <div className="up__date">{u.dates}</div>
                 <div className="up__name">
                   {u.name}
@@ -195,8 +217,8 @@ export default function App() {
             <div className="card empty">Aucun résultat récent des Bleus dans le fil equipe-france.</div>
           )}
           <div className="players">
-            {players.map((p, i) => (
-              <div className="player" key={i}>
+            {players.map((p) => (
+              <div className="player" key={p.name}>
                 <div className="player__name">
                   <span>{p.name}</span>
                   {p.rank && <span className="player__rank">{p.rank}</span>}

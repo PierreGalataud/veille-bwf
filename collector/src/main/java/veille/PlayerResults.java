@@ -28,6 +28,11 @@ final class PlayerResults {
     private static final String LANIER = "Alex Lanier";
     private static final String CHRISTO = "Christo Popov";
     private static final String TOMA = "Toma Junior Popov";
+    /**
+     * Le rank du double reste VOLONTAIREMENT null : equipe-france ne publie que
+     * les classements de SIMPLE (Delrue figure en « Non classé » sur la page
+     * féminine — vérifié juin 2026), aucun classement par paire exploitable.
+     */
     private static final String DOUBLE = "Delphine Delrue / Thom Gicquel";
 
     /** Slug equipe-france de chaque joueur, pour la jonction avec le classement. */

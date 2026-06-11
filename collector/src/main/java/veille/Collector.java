@@ -80,7 +80,15 @@ public class Collector {
         upcoming.sort((a, b) -> a.start().compareTo(b.start()));
 
         // Enrichissement du statut français via equipe-france (best-effort).
-        Map<String, EquipeFrance.FrenchStatus> frByName = EquipeFrance.buildFrenchStatus(current);
+        // On résout AUSSI les tournois à venir PROCHES (départ ≤ 14 jours) : leur
+        // page equipe-france existe déjà et alimente upcoming[].french au lieu du
+        // « à confirmer » permanent. Au-delà, la sélection n'est pas publiée —
+        // inutile de sonder.
+        List<Tournament> toResolve = new ArrayList<>(current);
+        for (Tournament t : upcoming) {
+            if (!t.start().isAfter(today.plusDays(UPCOMING_FR_DAYS))) toResolve.add(t);
+        }
+        Map<String, EquipeFrance.FrenchStatus> frByName = EquipeFrance.buildFrenchStatus(toResolve);
 
         List<DataJson.CurrentJson> currentJson = new ArrayList<>();
         for (Tournament t : current) {
@@ -100,7 +108,7 @@ public class Collector {
         for (Tournament t : upcoming) {
             upcomingJson.add(new DataJson.UpcomingJson(
                     FrDates.dateRange(t.start(), t.end(), false),
-                    t.name(), t.tier(), "FR : à confirmer"));
+                    t.name(), t.tier(), frenchLabel(frByName.get(t.name()))));
         }
 
         // players : suivi des Français via le fil daté d'equipe-france. On passe le
@@ -114,6 +122,21 @@ public class Collector {
                 upcomingJson);
 
         return new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(root);
+    }
+
+    /** Horizon de résolution du statut FR des tournois à venir (jours). */
+    private static final long UPCOMING_FR_DAYS = 14;
+
+    /**
+     * Libellé court FR d'un tournoi à venir. On n'affirme que le confirmé
+     * (mêmes trois états que frenchStatus) : non résolu ou inconnu → « à
+     * confirmer », jamais un « aucun » inventé.
+     */
+    private static String frenchLabel(EquipeFrance.FrenchStatus fs) {
+        if (fs == null) return "FR : à confirmer";
+        if (Boolean.TRUE.equals(fs.present())) return "FR : engagés";
+        if (Boolean.FALSE.equals(fs.present())) return "FR : aucun engagé";
+        return "FR : à confirmer";
     }
 
     private static String weekLabel(LocalDate today) {
