@@ -12,3 +12,6 @@ collector/target/
 # IDE (config locale : chemins JDK/Maven propres à chaque machine)
 .idea/
 *.iml
+
+# Notes personnelles (non publiées)
+FICHE-PROJET.md
