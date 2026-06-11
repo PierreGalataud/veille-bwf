@@ -129,7 +129,7 @@ public class Collector {
     }
 
     /** Un tournoi World Tour extrait du calendrier. */
-    private record Tournament(
+    record Tournament(
             String name, String tier, String location, String prize,
             LocalDate start, LocalDate end) {}
 
@@ -359,7 +359,7 @@ public class Collector {
     }
 
     /** Extrait les deux premiers entiers d'un libellé de dates (« 09 -14 »). */
-    private static int[] parseDayRange(String text) {
+    static int[] parseDayRange(String text) {
         Matcher m = Pattern.compile("(\\d{1,2})").matcher(text);
         List<Integer> nums = new ArrayList<>();
         while (m.find() && nums.size() < 2) {
@@ -629,7 +629,7 @@ public class Collector {
      *
      * @return {@code {{startMonth,startDay},{endMonth,endDay}}}, valeurs à 0 si absent.
      */
-    private static int[][] parseEfDates(String text) {
+    static int[][] parseEfDates(String text) {
         String low = text.toLowerCase(Locale.ROOT);
         // mois (valeur + position)
         List<int[]> months = new ArrayList<>(); // {monthNum, position}
@@ -784,7 +784,7 @@ public class Collector {
     private static final String SLUG_TOMA = "toma-junior-popov";
 
     /** Une entrée du fil : DATE · TOURNOI · TITRE, plus le slug de l'URL (recall). */
-    private record FeedItem(String date, String tournoi, String title, String href) {}
+    record FeedItem(String date, String tournoi, String title, String href) {}
 
     /**
      * Résumé d'un tournoi du point de vue d'un joueur : stade le plus avancé NOMMÉ
@@ -910,6 +910,33 @@ public class Collector {
         boolean hasLines() { return !byTour.isEmpty(); }
     }
 
+    /** Joueurs suivis cités par une entrée du fil, et nature du titre. */
+    record Mention(boolean lanier, boolean christo, boolean toma, boolean dble,
+                   boolean ambiguousPopov, boolean disputed) {}
+
+    /**
+     * Rattache une entrée du fil aux joueurs suivis (titre + slug d'URL + catégorie)
+     * et qualifie le titre : « Popov » sans prénom = ambigu (deux frères) ;
+     * opposition = titre nommant ≥ 2 joueurs suivis distincts ET un verbe
+     * d'affrontement → résultat indécidable (cf. OPP_VERBS / TourAgg.absorb).
+     */
+    static Mention classify(FeedItem it) {
+        String hay = norm(it.title() + " " + it.href() + " " + it.tournoi());
+
+        boolean hasChristo = hay.contains("christo");
+        boolean hasToma = hay.contains("toma");
+        boolean hasPopov = hay.contains("popov");
+        boolean hasLanier = hay.contains("lanier");
+        boolean hasDouble = hay.contains("delrue") || hay.contains("gicquel");
+        boolean ambiguousPopov = hasPopov && !hasChristo && !hasToma;
+
+        int tracked = (hasLanier ? 1 : 0) + (hasChristo ? 1 : 0) + (hasToma ? 1 : 0)
+                + (ambiguousPopov ? 1 : 0) + (hasDouble ? 1 : 0);
+        boolean disputed = tracked >= 2 && containsAny(norm(it.title()), OPP_VERBS);
+
+        return new Mention(hasLanier, hasChristo, hasToma, hasDouble, ambiguousPopov, disputed);
+    }
+
     /**
      * Construit {@code players[]} depuis le fil daté d'equipe-france (accueil
      * /badminton). Découpage déterministe DATE · TOURNOI · TITRE, rattachement par
@@ -935,32 +962,19 @@ public class Collector {
         // Le fil est antéchronologique (plus récent en premier) : on l'exploite tel
         // quel, la 1re ligne retenue par joueur devient « Dernier ».
         for (FeedItem it : feed) {
-            String hay = norm(it.title() + " " + it.href() + " " + it.tournoi());
             LocalDate titleDate = parseFeedDate(it.date(), today);
+            Mention m = classify(it);
 
-            boolean hasChristo = hay.contains("christo");
-            boolean hasToma = hay.contains("toma");
-            boolean hasPopov = hay.contains("popov");
-            boolean hasLanier = hay.contains("lanier");
-            boolean hasDouble = hay.contains("delrue") || hay.contains("gicquel");
-            boolean ambiguousPopov = hasPopov && !hasChristo && !hasToma;
-
-            // Opposition : titre nommant ≥ 2 joueurs suivis distincts ET un verbe
-            // d'affrontement → résultat indécidable (cf. OPP_VERBS / TourAgg.absorb).
-            int tracked = (hasLanier ? 1 : 0) + (hasChristo ? 1 : 0) + (hasToma ? 1 : 0)
-                    + (ambiguousPopov ? 1 : 0) + (hasDouble ? 1 : 0);
-            boolean disputed = tracked >= 2 && containsAny(norm(it.title()), OPP_VERBS);
-
-            if (hasLanier) lanier.add(it, false, disputed, titleDate);
-            if (hasChristo) christo.add(it, false, disputed, titleDate);
-            if (hasToma) toma.add(it, false, disputed, titleDate);
+            if (m.lanier()) lanier.add(it, false, m.disputed(), titleDate);
+            if (m.christo()) christo.add(it, false, m.disputed(), titleDate);
+            if (m.toma()) toma.add(it, false, m.disputed(), titleDate);
             // « Popov » sans prénom : ambigu (deux frères). Signal de sortie pour
             // les DEUX, sans inventer le stade individuel (cf. TourAgg.absorb).
-            if (ambiguousPopov) {
-                christo.add(it, true, disputed, titleDate);
-                toma.add(it, true, disputed, titleDate);
+            if (m.ambiguousPopov()) {
+                christo.add(it, true, m.disputed(), titleDate);
+                toma.add(it, true, m.disputed(), titleDate);
             }
-            if (hasDouble) dbl.add(it, false, disputed, titleDate);
+            if (m.dble()) dbl.add(it, false, m.disputed(), titleDate);
         }
 
         // Classement mondial (simple messieurs) — source autoritaire pour rank.
@@ -985,8 +999,8 @@ public class Collector {
      * son titre le plus récent date de plus de {@link #ONGOING_MAX_AGE_DAYS} jours.
      * Sans date exploitable, on n'affirme jamais « en cours ».
      */
-    private static boolean isOngoing(String cat, LocalDate lastDate,
-                                     List<Tournament> bwf, LocalDate today) {
+    static boolean isOngoing(String cat, LocalDate lastDate,
+                             List<Tournament> bwf, LocalDate today) {
         Set<String> catTokens = nameTokens(cat);
         Tournament match = null;
         for (Tournament t : bwf) {
@@ -1076,7 +1090,7 @@ public class Collector {
      * finale « sèche » pour ne pas confondre « quart/huitième/demi de finale » avec
      * « (atteint la) finale ».
      */
-    private static int stageOf(String t) {
+    static int stageOf(String t) {
         if (containsAny(t, "vainqueur", "sacre", "champion", "titre", "realise le double")) return 6;
         if (containsAny(t, "finaliste", "prives de double", "sincline en finale")) return 5;
         boolean reachedFinal = t.contains("finale")
@@ -1118,7 +1132,7 @@ public class Collector {
     }
 
     /** Minuscules + accents retirés + apostrophes supprimées (matching robuste). */
-    private static String norm(String s) {
+    static String norm(String s) {
         return stripAccents(s.toLowerCase(Locale.ROOT)).replaceAll("['`’]", "");
     }
 
@@ -1127,7 +1141,7 @@ public class Collector {
         return datesOverlapRange(t, new int[][]{e.start(), e.end()});
     }
 
-    private static boolean datesOverlapRange(Tournament t, int[][] range) {
+    static boolean datesOverlapRange(Tournament t, int[][] range) {
         if (range[0][0] == 0 || range[1][0] == 0) return false; // dates absentes
         int bs = ord(t.start().getMonthValue(), t.start().getDayOfMonth());
         int be = ord(t.end().getMonthValue(), t.end().getDayOfMonth());
@@ -1141,7 +1155,7 @@ public class Collector {
     }
 
     /** Jetons normalisés et significatifs d'un nom (accents et stopwords retirés). */
-    private static Set<String> nameTokens(String name) {
+    static Set<String> nameTokens(String name) {
         Set<String> tokens = new HashSet<>();
         for (String raw : stripAccents(name.toLowerCase(Locale.ROOT)).split("[^a-z0-9]+")) {
             if (raw.length() >= 2 && !NAME_STOPWORDS.contains(raw)) tokens.add(raw);
@@ -1150,7 +1164,7 @@ public class Collector {
     }
 
     /** Nombre de jetons communs, en tolérant les variantes FR/EN par préfixe. */
-    private static int sharedTokens(Set<String> a, Set<String> b) {
+    static int sharedTokens(Set<String> a, Set<String> b) {
         int shared = 0;
         for (String x : a) {
             for (String y : b) {
