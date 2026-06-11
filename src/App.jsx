@@ -110,6 +110,7 @@ export default function App() {
       </header>
 
       <div className="vbwf__grid">
+        <div className="vbwf__main">
         <section>
           <h2 className="sec-label">En cours cette semaine</h2>
 
@@ -155,6 +156,25 @@ export default function App() {
           ))}
         </section>
 
+        <section className="vbwf__upcoming">
+          <h2 className="sec-label">À venir — prochains tournois World Tour</h2>
+          <div className="upcoming">
+            {visibleUpcoming.map((u, i) => (
+              <div className="up" key={i}>
+                <div className="up__date">{u.dates}</div>
+                <div className="up__name">
+                  {u.name}
+                  <span className="tier" style={{ background: TIER_COLOR[u.tier], fontSize: 10, padding: "2px 7px" }}>
+                    {TIER_SHORT[u.tier]}
+                  </span>
+                </div>
+                <div className="up__fr">{u.french}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+        </div>
+
         <aside>
           <h2 className="sec-label">Vos Français</h2>
           <div className="players">
@@ -188,24 +208,6 @@ export default function App() {
           </div>
         </aside>
       </div>
-
-      <section style={{ marginTop: 30 }}>
-        <h2 className="sec-label">À venir — prochains tournois World Tour</h2>
-        <div className="upcoming">
-          {visibleUpcoming.map((u, i) => (
-            <div className="up" key={i}>
-              <div className="up__date">{u.dates}</div>
-              <div className="up__name">
-                {u.name}
-                <span className="tier" style={{ background: TIER_COLOR[u.tier], fontSize: 10, padding: "2px 7px" }}>
-                  {TIER_SHORT[u.tier]}
-                </span>
-              </div>
-              <div className="up__fr">{u.french}</div>
-            </div>
-          ))}
-        </div>
-      </section>
 
       <footer className="vbwf__foot">
         Données rafraîchies par le collecteur — dernière mise à jour : <b className="stamp">{stamp}</b>.<br />
