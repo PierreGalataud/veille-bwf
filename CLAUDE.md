@@ -6,26 +6,26 @@ Contexte et règles pour travailler sur ce dépôt. À lire avant toute modifica
 
 Un tableau de bord des tournois de badminton du **BWF World Tour** de la semaine
 en cours, avec suivi prioritaire des joueurs français (Alex Lanier, les frères
-Christo Popov et Toma Junior Popov, le double mixte Delrue/Gicquel).
+Christo Popov et Toma Junior Popov, le double Delphine Delrue / Thom Gicquel).
 
 Niveaux suivis (les 5 du World Tour) : **World Tour Finals, Super 1000, Super 750,
 Super 500, Super 300**.
 
-Deux priorités d'affichage, dans cet ordre : (1) les tournois de la semaine
-courante, (2) ceux où des Français sont en lice.
+Deux priorités d'affichage : (1) les tournois de la semaine courante, (2) ceux où
+des Français sont en lice.
 
 ## Architecture — la règle d'or
 
-Le projet = **deux programmes indépendants reliés par un seul fichier pivot**.
-Ils ne s'accordent que sur la forme de `public/data.json`.
+Deux programmes indépendants reliés par un seul fichier pivot. Ils ne s'accordent
+que sur la forme de `public/data.json`.
 
 ```
 Collecteur Java  --écrit-->  public/data.json  --lu par-->  Front React
    (collector/)               (LE CONTRAT)                  (src/)
 ```
 
-**Ne jamais casser le schéma de `data.json` d'un seul côté.** Si tu modifies la
-structure, tu modifies le collecteur ET `src/App.jsx` dans le même commit.
+**Ne jamais casser le schéma de `data.json` d'un seul côté.** Toute modif de
+structure touche le collecteur ET `src/App.jsx` dans le même commit.
 
 ## Carte du dépôt
 
@@ -40,13 +40,9 @@ collector/src/main/java/veille/Collector.java -> le collecteur
 .github/workflows/refresh.yml              -> automatisation (Actions -> commit -> Vercel)
 ```
 
-## Le contrat `data.json`
+## Le contrat `data.json` (schéma à jour)
 
 `tier` ∈ `"wtf" | "1000" | "750" | "500" | "300"`. `tone` ∈ `"win" | "out" | null`.
-`frenchStatus.present` est À TROIS ÉTATS : `true` (Français engagés), `false`
-(page equipe-france lue, « aucun Français »), `null` (aucune page appariée →
-statut INCONNU, à ne jamais confondre avec un `false` confirmé). Le front
-distingue visuellement le `null` (bandeau rayé) du `false` (bandeau gris plein).
 
 ```json
 {
@@ -55,14 +51,21 @@ distingue visuellement le `null` (bandeau rayé) du `false` (bandeau gris plein)
   "current": [
     {
       "name": "…", "tier": "500", "location": "…", "dates": "…",
-      "prize": "…", "timezone": "UTC+…", "dayLabel": "…",
+      "prize": "…", "timezone": "…", "dayLabel": "…",
       "seeds": [ { "rank": "TS1", "name": "…" } ],
-      "frenchStatus": { "present": false, "title": "…", "note": "…", "confirm": true }
+      "frenchStatus": { "present": true, "title": "…", "note": "…", "confirm": false }
     }
   ],
   "players": [
-    { "name": "…", "rank": "#x mondial",
-      "lines": [ { "label": "Dernier", "value": "…", "tone": "win" } ] }
+    {
+      "name": "…",
+      "rank": "#x mondial",        // ou null si introuvable
+      "lines": [
+        { "label": "Dernier", "date": "5 juin", "tournament": "Open d'Indonésie",
+          "stage": "Éliminé au 1er tour", "tone": "out",
+          "value": "Open d'Indonésie · Éliminé au 1er tour" }   // value = repli
+      ]
+    }
   ],
   "upcoming": [
     { "dates": "…", "name": "…", "tier": "300", "french": "FR : à confirmer" }
@@ -70,8 +73,14 @@ distingue visuellement le `null` (bandeau rayé) du `false` (bandeau gris plein)
 }
 ```
 
-`App.jsx` mappe `tier` via `TIER_COLOR` / `TIER_LABEL` / `TIER_SHORT` — mets-les à
-jour si tu ajoutes un niveau.
+`frenchStatus.present` est à **TROIS états**, jamais confondus :
+- `true`  : Français engagés (détails dans `note`).
+- `false` : page equipe-france lue, aucun Français engagé.
+- `null`  : aucune page equipe-france appariée -> **statut inconnu**.
+
+« Pas trouvé » (`null`) et « trouvé, personne » (`false`) doivent rester distincts,
+dans le collecteur ET à l'affichage. `App.jsx` mappe `tier` via `TIER_COLOR` /
+`TIER_LABEL` / `TIER_SHORT`.
 
 ## Carte des sources (VÉRIFIÉ — ne pas dévier)
 
@@ -81,33 +90,69 @@ jour si tu ajoutes un niveau.
 | Statut + résultats des Français | equipe-france.fr/badminton/... | **Jsoup OK** (rendu serveur, FR-centré) |
 | Tableaux / scores live | TournamentSoftware, Flashscore | **INTERDIT** — robots.txt bloque, ne pas scraper |
 
-Détails utiles :
-- **Calendrier** : grande table groupée par mois. La colonne CATEGORY donne le
-  niveau en clair (`HSBC BWF World Tour Super 500` -> `500`, etc.). On ne garde que
-  les catégories commençant par `HSBC BWF World Tour`. La ligne détail contient le
-  GUID TournamentSoftware (utile comme identifiant, PAS pour scraper le site).
-- **equipe-france** : page par tournoi avec phrase de participation + fil daté
-  `DATE · TOURNOI · TITRE`. C'est la source de `frenchStatus` et de `players[]`.
-- **Pas de score point par point** : les sources live sont bloquées. On se limite
-  au grain « tour » (sorti / qualifié / en quart), rafraîchi quelques fois par jour.
+- **Calendrier** : table groupée par mois ; colonne CATEGORY -> niveau (on ne garde
+  que `HSBC BWF World Tour …`). La ligne détail contient le GUID TournamentSoftware
+  (identifiant seulement, PAS pour scraper le site).
+- **equipe-france** : page par tournoi (phrase de participation) + fil daté
+  `DATE · TOURNOI · TITRE`. Source de `frenchStatus` et de `players[]`.
+- **Pas de score point par point** : sources live bloquées. Grain « tour » seulement
+  (sorti / qualifié / en quart), rafraîchi quelques fois par jour.
 
 ## État d'avancement
 
+### Phase déterministe — TERMINÉE (logique de fond)
 - [x] Tuyau complet : collecteur -> data.json -> Actions -> commit -> Vercel.
-- [x] **Calendrier réel** (Jsoup sur le calendrier BWF) : `current` / `upcoming`.
-- [ ] **Suivi des Français** (en cours) : `buildFrenchStatus()` via equipe-france,
-      remplit `players[]` et `frenchStatus`. Découpage déterministe + table de
-      mots-clés pour classer les titres (win/out/tour). Haiku = filet de sécurité
-      ultérieur, pas maintenant.
-- [ ] Réconciliation des noms de tournois BWF <-> equipe-france (table d'alias ou
-      correspondance par nom + dates).
+- [x] Calendrier réel (Jsoup) : `current` / `upcoming`, niveaux, dates, prize.
+- [x] `frenchStatus` à trois états via equipe-france (réconciliation par dates + nom).
+- [x] `players[]` : résultats des Bleus, classés par table de mots-clés.
 
-## Quand l'IA (Claude/Haiku) sert — et quand non
+La logique de fond est complète et fiable. Ce qui reste côté déterministe n'est plus
+de la logique mais de la **finition** : affichage, cas vides, fuseau/têtes de série
+si une source simple existe. Pas de surprise, et **ne pas chercher à pousser le
+déterministe plus loin sur l'interprétation du langage** (voir Limites).
 
-L'IA n'a sa place qu'à 3 endroits : extraire des pages HTML instables, réconcilier
-les noms entre sources, classer un titre en texte libre que les règles ne savent
-pas trancher. **Tout le reste reste du code déterministe** (filtrage par date/niveau,
-découpage du fil, dédup). Ne mets pas d'appel LLM là où une table de mots-clés suffit.
+### Prochaines étapes — bascule vers l'IA
+- [ ] **Étape A — Filet LLM (Haiku), ciblé.** Appels ponctuels UNIQUEMENT sur les cas
+      que le déterministe a marqués comme incertains (`tone: null`, `stage` « non
+      précisé », titres d'opposition). Une fonction texte->texte appelée par le Java
+      quand une règle sèche — **pas un agent**. Le LLM affine, il ne remplace pas le
+      pipeline. Clé `ANTHROPIC_API_KEY` -> GitHub Actions secrets.
+- [ ] **Étape B — Agent « La Dépêche des Français ».** Produit un résumé hebdo/mensuel
+      des Bleus à partir des faits DÉJÀ collectés, ton pince-sans-rire. Variante agent :
+      peut aller chercher l'ambiance côté presse (s'inspirer du registre, **sans
+      recopier** de contenu protégé). C'est de la production de langage, pas du parsing.
+      Reste un invité PAR-DESSUS les faits : s'il échoue, le tableau de bord tourne sans.
+
+## Règles de classement des résultats (déterministe en place)
+
+- Un titre **nominatif** (joueur cité seul) prime sur une mention **collective**
+  ambiguë pour le même tournoi (ex. « Christo s'incline au 1er tour » > « Lanier et
+  Popov éliminés »).
+- « **Popov** » sans prénom = ambigu (deux frères) : rattaché aux deux, `tone: null`.
+- Titre **opposant deux joueurs suivis** (« X domine Y ») : on ne classe personne
+  « Vainqueur » par défaut -> `tone: null`, `stage` « résultat à préciser ». Une règle
+  par mots-clés ne peut pas distinguer sujet et objet.
+- Table titre -> tone : `win` (sacré/vainqueur/remporte/titre/champion) ; `out`
+  (fin de parcours/s'incline/éliminé/1er tour/privés de) ; `null` (quart/demi/huitième/
+  qualifié/en finale). Un titre non classé garde `tone: null` et n'est jamais jeté.
+
+## Limites assumées (laissées au filet LLM, étape A)
+
+Volontairement NON sur-traitées en déterministe — les marteler avec plus de règles
+rendrait le code fragile pour un gain marginal :
+- les `stage` « stade non précisé » (perte de grain lors de l'agrégation) ;
+- les titres d'opposition entre deux Français (« X domine Y ») ;
+- les phrasés alambiqués sans mot-clé reconnu (« les Bleus rentrent bredouilles »).
+Ces cas sont **marqués** (`tone: null`) pour devenir le point d'entrée du LLM, pas
+corrigés à coups de règles supplémentaires.
+
+## Quand l'IA sert — et quand non
+
+L'IA n'a sa place qu'où il n'y a pas de bonne réponse unique calculable : interpréter
+un titre ambigu (étape A), produire un résumé avec un ton (étape B). **Tout le reste
+reste déterministe** (fetch, filtrage par date/niveau, découpage du fil, dédup). Ne
+mets pas d'appel LLM là où une règle suffit. Le LLM est un invité, jamais le moteur :
+les faits fiables viennent du pipeline ; si l'IA échoue, l'appli fonctionne sans elle.
 
 ## Commandes
 
@@ -121,8 +166,8 @@ npm run build
 mvn -f collector/pom.xml compile exec:java -Dexec.args="public/data.json"
 ```
 
-Après modif du collecteur, **toujours** le relancer et vérifier que `data.json`
-reste valide et conforme au schéma avant de committer.
+Après modif du collecteur, **toujours** le relancer et vérifier que `data.json` reste
+valide et conforme au schéma avant de committer.
 
 ## Déploiement
 
@@ -134,23 +179,25 @@ cron / clic  ->  GitHub Actions  ->  collecteur  ->  commit data.json
 ```
 
 - Vercel ne sert que du statique : **jamais** de Java ni d'appel API côté Vercel.
-- Les secrets (ex. `ANTHROPIC_API_KEY`) vont dans **GitHub Actions secrets**,
-  jamais dans Vercel ni dans le code.
+  Les appels LLM (étapes A/B) se font dans le collecteur, sous GitHub Actions.
+- Secrets (ex. `ANTHROPIC_API_KEY`) -> **GitHub Actions secrets**, jamais dans Vercel
+  ni dans le code.
 - Le workflow ne commite que si `data.json` a changé.
 
 ## Garde-fous
 
 - **Ne pas coder en dur de données badminton dans `src/App.jsx`** : tout vient du JSON.
-- **Échec gracieux** : si une source échoue, ne réécris PAS un `data.json` vide ou
-  cassé (cela viderait le site). Garde la dernière bonne version ou sors en erreur.
+- **Échec gracieux** : si une source (ou un appel LLM) échoue, ne réécris PAS un
+  `data.json` vide ou cassé. Garde la dernière bonne version ou sors en erreur.
 - **Ne jamais scraper TournamentSoftware ni Flashscore** (robots.txt).
 - Usage personnel : User-Agent explicite, requêtes espacées, cache, cron raisonnable.
 - Contenu en français, **UTF-8** partout.
 
 ## Identités à ne pas confondre
 
-- C'est **Alex Lanier** (et non « Lasnier »).
-- « Popov » = **deux frères** : **Christo Popov** et **Toma Junior Popov**. Un titre
-  qui dit seulement « Popov » est ambigu : privilégier les mentions avec prénom.
-- Le double : **Delphine Delrue / Thom Gicquel** — l'ordre des noms varie selon les
-  sources (« Gicquel-Delrue », « Delrue-Gicquel ») ; matcher sur l'un ou l'autre.
+- **Alex Lanier** (et non « Lasnier »).
+- « Popov » = **deux frères** : **Christo Popov** et **Toma Junior Popov**. Mention
+  sans prénom = ambiguë (cf. règles de classement).
+- Double : **Delphine Delrue / Thom Gicquel** — l'ordre varie selon les sources
+  (« Gicquel-Delrue », « Delrue-Gicquel »), matcher sur l'un ou l'autre. Les coquilles
+  de la source (prénoms inversés) sont recopiées telles quelles, pas corrigées.
