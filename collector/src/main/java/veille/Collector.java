@@ -761,9 +761,21 @@ public class Collector {
      * oppose ces joueurs (« X domine Y »). La table de mots-clés ne sait pas
      * distinguer le gagnant du perdant → on neutralise le résultat des joueurs cités
      * (tone null, « résultat à préciser ») plutôt que d'en sacrer un à tort.
+     * « bat » est testé à part comme MOT ENTIER (cf. classify) : en simple
+     * sous-chaîne il matcherait « combat », « battu », « débat ».
      */
     private static final String[] OPP_VERBS = {
-            "domine", "bat", "simpose face", "elimin", "prive", "ecarte", "renverse"
+            "domine", "simpose face", "elimin", "prive", "ecarte", "renverse"
+    };
+    /**
+     * Formes COLLECTIVES de sortie (pluriel) : « X et Y éliminés » est une sortie
+     * groupée des joueurs cités, PAS une opposition « X élimine Y ». Testées AVANT
+     * OPP_VERBS dans classify pour ne jamais neutraliser une élimination groupée
+     * en « résultat à préciser » (règle CLAUDE.md : mention groupée = signal de
+     * sortie).
+     */
+    private static final String[] COLLECTIVE_OUT = {
+            "elimines", "sinclinent", "tombent", "prives"
     };
     /** Catégories génériques du fil qui ne désignent pas un tournoi (à ignorer). */
     private static final Set<String> GENERIC_CATS = new HashSet<>(List.of("badminton"));
@@ -919,20 +931,27 @@ public class Collector {
      * et qualifie le titre : « Popov » sans prénom = ambigu (deux frères) ;
      * opposition = titre nommant ≥ 2 joueurs suivis distincts ET un verbe
      * d'affrontement → résultat indécidable (cf. OPP_VERBS / TourAgg.absorb).
+     *
+     * Les noms se reconnaissent en MOTS ENTIERS (« toma » ⊄ « automatique »,
+     * « christo » ⊄ « Christophe »). Une forme collective (« éliminés » pluriel)
+     * prime sur les verbes d'opposition : c'est une sortie groupée, pas un duel.
      */
     static Mention classify(FeedItem it) {
         String hay = norm(it.title() + " " + it.href() + " " + it.tournoi());
 
-        boolean hasChristo = hay.contains("christo");
-        boolean hasToma = hay.contains("toma");
-        boolean hasPopov = hay.contains("popov");
-        boolean hasLanier = hay.contains("lanier");
-        boolean hasDouble = hay.contains("delrue") || hay.contains("gicquel");
+        boolean hasChristo = hasWord(hay, "christo");
+        boolean hasToma = hasWord(hay, "toma");
+        boolean hasPopov = hasWord(hay, "popov");
+        boolean hasLanier = hasWord(hay, "lanier");
+        boolean hasDouble = hasWord(hay, "delrue") || hasWord(hay, "gicquel");
         boolean ambiguousPopov = hasPopov && !hasChristo && !hasToma;
 
         int tracked = (hasLanier ? 1 : 0) + (hasChristo ? 1 : 0) + (hasToma ? 1 : 0)
                 + (ambiguousPopov ? 1 : 0) + (hasDouble ? 1 : 0);
-        boolean disputed = tracked >= 2 && containsAny(norm(it.title()), OPP_VERBS);
+        String title = norm(it.title());
+        boolean collective = containsAny(title, COLLECTIVE_OUT);
+        boolean disputed = tracked >= 2 && !collective
+                && (containsAny(title, OPP_VERBS) || hasWord(title, "bat"));
 
         return new Mention(hasLanier, hasChristo, hasToma, hasDouble, ambiguousPopov, disputed);
     }
@@ -1002,13 +1021,20 @@ public class Collector {
     static boolean isOngoing(String cat, LocalDate lastDate,
                              List<Tournament> bwf, LocalDate today) {
         Set<String> catTokens = nameTokens(cat);
+        Set<String> catStrong = minusWeak(catTokens);
         Tournament match = null;
         for (Tournament t : bwf) {
-            if (sharedTokens(catTokens, nameTokens(t.name() + " " + t.location())) < 1) continue;
+            Set<String> tTokens = nameTokens(t.name() + " " + t.location());
+            if (sharedTokens(catTokens, tTokens) < 1) continue;
             boolean dateInside = lastDate != null
                     && !lastDate.isBefore(t.start()) && !lastDate.isAfter(t.end());
             if (dateInside) { match = t; break; }   // édition confirmée par la date
-            if (match == null) match = t;            // candidat par le nom, à défaut
+            // Repli par le nom seul (sans date confirmante) : exige un jeton
+            // DISTINCTIF partagé — « masters » seul relierait l'Orléans Masters
+            // aux Masters asiatiques et leur emprunterait leurs dates.
+            if (match == null && sharedTokens(catStrong, minusWeak(tTokens)) >= 1) {
+                match = t;
+            }
         }
         if (match != null) {
             return !match.start().isAfter(today) && !match.end().isBefore(today);
@@ -1131,6 +1157,20 @@ public class Collector {
         return false;
     }
 
+    /** Présence de {@code word} comme MOT ENTIER (bornes non alphanumériques) dans
+     *  un texte normalisé — « toma » ne matche pas « automatique », mais matche
+     *  bien « toma-junior-popov » dans un slug d'URL (le tiret borne le mot). */
+    static boolean hasWord(String hay, String word) {
+        int i = -1;
+        while ((i = hay.indexOf(word, i + 1)) >= 0) {
+            boolean leftOk = i == 0 || !Character.isLetterOrDigit(hay.charAt(i - 1));
+            int j = i + word.length();
+            boolean rightOk = j >= hay.length() || !Character.isLetterOrDigit(hay.charAt(j));
+            if (leftOk && rightOk) return true;
+        }
+        return false;
+    }
+
     /** Minuscules + accents retirés + apostrophes supprimées (matching robuste). */
     static String norm(String s) {
         return stripAccents(s.toLowerCase(Locale.ROOT)).replaceAll("['`’]", "");
@@ -1141,17 +1181,40 @@ public class Collector {
         return datesOverlapRange(t, new int[][]{e.start(), e.end()});
     }
 
+    /**
+     * La plage equipe-france est sans année : on l'ancre sur l'année du tournoi
+     * BWF en choisissant l'interprétation la plus proche (à ± 6 mois), puis on
+     * déroule l'enroulement déc. → janv. (mois de fin < mois de début). Comparer
+     * de vraies dates évite le bug du passage d'année (« 30 déc. – 4 janv. »
+     * ne chevauchait jamais rien avec l'ancienne arithmétique mois*100+jour).
+     */
     static boolean datesOverlapRange(Tournament t, int[][] range) {
         if (range[0][0] == 0 || range[1][0] == 0) return false; // dates absentes
-        int bs = ord(t.start().getMonthValue(), t.start().getDayOfMonth());
-        int be = ord(t.end().getMonthValue(), t.end().getDayOfMonth());
-        int es = ord(range[0][0], range[0][1]);
-        int ee = ord(range[1][0], range[1][1]);
-        return bs <= ee && es <= be;
+        LocalDate es, ee;
+        try {
+            es = LocalDate.of(t.start().getYear(), range[0][0], range[0][1]);
+            if (es.isBefore(t.start().minusMonths(6))) es = es.plusYears(1);
+            else if (es.isAfter(t.start().plusMonths(6))) es = es.minusYears(1);
+            int endYear = es.getYear() + (range[1][0] < range[0][0] ? 1 : 0);
+            ee = LocalDate.of(endYear, range[1][0], range[1][1]);
+        } catch (Exception ex) {
+            return false; // jour/mois invalide dans la source
+        }
+        return !es.isAfter(t.end()) && !t.start().isAfter(ee);
     }
 
-    private static int ord(int month, int day) {
-        return month * 100 + day;
+    /**
+     * Jetons trop génériques pour apparier un tournoi à eux SEULS (partagés par
+     * plusieurs tournois sans lien : Orléans/Korea/Kumamoto Masters…). Gardés dans
+     * les jetons (utile combinés à d'autres), mais ignorés par le repli « nom seul »
+     * de {@link #isOngoing}.
+     */
+    private static final Set<String> WEAK_TOKENS = Set.of("masters");
+
+    private static Set<String> minusWeak(Set<String> tokens) {
+        Set<String> out = new HashSet<>(tokens);
+        out.removeAll(WEAK_TOKENS);
+        return out;
     }
 
     /** Jetons normalisés et significatifs d'un nom (accents et stopwords retirés). */
