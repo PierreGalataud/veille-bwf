@@ -35,12 +35,25 @@ src/main.jsx                               -> point d'entrée React
 src/App.jsx                                -> TOUT l'affichage, piloté par data.json
 src/styles.css                             -> thème (maquette validée)
 public/data.json                           -> le contrat de données
-collector/pom.xml                          -> Maven, Java 17 (Jsoup activé)
-collector/src/main/java/veille/Collector.java -> le collecteur
-.github/workflows/refresh.yml              -> automatisation (Actions -> commit -> Vercel)
+collector/pom.xml                          -> Maven, Java 17 (Jsoup + JUnit 5)
+collector/src/main/java/veille/           -> le collecteur, découpé par rôle :
+  Collector.java       orchestration + écriture atomique de data.json
+  BwfCalendar.java     calendrier BWF (tiers, dates, dotation)
+  EquipeFrance.java    statut FR, fil des Bleus, classement (throttle commun fetchEf)
+  PlayerResults.java   agrégation players[] (classify, tables de mots-clés, stades)
+  DataJson.java        LE CONTRAT data.json en records typés (cf. ci-dessous)
+  TextUtil / FrDates / Http / Tournament / FeedItem / EfDateRange (utilitaires, modèle)
+collector/src/test/java/veille/CollectorTest.java -> tests JUnit (fonctions pures, JAMAIS de réseau)
+.github/workflows/refresh.yml              -> automatisation (tests -> collecteur ->
+                                              validation jq du contrat -> commit -> Vercel)
 ```
 
 ## Le contrat `data.json` (schéma à jour)
+
+Le contrat est TYPÉ côté Java : `DataJson.java` (records sérialisés tels quels par
+Jackson, ordre des composants = ordre des clés). Toute modif du schéma passe par ce
+fichier ET `src/App.jsx`, même commit. Le workflow VALIDE le contrat (step jq) avant
+tout commit de data.json.
 
 `tier` ∈ `"wtf" | "1000" | "750" | "500" | "300"`. `tone` ∈ `"win" | "out" | null`.
 
@@ -72,6 +85,11 @@ collector/src/main/java/veille/Collector.java -> le collecteur
   ]
 }
 ```
+
+`upcoming[].french` : résolu via equipe-france pour les tournois démarrant sous
+14 jours (`UPCOMING_FR_DAYS`) -> `"FR : engagés"` / `"FR : aucun engagé"` /
+`"FR : à confirmer"` (non résolu, ou sélection non publiée — on n'invente jamais
+un « aucun »). Au-delà de 14 jours : « à confirmer » sans sonder.
 
 `frenchStatus.present` est à **TROIS états**, jamais confondus :
 - `true`  : Français engagés (détails dans `note`).
@@ -111,6 +129,22 @@ de la logique mais de la **finition** : affichage, cas vides, fuseau/têtes de s
 si une source simple existe. Pas de surprise, et **ne pas chercher à pousser le
 déterministe plus loin sur l'interprétation du langage** (voir Limites).
 
+### Audit qualité — APPLIQUÉ (2026-06-11)
+
+Le code a été audité et durci (détail : historique git, commits « Audit lot 1-6 ») :
+- [x] Tests JUnit sur les fonctions pures (classify, stades, dates, jetons) +
+      step de tests dans le workflow. **Toute évolution des règles passe d'abord
+      par un test.**
+- [x] Bugs corrigés : noms de joueurs en MOTS ENTIERS (« toma » ⊄ « automatique »),
+      chevauchement de dates au passage d'année, sorties collectives ≠ oppositions,
+      appariement de tournoi interdit sur le seul jeton « masters ».
+- [x] Écriture ATOMIQUE de data.json ; validation jq du contrat en CI ;
+      `git pull --rebase` avant push ; timeout du job.
+- [x] Front : replis si une clé du contrat manque, états vides, badge de fraîcheur
+      piloté par `generatedAt` (12 h), auto-refresh 15 min des onglets ouverts.
+- [x] Collecteur découpé en classes (comportement identique, vérifié au diff de
+      data.json près de `generatedAt`).
+
 ### Prochaines étapes — bascule vers l'IA
 - [ ] **Étape A — Filet LLM (Haiku), ciblé.** Appels ponctuels UNIQUEMENT sur les cas
       que le déterministe a marqués comme incertains (`tone: null`, `stage` « non
@@ -125,6 +159,11 @@ déterministe plus loin sur l'interprétation du langage** (voir Limites).
 
 ## Règles de classement des résultats (déterministe en place)
 
+Tout est dans `PlayerResults.java` (classify + tables), couvert par les tests.
+
+- Les noms de joueurs se reconnaissent en **MOTS ENTIERS** (`TextUtil.hasWord`),
+  jamais en sous-chaîne : « toma » ⊄ « automatique », « christo » ⊄ « Christophe »,
+  « bat » ⊄ « combat ».
 - Un titre **nominatif** (joueur cité seul) prime sur une mention **collective**
   ambiguë pour le même tournoi (ex. « Christo s'incline au 1er tour » > « Lanier et
   Popov éliminés »).
@@ -132,9 +171,15 @@ déterministe plus loin sur l'interprétation du langage** (voir Limites).
 - Titre **opposant deux joueurs suivis** (« X domine Y ») : on ne classe personne
   « Vainqueur » par défaut -> `tone: null`, `stage` « résultat à préciser ». Une règle
   par mots-clés ne peut pas distinguer sujet et objet.
+- MAIS une forme **collective au pluriel** (« X et Y éliminés », « s'inclinent »,
+  « privés ») n'est PAS une opposition : c'est un signal de sortie pour tous les
+  cités (`COLLECTIVE_OUT`, testé AVANT `OPP_VERBS`). Ne pas re-fusionner les deux.
 - Table titre -> tone : `win` (sacré/vainqueur/remporte/titre/champion) ; `out`
   (fin de parcours/s'incline/éliminé/1er tour/privés de) ; `null` (quart/demi/huitième/
   qualifié/en finale). Un titre non classé garde `tone: null` et n'est jamais jeté.
+- « En cours » se décide par les DATES, jamais par les mots. L'appariement d'un
+  tournoi du fil au calendrier BWF exige un jeton DISTINCTIF : « masters » seul ne
+  suffit pas (`WEAK_TOKENS`), sinon Orléans hériterait des dates du Korea Masters.
 
 ## Limites assumées (laissées au filet LLM, étape A)
 
@@ -145,6 +190,14 @@ rendrait le code fragile pour un gain marginal :
 - les phrasés alambiqués sans mot-clé reconnu (« les Bleus rentrent bredouilles »).
 Ces cas sont **marqués** (`tone: null`) pour devenir le point d'entrée du LLM, pas
 corrigés à coups de règles supplémentaires.
+
+Autres limites ASSUMÉES (vérifiées, ne pas re-creuser) :
+- **`rank` du double Delrue/Gicquel = null pour toujours** : equipe-france ne publie
+  que les classements de SIMPLE (Delrue y est « Non classé », vérifié juin 2026).
+  Pas de classement par paire exploitable.
+- **Sélection « pas disponible »** sur une page tournoi à venir -> « FR : à
+  confirmer », jamais un « aucun » : la page bascule d'elle-même quand la FFBaD
+  publie la sélection.
 
 ## Quand l'IA sert — et quand non
 
@@ -162,12 +215,14 @@ npm install
 npm run dev      # http://localhost:5173
 npm run build
 
-# Collecteur (régénère public/data.json)
+# Collecteur : tests puis régénération de public/data.json
+mvn -f collector/pom.xml test
 mvn -f collector/pom.xml compile exec:java -Dexec.args="public/data.json"
 ```
 
-Après modif du collecteur, **toujours** le relancer et vérifier que `data.json` reste
-valide et conforme au schéma avant de committer.
+Après modif du collecteur, **toujours** : lancer les tests, relancer le collecteur,
+et vérifier que le diff de `data.json` est celui attendu (un refactor « comportement
+identique » doit donner un diff vide hors `generatedAt`) avant de committer.
 
 ## Déploiement
 
@@ -182,16 +237,35 @@ cron / clic  ->  GitHub Actions  ->  collecteur  ->  commit data.json
   Les appels LLM (étapes A/B) se font dans le collecteur, sous GitHub Actions.
 - Secrets (ex. `ANTHROPIC_API_KEY`) -> **GitHub Actions secrets**, jamais dans Vercel
   ni dans le code.
-- Le workflow ne commite que si `data.json` a changé.
+- Le workflow ne commite que si `data.json` a changé, ET seulement après : tests
+  JUnit verts + validation jq du contrat. Un data.json invalide n'est JAMAIS commité.
+- Un déploiement Vercel ne rafraîchit PAS les onglets déjà ouverts : c'est
+  l'auto-refresh du front (15 min) qui s'en charge ; le badge passe à « Données
+  anciennes » si `generatedAt` a plus de 12 h (signal qu'un run CI a échoué).
 
 ## Garde-fous
 
 - **Ne pas coder en dur de données badminton dans `src/App.jsx`** : tout vient du JSON.
 - **Échec gracieux** : si une source (ou un appel LLM) échoue, ne réécris PAS un
   `data.json` vide ou cassé. Garde la dernière bonne version ou sors en erreur.
+  L'écriture est ATOMIQUE (temp + rename, `Collector.writeAtomic`) : ne pas revenir
+  à un `Files.writeString` direct.
 - **Ne jamais scraper TournamentSoftware ni Flashscore** (robots.txt).
-- Usage personnel : User-Agent explicite, requêtes espacées, cache, cron raisonnable.
-- Contenu en français, **UTF-8** partout.
+- Usage personnel : User-Agent explicite (pointe vers ce dépôt), requêtes espacées —
+  TOUTE requête equipe-france passe par `EquipeFrance.fetchEf` (throttle commun),
+  ne pas appeler `Http.fetch` en direct pour ce site.
+- Contenu en français, **UTF-8** partout. PIÈGE : le séparateur de milliers de
+  `prize` est une espace insécable fine **U+202F littérale** dans
+  `BwfCalendar.parsePrize` (invisible à l'œil) — ne pas la « corriger » en espace
+  simple, le diff de data.json le révélerait.
+- **Toute nouvelle méthode de LOGIQUE arrive AVEC ses tests JUnit** (parsing,
+  classement, appariement, dates, normalisation…) — même commit. Pour un bug :
+  test ROUGE d'abord, correction ensuite. Si la logique est enfouie dans une
+  méthode d'orchestration ou de réseau, l'EXTRAIRE pour la rendre testable
+  (modèle : `classify()` extrait de `buildPlayers`). Seuls l'orchestration et les
+  accès réseau ne se testent pas unitairement.
+- Les tests JUnit ne font **jamais de réseau** (fonctions pures et fixtures
+  uniquement) : un test qui fetch est un bug de test.
 
 ## Identités à ne pas confondre
 
