@@ -15,6 +15,7 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    timeout-minutes: 15     # le collecteur espace ses requêtes ; un blocage réseau ne doit pas consommer des heures de runner
     steps:
       - name: Récupérer le dépôt
         uses: actions/checkout@v5
@@ -26,10 +27,28 @@ jobs:
           java-version: "17"
           cache: maven
 
+      - name: Tests du collecteur
+        run: mvn -q -B -f collector/pom.xml test
+
       - name: Lancer le collecteur (écrit public/data.json)
         run: >
           mvn -q -B -f collector/pom.xml compile exec:java
           -Dexec.args="${{ github.workspace }}/public/data.json"
+
+      # Mécanisation du garde-fou « vérifier que data.json reste conforme au
+      # schéma » (CLAUDE.md) : un data.json invalide ne doit JAMAIS être committé.
+      - name: Valider data.json (contrat minimal)
+        run: |
+          jq -e '
+            (.generatedAt | type == "string") and
+            (.weekLabel   | type == "string") and
+            (.current     | type == "array") and
+            (.players     | type == "array") and
+            (.upcoming    | type == "array") and
+            ([.current[].tier]  | all(IN("wtf","1000","750","500","300"))) and
+            ([.upcoming[].tier] | all(IN("wtf","1000","750","500","300"))) and
+            ([.current[].frenchStatus.present] | all(. == true or . == false or . == null))
+          ' public/data.json > /dev/null
 
       - name: Committer si data.json a changé
         run: |
@@ -37,4 +56,7 @@ jobs:
           git config user.email "actions@users.noreply.github.com"
           git add public/data.json
           git diff --staged --quiet || git commit -m "data: refresh $(date -u +%FT%TZ)"
+          # Un commit a pu arriver sur main entre le checkout et ce push (modif
+          # manuelle, autre run) : on rebase notre éventuel commit data avant de pousser.
+          git pull --rebase origin main
           git push

@@ -3,8 +3,10 @@ package veille;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.text.Normalizer;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -117,7 +119,7 @@ public class Collector {
             if (out.getParent() != null) {
                 Files.createDirectories(out.getParent());
             }
-            Files.writeString(out, json, StandardCharsets.UTF_8);
+            writeAtomic(out, json);
             System.out.println("data.json écrit : " + out.toAbsolutePath());
         } catch (Exception e) {
             // Échec gracieux : on laisse l'ancien data.json intact (pas de commit
@@ -125,6 +127,27 @@ public class Collector {
             System.err.println("Collecte échouée — data.json laissé intact : " + e);
             e.printStackTrace();
             System.exit(1);
+        }
+    }
+
+    /**
+     * Écriture atomique : fichier temporaire du même dossier puis renommage.
+     * Garde-fou « échec gracieux » : un processus tué en pleine écriture (timeout
+     * CI, Ctrl-C) ne doit jamais laisser un data.json tronqué — qui serait ensuite
+     * committé tel quel par le workflow.
+     */
+    private static void writeAtomic(Path out, String content) throws java.io.IOException {
+        Path tmp = Files.createTempFile(out.toAbsolutePath().getParent(), "data", ".tmp");
+        try {
+            Files.writeString(tmp, content, StandardCharsets.UTF_8);
+            try {
+                Files.move(tmp, out, StandardCopyOption.REPLACE_EXISTING,
+                        StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(tmp, out, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } finally {
+            Files.deleteIfExists(tmp); // ne reste que si le move a échoué
         }
     }
 
