@@ -71,9 +71,19 @@ export default function App() {
     );
   }
 
-  const visibleCurrent = data.current.filter((t) => active.has(t.tier));
-  const visibleUpcoming = data.upcoming.filter((t) => active.has(t.tier));
+  // Replis défensifs : un data.json ancien ou partiel ne doit pas blanchir la
+  // page (échec gracieux, cf. CLAUDE.md) — chaque section absente s'affiche vide.
+  const current = data.current ?? [];
+  const upcoming = data.upcoming ?? [];
+  const players = data.players ?? [];
+
+  const visibleCurrent = current.filter((t) => active.has(t.tier));
+  const visibleUpcoming = upcoming.filter((t) => active.has(t.tier));
   const stamp = new Date(data.generatedAt).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
+  // Badge honnête : les données viennent d'un cron (pas du direct). Au-delà de
+  // 12 h sans rafraîchissement, on signale que le collecteur n'a pas publié.
+  const ageHours = (Date.now() - new Date(data.generatedAt).getTime()) / 3600000;
+  const fresh = Number.isFinite(ageHours) && ageHours < 12;
 
   return (
     <div className="vbwf">
@@ -87,7 +97,7 @@ export default function App() {
         </svg>
         <div className="vbwf__eyebrow">
           <span>{data.weekLabel}</span>
-          <span className="vbwf__live"><i /> En direct</span>
+          <span className="vbwf__live"><i /> {fresh ? "À jour" : "Données anciennes"}</span>
         </div>
         <h1 className="vbwf__title">Veille <b>BWF</b> World Tour</h1>
         <p className="vbwf__sub">
@@ -146,7 +156,8 @@ export default function App() {
               {t.frenchStatus && (
                 <div className={"fr-banner" + frBannerClass(t.frenchStatus.present)}>
                   <h5>
-                    {t.frenchStatus.present === null ? "❔" : "🇫🇷"} {t.frenchStatus.title}
+                    {/* == null volontaire : null OU undefined = statut inconnu */}
+                    {t.frenchStatus.present == null ? "❔" : "🇫🇷"} {t.frenchStatus.title}
                     {t.frenchStatus.confirm && <span className="tag-confirm">à confirmer</span>}
                   </h5>
                   <p>{t.frenchStatus.note}</p>
@@ -158,6 +169,9 @@ export default function App() {
 
         <section className="vbwf__upcoming">
           <h2 className="sec-label">À venir — prochains tournois World Tour</h2>
+          {visibleUpcoming.length === 0 && (
+            <div className="card empty">Aucun tournoi de ce niveau au calendrier.</div>
+          )}
           <div className="upcoming">
             {visibleUpcoming.map((u, i) => (
               <div className="up" key={i}>
@@ -177,8 +191,11 @@ export default function App() {
 
         <aside>
           <h2 className="sec-label">Vos Français</h2>
+          {players.length === 0 && (
+            <div className="card empty">Aucun résultat récent des Bleus dans le fil equipe-france.</div>
+          )}
           <div className="players">
-            {data.players.map((p, i) => (
+            {players.map((p, i) => (
               <div className="player" key={i}>
                 <div className="player__name">
                   <span>{p.name}</span>
@@ -211,8 +228,8 @@ export default function App() {
 
       <footer className="vbwf__foot">
         Données rafraîchies par le collecteur — dernière mise à jour : <b className="stamp">{stamp}</b>.<br />
-        Sources visées : BWF (Match Centre), TournamentSoftware (tableaux &amp; live), Flashscore, equipe-france.fr / FFBaD.
-        Les mentions « à confirmer » indiquent le niveau de confiance de la donnée.
+        Sources : calendrier BWF World Tour (corporate.bwfbadminton.com) et suivi des Bleus via equipe-france.fr / FFBaD.
+        Résultats au grain « tour » (pas de score live). Les mentions « à confirmer » indiquent le niveau de confiance de la donnée.
       </footer>
     </div>
   );

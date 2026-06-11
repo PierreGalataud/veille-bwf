@@ -29,7 +29,6 @@ import java.util.regex.Pattern;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 
 /**
  * Collecteur v2 — collecte réelle du calendrier BWF World Tour.
@@ -70,7 +69,7 @@ public class Collector {
     private static final String EF_BASE = "https://www.equipe-france.fr";
     private static final String EF_CAL_URL = EF_BASE + "/badminton/calendrier";
     private static final String USER_AGENT =
-            "veille-bwf/1.0 (projet personnel; +https://github.com)";
+            "veille-bwf/1.0 (projet personnel; +https://github.com/PierreGalataud/veille-bwf)";
     private static final int TIMEOUT_MS = 20000;
     /** Pause entre deux requêtes equipe-france (politesse, cf. garde-fous). */
     private static final long EF_THROTTLE_MS = 800;
@@ -558,14 +557,14 @@ public class Collector {
     private static List<EfEntry> harvestCandidates() {
         Map<String, EfEntry> byPath = new LinkedHashMap<>();
         try { // calendrier : entrées datées (prioritaires en cas de doublon)
-            for (EfEntry e : parseEfCalendar(fetch(EF_CAL_URL))) {
+            for (EfEntry e : parseEfCalendar(fetchEf(EF_CAL_URL))) {
                 byPath.putIfAbsent(pathOf(e.url()), e);
             }
         } catch (Exception ex) {
             System.err.println("equipe-france (calendrier) KO : " + ex);
         }
         try { // accueil : liens tournoi non datés (complète les tournois en cours)
-            for (EfEntry e : parseHomeLinks(fetch(EF_BASE + "/badminton"))) {
+            for (EfEntry e : parseHomeLinks(fetchEf(EF_BASE + "/badminton"))) {
                 byPath.putIfAbsent(pathOf(e.url()), e);
             }
         } catch (Exception ex) {
@@ -582,13 +581,30 @@ public class Collector {
                 .get();
     }
 
-    /** Récupère une page (avec cache et pause de politesse). null si échec. */
-    private static Document getPage(String url, Map<String, Document> cache) throws InterruptedException {
+    /** Horodatage de la dernière requête equipe-france (throttle commun). */
+    private static long lastEfFetchMs = 0;
+
+    /**
+     * Point de passage UNIQUE des requêtes equipe-france : applique la pause de
+     * politesse entre deux requêtes au même site (cf. garde-fous), où que l'appel
+     * soit fait dans le pipeline. Pas d'attente avant la toute première requête.
+     */
+    private static Document fetchEf(String url) throws Exception {
+        long wait = EF_THROTTLE_MS - (System.currentTimeMillis() - lastEfFetchMs);
+        if (wait > 0) Thread.sleep(wait);
+        try {
+            return fetch(url);
+        } finally {
+            lastEfFetchMs = System.currentTimeMillis();
+        }
+    }
+
+    /** Récupère une page equipe-france (avec cache). null si échec. */
+    private static Document getPage(String url, Map<String, Document> cache) {
         if (cache.containsKey(url)) return cache.get(url);
-        Thread.sleep(EF_THROTTLE_MS);
         Document d = null;
         try {
-            d = fetch(url);
+            d = fetchEf(url);
         } catch (Exception e) {
             System.err.println("equipe-france page KO (" + url + ") : " + e);
         }
@@ -721,10 +737,9 @@ public class Collector {
                 break;
             }
         }
-        if (sentence.isEmpty()) {
-            Elements intros = page.select("p.intro");
-            if (intros.size() >= 2) sentence = intros.get(1).text().trim();
-        }
+        // Pas de repli sur un paragraphe arbitraire : sans phrase de participation
+        // reconnue, on tombera sur « inconnu » plus bas. Classer un paragraphe pris
+        // au hasard risquerait un present:true erroné pour un mot croisé par hasard.
 
         String low = stripAccents(sentence.toLowerCase(Locale.ROOT));
         // « aucun » d'abord : « Aucun français ne participe » contient « participe ».
@@ -989,8 +1004,7 @@ public class Collector {
     private static List<Object> buildPlayers(List<Tournament> bwf, LocalDate today) {
         List<FeedItem> feed;
         try {
-            Thread.sleep(EF_THROTTLE_MS); // politesse (cf. garde-fous)
-            feed = parseFeed(fetch(EF_BASE + "/badminton"));
+            feed = parseFeed(fetchEf(EF_BASE + "/badminton"));
         } catch (Exception e) {
             System.err.println("equipe-france (fil actus) KO — players[] vide : " + e);
             return new ArrayList<>();
@@ -1097,8 +1111,7 @@ public class Collector {
     private static Map<String, String> buildRanks() {
         Map<String, String> ranks = new HashMap<>();
         try {
-            Thread.sleep(EF_THROTTLE_MS); // politesse (cf. garde-fous)
-            Document doc = fetch(EF_RANK_M);
+            Document doc = fetchEf(EF_RANK_M);
             for (Element tr : doc.select("table tbody tr")) {
                 Element a = tr.selectFirst("th[scope=row] a[href]");
                 Element num = tr.selectFirst("td strong");
