@@ -7,9 +7,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 
-import veille.Collector.FeedItem;
-import veille.Collector.Mention;
-import veille.Collector.Tournament;
+import veille.PlayerResults.Mention;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,19 +38,19 @@ class CollectorTest {
     class Normalisation {
         @Test
         void normRetireAccentsEtApostrophes() {
-            assertEquals("elimine dentree", Collector.norm("Éliminé d'entrée"));
+            assertEquals("elimine dentree", TextUtil.norm("Éliminé d'entrée"));
         }
 
         @Test
         void nameTokensFiltreSponsorsEtGeneriques() {
-            assertEquals(Set.of("canada"), Collector.nameTokens("YONEX Canada Open 2026"));
+            assertEquals(Set.of("canada"), TextUtil.nameTokens("YONEX Canada Open 2026"));
         }
 
         @Test
         void sharedTokensTolereVariantesFrEnParPrefixe() {
-            assertEquals(1, Collector.sharedTokens(
-                    Collector.nameTokens("Open d'Indonésie"),
-                    Collector.nameTokens("KAPAL API Indonesia Open 2026")));
+            assertEquals(1, TextUtil.sharedTokens(
+                    TextUtil.nameTokens("Open d'Indonésie"),
+                    TextUtil.nameTokens("KAPAL API Indonesia Open 2026")));
         }
     }
 
@@ -63,14 +61,14 @@ class CollectorTest {
     class Stades {
         @Test
         void echelleDesStades() {
-            assertEquals(6, Collector.stageOf(Collector.norm("Sacré champion à Sydney")));
-            assertEquals(5, Collector.stageOf(Collector.norm("Alex Lanier s'incline en finale")));
-            assertEquals(5, Collector.stageOf(Collector.norm("Alex Lanier atteint la finale")));
-            assertEquals(4, Collector.stageOf(Collector.norm("Battu en demi-finale")));
-            assertEquals(3, Collector.stageOf(Collector.norm("Qualifié pour les quarts de finale")));
-            assertEquals(2, Collector.stageOf(Collector.norm("Sorti en huitième de finale")));
-            assertEquals(1, Collector.stageOf(Collector.norm("Éliminé au 1er tour")));
-            assertEquals(0, Collector.stageOf(Collector.norm("Une semaine de préparation")));
+            assertEquals(6, PlayerResults.stageOf(TextUtil.norm("Sacré champion à Sydney")));
+            assertEquals(5, PlayerResults.stageOf(TextUtil.norm("Alex Lanier s'incline en finale")));
+            assertEquals(5, PlayerResults.stageOf(TextUtil.norm("Alex Lanier atteint la finale")));
+            assertEquals(4, PlayerResults.stageOf(TextUtil.norm("Battu en demi-finale")));
+            assertEquals(3, PlayerResults.stageOf(TextUtil.norm("Qualifié pour les quarts de finale")));
+            assertEquals(2, PlayerResults.stageOf(TextUtil.norm("Sorti en huitième de finale")));
+            assertEquals(1, PlayerResults.stageOf(TextUtil.norm("Éliminé au 1er tour")));
+            assertEquals(0, PlayerResults.stageOf(TextUtil.norm("Une semaine de préparation")));
         }
     }
 
@@ -81,31 +79,28 @@ class CollectorTest {
     class ParsingDates {
         @Test
         void parseDayRangeLitLesDeuxJours() {
-            assertArrayEquals(new int[]{9, 14}, Collector.parseDayRange("09 -14"));
-            assertArrayEquals(new int[]{30, 5}, Collector.parseDayRange("30 - 05"));
-            assertArrayEquals(new int[]{21, 21}, Collector.parseDayRange("21"));
-            assertNull(Collector.parseDayRange("TBC"));
+            assertArrayEquals(new int[]{9, 14}, BwfCalendar.parseDayRange("09 -14"));
+            assertArrayEquals(new int[]{30, 5}, BwfCalendar.parseDayRange("30 - 05"));
+            assertArrayEquals(new int[]{21, 21}, BwfCalendar.parseDayRange("21"));
+            assertNull(BwfCalendar.parseDayRange("TBC"));
         }
 
         @Test
         void parseEfDatesMemeMois() {
-            int[][] r = Collector.parseEfDates("16 – 21 juin");
-            assertArrayEquals(new int[]{6, 16}, r[0]);
-            assertArrayEquals(new int[]{6, 21}, r[1]);
+            assertEquals(new EfDateRange(6, 16, 6, 21),
+                    EquipeFrance.parseEfDates("16 – 21 juin"));
         }
 
         @Test
         void parseEfDatesAChevalSurDeuxMois() {
-            int[][] r = Collector.parseEfDates("Du 30 juin au 5 juillet");
-            assertArrayEquals(new int[]{6, 30}, r[0]);
-            assertArrayEquals(new int[]{7, 5}, r[1]);
+            assertEquals(new EfDateRange(6, 30, 7, 5),
+                    EquipeFrance.parseEfDates("Du 30 juin au 5 juillet"));
         }
 
         @Test
         void parseEfDatesSansDate() {
-            int[][] r = Collector.parseEfDates("dates non communiquées");
-            assertArrayEquals(new int[]{0, 0}, r[0]);
-            assertArrayEquals(new int[]{0, 0}, r[1]);
+            assertEquals(EfDateRange.UNKNOWN,
+                    EquipeFrance.parseEfDates("dates non communiquées"));
         }
     }
 
@@ -118,28 +113,27 @@ class CollectorTest {
         void chevauchementMemeMois() {
             Tournament australie = t("Australian Open",
                     LocalDate.of(2026, 6, 9), LocalDate.of(2026, 6, 14));
-            assertTrue(Collector.datesOverlapRange(australie,
-                    new int[][]{{6, 9}, {6, 14}}));
-            assertFalse(Collector.datesOverlapRange(australie,
-                    new int[][]{{6, 15}, {6, 21}}));
+            assertTrue(EquipeFrance.datesOverlapRange(australie,
+                    new EfDateRange(6, 9, 6, 14)));
+            assertFalse(EquipeFrance.datesOverlapRange(australie,
+                    new EfDateRange(6, 15, 6, 21)));
         }
 
         @Test
         void datesAbsentesNeChevauchentJamais() {
             Tournament australie = t("Australian Open",
                     LocalDate.of(2026, 6, 9), LocalDate.of(2026, 6, 14));
-            assertFalse(Collector.datesOverlapRange(australie,
-                    new int[][]{{0, 0}, {0, 0}}));
+            assertFalse(EquipeFrance.datesOverlapRange(australie, EfDateRange.UNKNOWN));
         }
 
         /** Bug 1.2 : tournoi à cheval décembre → janvier, l'enroulement d'année
-         *  doit être géré (mois*100+jour ne suffit pas). */
+         *  doit être géré (mois*100+jour ne suffisait pas). */
         @Test
         void chevauchementAuPassageDannee() {
             Tournament nouvelAn = t("New Year Open",
                     LocalDate.of(2026, 12, 30), LocalDate.of(2027, 1, 4));
-            assertTrue(Collector.datesOverlapRange(nouvelAn,
-                    new int[][]{{12, 30}, {1, 4}}));
+            assertTrue(EquipeFrance.datesOverlapRange(nouvelAn,
+                    new EfDateRange(12, 30, 1, 4)));
         }
 
         /** Une plage déc.–janv. ne doit pas matcher un tournoi début janvier disjoint. */
@@ -147,8 +141,8 @@ class CollectorTest {
         void plageEnrouleeDisjointeNeMatchePas() {
             Tournament janvier = t("January Open",
                     LocalDate.of(2027, 1, 5), LocalDate.of(2027, 1, 10));
-            assertFalse(Collector.datesOverlapRange(janvier,
-                    new int[][]{{12, 30}, {1, 4}}));
+            assertFalse(EquipeFrance.datesOverlapRange(janvier,
+                    new EfDateRange(12, 30, 1, 4)));
         }
     }
 
@@ -161,7 +155,7 @@ class CollectorTest {
         /** Bug 1.1 : « automatique » contient « toma » — ne doit PAS matcher Toma. */
         @Test
         void automatiqueNeMatchePasToma() {
-            Mention m = Collector.classify(feed("Qualification automatique pour les Bleus"));
+            Mention m = PlayerResults.classify(feed("Qualification automatique pour les Bleus"));
             assertFalse(m.toma());
             assertFalse(m.christo());
             assertFalse(m.lanier());
@@ -170,14 +164,14 @@ class CollectorTest {
         /** Bug 1.1 : « Christophe » contient « christo » — ne doit PAS matcher Christo Popov. */
         @Test
         void christopheNeMatchePasChristo() {
-            Mention m = Collector.classify(feed("Christophe Martin nommé entraîneur national"));
+            Mention m = PlayerResults.classify(feed("Christophe Martin nommé entraîneur national"));
             assertFalse(m.christo());
         }
 
         /** Bug 1.1 : « combat » contient « bat » — pas un verbe d'opposition. */
         @Test
         void combatNestPasUnVerbeDopposition() {
-            Mention m = Collector.classify(
+            Mention m = PlayerResults.classify(
                     feed("Un combat splendide entre Alex Lanier et Toma Junior Popov"));
             assertTrue(m.lanier());
             assertTrue(m.toma());
@@ -188,7 +182,7 @@ class CollectorTest {
          *  pour les cités, pas une opposition à neutraliser (règle CLAUDE.md). */
         @Test
         void sortieCollectiveNestPasUneOpposition() {
-            Mention m = Collector.classify(feed("Alex Lanier et les Popov éliminés d'entrée"));
+            Mention m = PlayerResults.classify(feed("Alex Lanier et les Popov éliminés d'entrée"));
             assertTrue(m.lanier());
             assertTrue(m.ambiguousPopov());
             assertFalse(m.disputed());
@@ -197,7 +191,7 @@ class CollectorTest {
         /** Opposition active entre deux suivis → indécidable (règle CLAUDE.md). */
         @Test
         void oppositionActiveResteIndecidable() {
-            Mention m = Collector.classify(feed("Toma Junior Popov domine Alex Lanier en finale"));
+            Mention m = PlayerResults.classify(feed("Toma Junior Popov domine Alex Lanier en finale"));
             assertTrue(m.toma());
             assertTrue(m.lanier());
             assertTrue(m.disputed());
@@ -205,7 +199,7 @@ class CollectorTest {
 
         @Test
         void verbeBattreEntierEstUneOpposition() {
-            Mention m = Collector.classify(feed("Christo Popov bat son frère Toma au 1er tour"));
+            Mention m = PlayerResults.classify(feed("Christo Popov bat son frère Toma au 1er tour"));
             assertTrue(m.christo());
             assertTrue(m.toma());
             assertTrue(m.disputed());
@@ -214,7 +208,7 @@ class CollectorTest {
         /** « Popov » sans prénom = ambigu, rattaché aux deux frères (règle CLAUDE.md). */
         @Test
         void popovSansPrenomEstAmbigu() {
-            Mention m = Collector.classify(feed("Popov s'incline au 1er tour"));
+            Mention m = PlayerResults.classify(feed("Popov s'incline au 1er tour"));
             assertTrue(m.ambiguousPopov());
             assertFalse(m.christo());
             assertFalse(m.toma());
@@ -222,8 +216,8 @@ class CollectorTest {
 
         @Test
         void doubleMatcheSurLunOuLautreNom() {
-            assertTrue(Collector.classify(feed("Delphine Delrue et Thom Gicquel privés de finale")).dble());
-            assertTrue(Collector.classify(feed("Gicquel-Delrue en quarts de finale")).dble());
+            assertTrue(PlayerResults.classify(feed("Delphine Delrue et Thom Gicquel privés de finale")).dble());
+            assertTrue(PlayerResults.classify(feed("Gicquel-Delrue en quarts de finale")).dble());
         }
     }
 
@@ -241,7 +235,7 @@ class CollectorTest {
          *  « masters » avec le Korea Masters — il ne doit PAS hériter de ses dates. */
         @Test
         void jetonMastersSeulNapparieAucunTournoi() {
-            assertFalse(Collector.isOngoing("Orléans Masters",
+            assertFalse(PlayerResults.isOngoing("Orléans Masters",
                     LocalDate.of(2026, 3, 23),
                     List.of(koreaMasters),
                     LocalDate.of(2026, 8, 5)));
@@ -251,7 +245,7 @@ class CollectorTest {
          *  même quand la date du titre sort de la plage (article de bilan). */
         @Test
         void replParJetonDistinctifApresLaFin() {
-            assertFalse(Collector.isOngoing("Open d'Indonésie",
+            assertFalse(PlayerResults.isOngoing("Open d'Indonésie",
                     LocalDate.of(2026, 6, 8),
                     List.of(indonesiaOpen),
                     LocalDate.of(2026, 6, 8)));
@@ -259,7 +253,7 @@ class CollectorTest {
 
         @Test
         void tournoiApparieEnCoursParSesDates() {
-            assertTrue(Collector.isOngoing("Open d'Indonésie",
+            assertTrue(PlayerResults.isOngoing("Open d'Indonésie",
                     LocalDate.of(2026, 6, 5),
                     List.of(indonesiaOpen),
                     LocalDate.of(2026, 6, 5)));
@@ -267,15 +261,15 @@ class CollectorTest {
 
         @Test
         void horsCalendrierRecentReputeEnCours() {
-            assertTrue(Collector.isOngoing("Championnats d'Europe",
+            assertTrue(PlayerResults.isOngoing("Championnats d'Europe",
                     LocalDate.of(2026, 6, 9), List.of(), LocalDate.of(2026, 6, 11)));
-            assertFalse(Collector.isOngoing("Championnats d'Europe",
+            assertFalse(PlayerResults.isOngoing("Championnats d'Europe",
                     LocalDate.of(2026, 4, 13), List.of(), LocalDate.of(2026, 6, 11)));
         }
 
         @Test
         void sansDateOnNaffirmeJamaisEnCours() {
-            assertFalse(Collector.isOngoing("Championnats d'Europe",
+            assertFalse(PlayerResults.isOngoing("Championnats d'Europe",
                     null, List.of(), LocalDate.of(2026, 6, 11)));
         }
     }
