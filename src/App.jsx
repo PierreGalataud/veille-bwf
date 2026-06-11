@@ -161,21 +161,28 @@ export default function App() {
             {data.players.map((p, i) => (
               <div className="player" key={i}>
                 <div className="player__name">
-                  {p.name} {p.rank && <span className="player__rank">{p.rank}</span>}
+                  <span>{p.name}</span>
+                  {p.rank && <span className="player__rank">{p.rank}</span>}
                 </div>
-                {p.lines.map((l, k) => (
-                  <div className="player__row" key={k}>
-                    <b>{l.label} :</b>{" "}
-                    <span>
-                      <span className={toneClass(l.tone)}>{l.headline || l.value}</span>
-                      {l.tournament && (
-                        <span className="player__ctx">
-                          {" "}· {l.tournament}{l.date ? ` · ${l.date}` : ""}
-                        </span>
+                {p.lines.map((l, k) => {
+                  // Affichage structuré : tournoi en gras, date discrète, stade
+                  // coloré par tone. Repli sur value si un sous-champ manque.
+                  const structured = l.tournament && l.stage;
+                  return (
+                    <div className="player__row" key={k}>
+                      <b>{l.label} :</b>
+                      {structured ? (
+                        <>
+                          <span className="player__tour">{l.tournament}</span>
+                          {l.date && <span className="player__date">{l.date}</span>}
+                          <span className={toneClass(l.tone)}>{l.stage}</span>
+                        </>
+                      ) : (
+                        <span className={toneClass(l.tone)}>{l.value}</span>
                       )}
-                    </span>
-                  </div>
-                ))}
+                    </div>
+                  );
+                })}
               </div>
             ))}
           </div>

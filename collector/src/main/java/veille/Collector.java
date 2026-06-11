@@ -9,6 +9,7 @@ import java.text.Normalizer;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -50,8 +51,10 @@ import org.jsoup.select.Elements;
  *
  * Le tableau {@code players[]} (ÉTAPE 2) est alimenté par le fil daté d'actualités
  * d'equipe-france (cf. {@link #buildPlayers}) : on découpe chaque entrée
- * DATE · TOURNOI · TITRE, on retient celles qui citent un joueur suivi et on
- * classe le titre en {@code tone} via une table de mots-clés déterministe.
+ * DATE · TOURNOI · TITRE, on retient celles qui citent un joueur suivi, puis on
+ * AGRÈGE par tournoi en un résumé centré joueur — stade le plus avancé atteint +
+ * issue (win/out/null) — via des tables de mots-clés déterministes (pas de LLM).
+ * Le {@code rank} provient de la page de classement equipe-france.
  *
  * Hors périmètre de ce milestone : les têtes de série ({@code seeds}) ; la
  * dotation et le fuseau restent neutres.
@@ -220,8 +223,10 @@ public class Collector {
         }
         root.put("current", currentJson);
 
-        // players : suivi des Français via le fil daté d'equipe-france.
-        root.put("players", buildPlayers());
+        // players : suivi des Français via le fil daté d'equipe-france. On passe le
+        // calendrier BWF (dates des tournois) et la date du jour pour décider si un
+        // tournoi est « en cours » à partir des DATES, jamais des mots du titre.
+        root.put("players", buildPlayers(all, today));
 
         List<Object> upcomingJson = new ArrayList<>();
         for (Tournament t : upcoming) {
@@ -734,26 +739,33 @@ public class Collector {
     private static final String DOUBLE = "Delphine Delrue / Thom Gicquel";
 
     /**
-     * Table de classement des titres en {@code tone} (déterministe, pas de LLM).
-     * Évaluée dans l'ordre : titre gagné (win) → sortie (out) → toujours en lice
-     * (null) → « s'impose » seul = victoire de match (win). Tout titre hors table
-     * retombe sur {@code null} en conservant le texte (futur point d'entrée IA).
-     * Mots-clés sur texte normalisé (sans accents ni apostrophes).
+     * Tables déterministes (pas de LLM) pour résumer un tournoi du point de vue
+     * d'un joueur. Mots-clés sur texte normalisé (sans accents ni apostrophes).
+     *
+     * Marqueurs d'ISSUE :
+     *  - WIN : le joueur gagne le tournoi (→ stade Vainqueur) ;
+     *  - OUT : le joueur sort (« fin de parcours », « s'incline », « tombent »,
+     *    « privés »…). Une mention groupée (« Lanier et Popov », « Gicquel-Delrue »)
+     *    vaut aussi signal de sortie.
+     * Le STADE atteint est l'échelon le plus avancé nommé (cf. {@link #stageOf}) :
+     * 1er tour(1) &lt; 1/8(2) &lt; 1/4(3) &lt; 1/2(4) &lt; Finale(5) &lt; Vainqueur(6).
      */
-    private static final String[] TONE_WIN = {
-            "sacre", "vainqueur", "remporte", "titre", "champion",
-            "simpose en finale", "soffre le titre"
+    private static final String[] WIN_MARKERS = {
+            "sacre", "vainqueur", "champion", "titre", "realise le double"
     };
-    private static final String[] TONE_OUT = {
-            "fin de parcours", "sincline", "elimin", "premier tour", "1er tour",
-            "prive", "chute"
+    private static final String[] OUT_MARKERS = {
+            "fin de parcours", "sincline", "tombent", "prive", "elimin", "chute"
     };
-    private static final String[] TONE_STILL = {
-            "quart", "demi", "huitieme", "qualifie", "rejoint les",
-            "en finale", "finale", "rescap"
-    };
+    /** Catégories génériques du fil qui ne désignent pas un tournoi (à ignorer). */
+    private static final Set<String> GENERIC_CATS = new HashSet<>(List.of("badminton"));
     /** Nb max de lignes conservées par joueur (les plus récentes). */
     private static final int MAX_LINES = 6;
+    /**
+     * Hors calendrier BWF (Championnats d'Europe, Orléans…), faute de dates
+     * précises : un tournoi est réputé terminé si son titre le plus récent date de
+     * plus de ~10 jours (un tournoi dure ~1 semaine). Cf. {@link #isOngoing}.
+     */
+    private static final long ONGOING_MAX_AGE_DAYS = 10;
     /** Page de classement (simple messieurs) : source des {@code rank}. */
     private static final String EF_RANK_M =
             EF_BASE + "/badminton/classement-des-joueurs-masculin";
@@ -765,51 +777,109 @@ public class Collector {
     /** Une entrée du fil : DATE · TOURNOI · TITRE, plus le slug de l'URL (recall). */
     private record FeedItem(String date, String tournoi, String title, String href) {}
 
-    /** Une ligne candidate : l'entrée du fil, son tone, et si elle est ambiguë. */
-    private record LineRec(FeedItem item, String tone, boolean ambiguous) {}
+    /**
+     * Résumé d'un tournoi du point de vue d'un joueur : stade le plus avancé NOMMÉ
+     * + issue (win/out/null). Agrège plusieurs titres du fil sur un même tournoi.
+     */
+    private static final class TourAgg {
+        final String tournoi;
+        final String date;     // date (texte) de la mention la plus récente (1re vue)
+        LocalDate lastDate;    // même date, parsée (pour décider « en cours »)
+        boolean win = false;   // marqueur de victoire finale (sacré/vainqueur…)
+        boolean explicitOut = false; // marqueur explicite de sortie (s'incline…)
+        int stage = 0;         // stade le plus avancé NOMMÉ (titres nominatifs)
 
-    /** Accumulateur de lignes pour un joueur (ordre = antéchronologique d'arrivée). */
+        TourAgg(String tournoi, String date, LocalDate lastDate) {
+            this.tournoi = tournoi;
+            this.date = date;
+            this.lastDate = lastDate;
+        }
+
+        /**
+         * Absorbe un titre normalisé concernant ce joueur sur ce tournoi.
+         * Nominatif : fournit l'issue (win/out) ET le stade. Ambigu (« Popov »
+         * sans prénom) : vaut SEULEMENT signal de sortie, sans inventer le stade
+         * individuel (cf. règle d'ambiguïté CLAUDE.md).
+         */
+        void absorb(String normTitle, boolean ambiguous, LocalDate titleDate) {
+            if (titleDate != null && (lastDate == null || titleDate.isAfter(lastDate))) {
+                lastDate = titleDate;
+            }
+            if (ambiguous) { explicitOut = true; return; }
+            if (containsAny(normTitle, WIN_MARKERS)) win = true;
+            if (containsAny(normTitle, OUT_MARKERS)) explicitOut = true;
+            stage = Math.max(stage, stageOf(normTitle));
+        }
+
+        /**
+         * Construit la ligne JSON {label,date,tournament,stage,tone,value}. L'état
+         * « en cours » vient des DATES ({@code ongoing}), jamais des mots du titre.
+         * <ul>
+         *   <li>victoire finale → {@code Vainqueur} / win ;</li>
+         *   <li>sortie explicite (titre d'élimination) → {@code Éliminé <stade>} /
+         *       out (stade exact = stade le plus avancé atteint) ;</li>
+         *   <li>tournoi EN COURS, sans verdict → {@code <stade> (en cours)} / null ;</li>
+         *   <li>tournoi TERMINÉ sans victoire ni sortie nommée → le joueur est sorti,
+         *       borne basse {@code Éliminé (<stade> ou plus loin)} / out.</li>
+         * </ul>
+         */
+        Map<String, Object> toLine(String label, boolean ongoing) {
+            String tone;
+            String stade;
+            if (win) {                            // victoire finale (prime sur tout)
+                tone = "win";
+                stade = "Vainqueur";
+            } else if (explicitOut) {             // sortie nommée → stade exact
+                tone = "out";
+                stade = stage > 0
+                        ? "Éliminé " + outExact(stage)
+                        : "Éliminé (stade non précisé)";
+            } else if (ongoing) {                 // tournoi en cours → encore en lice
+                tone = null;
+                stade = stage > 0
+                        ? capitalize(stageShort(stage)) + " (en cours)"
+                        : "En lice (en cours)";
+            } else {                              // tournoi terminé, pas de verdict → sorti
+                tone = "out";
+                stade = stage > 0
+                        ? "Éliminé (" + stageShort(stage) + " ou plus loin)"
+                        : "Éliminé (stade non précisé)";
+            }
+            Map<String, Object> line = new LinkedHashMap<>();
+            line.put("label", label);
+            line.put("date", date);
+            line.put("tournament", tournoi);
+            line.put("stage", stade);
+            line.put("tone", tone);
+            // value ne cite JAMAIS un autre joueur : « <tournoi> · <stade lisible> ».
+            line.put("value", tournoi + " · " + stade);
+            return line;
+        }
+    }
+
+    /** Accumulateur par joueur : un résumé par tournoi, ordre antéchronologique. */
     private static final class PlayerAcc {
         final String name;
         final String slug;
         String rank = "";
-        final List<LineRec> raw = new ArrayList<>();
-        final Set<String> seen = new HashSet<>();
+        final Map<String, TourAgg> byTour = new LinkedHashMap<>();
 
         PlayerAcc(String name, String slug) { this.name = name; this.slug = slug; }
 
-        /** Mémorise une ligne candidate (dédup par tournoi+titre). */
-        void add(FeedItem it, String tone, boolean ambiguous) {
-            String key = it.tournoi() + "|" + it.title();
-            if (!seen.add(key)) return;
-            raw.add(new LineRec(it, tone, ambiguous));
+        /** Rattache un titre du fil au tournoi (ignore les catégories non-tournoi). */
+        void add(FeedItem it, boolean ambiguous, LocalDate titleDate) {
+            String tour = it.tournoi();
+            if (tour.isEmpty() || GENERIC_CATS.contains(norm(tour))) return;
+            TourAgg agg = byTour.computeIfAbsent(tour, k -> new TourAgg(tour, it.date(), titleDate));
+            agg.absorb(norm(it.title()), ambiguous, titleDate);
         }
 
-        /**
-         * Finalise les lignes. Règle 1 (priorité nominative) : pour un tournoi où
-         * le joueur a une ligne nominative, on écarte ses lignes collectives
-         * ambiguës — la ligne nominative représente ce tournoi. Puis plafond,
-         * labels (« Dernier » / « Puis ») et sous-champs (date / tournament /
-         * headline) en plus de {@code value}.
-         */
-        Map<String, Object> toJson() {
-            Set<String> nominativeTournois = new HashSet<>();
-            for (LineRec r : raw) {
-                if (!r.ambiguous()) nominativeTournois.add(r.item().tournoi());
-            }
+        Map<String, Object> toJson(List<Tournament> bwf, LocalDate today) {
             List<Map<String, Object>> lines = new ArrayList<>();
-            for (LineRec r : raw) {
-                FeedItem it = r.item();
-                if (r.ambiguous() && nominativeTournois.contains(it.tournoi())) continue;
+            for (TourAgg agg : byTour.values()) {
                 if (lines.size() >= MAX_LINES) break;
-                Map<String, Object> line = new LinkedHashMap<>();
-                line.put("label", lines.isEmpty() ? "Dernier" : "Puis");
-                line.put("date", it.date());
-                line.put("tournament", it.tournoi());
-                line.put("headline", it.title());
-                line.put("value", formatValue(it));
-                line.put("tone", r.tone());
-                lines.add(line);
+                boolean ongoing = isOngoing(agg.tournoi, agg.lastDate, bwf, today);
+                lines.add(agg.toLine(lines.isEmpty() ? "Dernier" : "Puis", ongoing));
             }
             Map<String, Object> o = new LinkedHashMap<>();
             o.put("name", name);
@@ -817,15 +887,8 @@ public class Collector {
             o.put("lines", lines);
             return o;
         }
-    }
 
-    /** Rend une ligne au format « DATE · TOURNOI · TITRE » (parties vides omises). */
-    private static String formatValue(FeedItem it) {
-        StringBuilder sb = new StringBuilder();
-        if (!it.date().isEmpty()) sb.append(it.date()).append(" · ");
-        if (!it.tournoi().isEmpty()) sb.append(it.tournoi()).append(" · ");
-        sb.append(it.title());
-        return sb.toString();
+        boolean hasLines() { return !byTour.isEmpty(); }
     }
 
     /**
@@ -835,7 +898,7 @@ public class Collector {
      * toute indisponibilité de la source renvoie une liste vide (data.json reste
      * écrit, on ne casse rien).
      */
-    private static List<Object> buildPlayers() {
+    private static List<Object> buildPlayers(List<Tournament> bwf, LocalDate today) {
         List<FeedItem> feed;
         try {
             Thread.sleep(EF_THROTTLE_MS); // politesse (cf. garde-fous)
@@ -854,7 +917,7 @@ public class Collector {
         // quel, la 1re ligne retenue par joueur devient « Dernier ».
         for (FeedItem it : feed) {
             String hay = norm(it.title() + " " + it.href() + " " + it.tournoi());
-            String tone = classifyTone(norm(it.title()));
+            LocalDate titleDate = parseFeedDate(it.date(), today);
 
             boolean hasChristo = hay.contains("christo");
             boolean hasToma = hay.contains("toma");
@@ -862,18 +925,16 @@ public class Collector {
             boolean hasLanier = hay.contains("lanier");
             boolean hasDouble = hay.contains("delrue") || hay.contains("gicquel");
 
-            if (hasLanier) lanier.add(it, tone, false);
-            if (hasChristo) christo.add(it, tone, false);
-            if (hasToma) toma.add(it, tone, false);
-            // « Popov » sans prénom : ambigu (deux frères). On rattache aux deux,
-            // mais en neutralisant le tone (null) : on ne PEUT pas affirmer lequel.
-            // Ces lignes sont marquées « ambiguous » → écartées par la priorité
-            // nominative (cf. PlayerAcc.toJson) si le joueur a mieux sur le tournoi.
+            if (hasLanier) lanier.add(it, false, titleDate);
+            if (hasChristo) christo.add(it, false, titleDate);
+            if (hasToma) toma.add(it, false, titleDate);
+            // « Popov » sans prénom : ambigu (deux frères). Signal de sortie pour
+            // les DEUX, sans inventer le stade individuel (cf. TourAgg.absorb).
             if (hasPopov && !hasChristo && !hasToma) {
-                christo.add(it, null, true);
-                toma.add(it, null, true);
+                christo.add(it, true, titleDate);
+                toma.add(it, true, titleDate);
             }
-            if (hasDouble) dbl.add(it, tone, false);
+            if (hasDouble) dbl.add(it, false, titleDate);
         }
 
         // Classement mondial (simple messieurs) — source autoritaire pour rank.
@@ -885,9 +946,58 @@ public class Collector {
 
         List<Object> out = new ArrayList<>();
         for (PlayerAcc p : List.of(lanier, christo, toma, dbl)) {
-            if (!p.raw.isEmpty()) out.add(p.toJson());
+            if (p.hasLines()) out.add(p.toJson(bwf, today));
         }
         return out;
+    }
+
+    /**
+     * Un tournoi du fil est-il « en cours » aujourd'hui (UTC) ? Décision par DATES,
+     * jamais par le texte. 1) Si le tournoi s'apparie au calendrier BWF (jeton de
+     * nom commun + la date du titre tombe dans sa plage), on tranche par ses dates
+     * réelles. 2) Sinon (Championnats d'Europe, Orléans…), il est réputé terminé si
+     * son titre le plus récent date de plus de {@link #ONGOING_MAX_AGE_DAYS} jours.
+     * Sans date exploitable, on n'affirme jamais « en cours ».
+     */
+    private static boolean isOngoing(String cat, LocalDate lastDate,
+                                     List<Tournament> bwf, LocalDate today) {
+        Set<String> catTokens = nameTokens(cat);
+        Tournament match = null;
+        for (Tournament t : bwf) {
+            if (sharedTokens(catTokens, nameTokens(t.name() + " " + t.location())) < 1) continue;
+            boolean dateInside = lastDate != null
+                    && !lastDate.isBefore(t.start()) && !lastDate.isAfter(t.end());
+            if (dateInside) { match = t; break; }   // édition confirmée par la date
+            if (match == null) match = t;            // candidat par le nom, à défaut
+        }
+        if (match != null) {
+            return !match.start().isAfter(today) && !match.end().isBefore(today);
+        }
+        if (lastDate == null) return false;          // pas de date → pas « en cours »
+        long age = ChronoUnit.DAYS.between(lastDate, today);
+        return age >= 0 && age <= ONGOING_MAX_AGE_DAYS;
+    }
+
+    /** Parse une date du fil (« 5 juin ») en {@link LocalDate}, année déduite (date
+     *  récente passée). {@code null} si illisible. */
+    private static LocalDate parseFeedDate(String text, LocalDate today) {
+        if (text == null) return null;
+        String low = stripAccents(text.toLowerCase(Locale.ROOT));
+        Matcher dm = Pattern.compile("(\\d{1,2})").matcher(low);
+        if (!dm.find()) return null;
+        int day = Integer.parseInt(dm.group(1));
+        int month = 0;
+        for (Map.Entry<String, Integer> e : FR_MONTH_NUM.entrySet()) {
+            if (low.contains(stripAccents(e.getKey()))) { month = e.getValue(); break; }
+        }
+        if (month == 0) return null;
+        try {
+            LocalDate d = LocalDate.of(today.getYear(), month, day);
+            if (d.isAfter(today)) d = d.minusYears(1); // l'actu date du passé récent
+            return d;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /**
@@ -935,17 +1045,50 @@ public class Collector {
     }
 
     /**
-     * Classe un titre normalisé en {@code tone} via {@link #TONE_WIN}/{@code _OUT}/
-     * {@code _STILL}. Renvoie {@code "win"}, {@code "out"} ou {@code null} (toujours
-     * en lice OU titre non reconnu — dans les deux cas le texte est conservé).
+     * Stade atteint d'après un titre normalisé : 1er tour(1) … Vainqueur(6), ou 0
+     * si aucun stade n'est nommé. Les échelons « X de finale » sont testés AVANT la
+     * finale « sèche » pour ne pas confondre « quart/huitième/demi de finale » avec
+     * « (atteint la) finale ».
      */
-    private static String classifyTone(String t) {
-        for (String k : TONE_WIN) if (t.contains(k)) return "win";
-        for (String k : TONE_OUT) if (t.contains(k)) return "out";
-        for (String k : TONE_STILL) if (t.contains(k)) return null;
-        // « s'impose face à X » = victoire de match (win), pas un titre.
-        if (t.contains("simpose")) return "win";
-        return null; // hors table : on garde la ligne, tone neutre
+    private static int stageOf(String t) {
+        if (containsAny(t, "vainqueur", "sacre", "champion", "titre", "realise le double")) return 6;
+        if (containsAny(t, "finaliste", "prives de double", "sincline en finale")) return 5;
+        boolean reachedFinal = t.contains("finale")
+                && !t.contains("quart") && !t.contains("huitieme")
+                && !t.contains("demi") && !t.contains("de finale");
+        if (reachedFinal) return 5;
+        if (t.contains("demi")) return 4;
+        if (t.contains("quart")) return 3;
+        if (t.contains("huitieme")) return 2;
+        if (containsAny(t, "premier tour", "1er tour", "tombent des")) return 1;
+        return 0;
+    }
+
+    /** Nom court du stade (échelle 1..5) : « 1er tour », « 1/8 de finale »… */
+    private static String stageShort(int stage) {
+        switch (stage) {
+            case 1: return "1er tour";
+            case 2: return "1/8 de finale";
+            case 3: return "1/4 de finale";
+            case 4: return "1/2 finale";
+            case 5: return "finale";
+            default: return "";
+        }
+    }
+
+    /** Suffixe « Éliminé … » d'une sortie NOMMÉE (« au » au 1er tour, sinon « en »). */
+    private static String outExact(int stage) {
+        return stage == 1 ? "au 1er tour" : "en " + stageShort(stage);
+    }
+
+    private static String capitalize(String s) {
+        if (s.isEmpty()) return s;
+        return Character.toUpperCase(s.charAt(0)) + s.substring(1);
+    }
+
+    private static boolean containsAny(String t, String... keys) {
+        for (String k : keys) if (t.contains(k)) return true;
+        return false;
     }
 
     /** Minuscules + accents retirés + apostrophes supprimées (matching robuste). */

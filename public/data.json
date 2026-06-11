@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-06-11T08:11:40.205412400Z",
+  "generatedAt" : "2026-06-11T09:24:21.654519900Z",
   "weekLabel" : "Semaine du 8 – 14 juin 2026",
   "current" : [ {
     "name" : "SATHIO GROUP Australian Badminton Open 2026",
@@ -24,83 +24,55 @@
       "label" : "Dernier",
       "date" : "5 juin",
       "tournament" : "Open d'Indonésie",
-      "headline" : "Fin de parcours pour Lanier et Popov, Gicquel-Delrue derniers rescapés",
-      "value" : "5 juin · Open d'Indonésie · Fin de parcours pour Lanier et Popov, Gicquel-Delrue derniers rescapés",
-      "tone" : "out"
-    }, {
-      "label" : "Puis",
-      "date" : "4 juin",
-      "tournament" : "Open d'Indonésie",
-      "headline" : "Alex Lanier s'impose face à Anders Antonsen",
-      "value" : "4 juin · Open d'Indonésie · Alex Lanier s'impose face à Anders Antonsen",
-      "tone" : "win"
+      "stage" : "Éliminé (stade non précisé)",
+      "tone" : "out",
+      "value" : "Open d'Indonésie · Éliminé (stade non précisé)"
     }, {
       "label" : "Puis",
       "date" : "31 mai",
       "tournament" : "Open de Singapour",
-      "headline" : "Alex Lanier sacré au bout du suspens",
-      "value" : "31 mai · Open de Singapour · Alex Lanier sacré au bout du suspens",
-      "tone" : "win"
+      "stage" : "Vainqueur",
+      "tone" : "win",
+      "value" : "Open de Singapour · Vainqueur"
     }, {
       "label" : "Puis",
-      "date" : "30 mai",
-      "tournament" : "Open de Singapour",
-      "headline" : "Alex Lanier s'offre une finale magistrale en Super 750",
-      "value" : "30 mai · Open de Singapour · Alex Lanier s'offre une finale magistrale en Super 750",
-      "tone" : null
+      "date" : "9 avril",
+      "tournament" : "Championnats d'Europe",
+      "stage" : "Éliminé (stade non précisé)",
+      "tone" : "out",
+      "value" : "Championnats d'Europe · Éliminé (stade non précisé)"
     }, {
       "label" : "Puis",
-      "date" : "30 mai",
-      "tournament" : "Open de Singapour",
-      "headline" : "Alex Lanier s'impose face à Anders Antonsen",
-      "value" : "30 mai · Open de Singapour · Alex Lanier s'impose face à Anders Antonsen",
-      "tone" : "win"
-    }, {
-      "label" : "Puis",
-      "date" : "29 mai",
-      "tournament" : "Open de Singapour",
-      "headline" : "Alex Lanier rejoint les quarts de finale",
-      "value" : "29 mai · Open de Singapour · Alex Lanier rejoint les quarts de finale",
-      "tone" : null
+      "date" : "23 mars",
+      "tournament" : "Orléans Masters",
+      "stage" : "Vainqueur",
+      "tone" : "win",
+      "value" : "Orléans Masters · Vainqueur"
     } ]
   }, {
     "name" : "Christo Popov",
     "rank" : "#4 mondial",
     "lines" : [ {
       "label" : "Dernier",
-      "date" : "3 juin",
+      "date" : "5 juin",
       "tournament" : "Open d'Indonésie",
-      "headline" : "Christo Popov s'incline dès le premier tour",
-      "value" : "3 juin · Open d'Indonésie · Christo Popov s'incline dès le premier tour",
-      "tone" : "out"
+      "stage" : "Éliminé au 1er tour",
+      "tone" : "out",
+      "value" : "Open d'Indonésie · Éliminé au 1er tour"
     }, {
       "label" : "Puis",
       "date" : "28 mai",
       "tournament" : "Open de Singapour",
-      "headline" : "Christo Popov est en huitième de finale",
-      "value" : "28 mai · Open de Singapour · Christo Popov est en huitième de finale",
-      "tone" : null
-    }, {
-      "label" : "Puis",
-      "date" : "15 avril",
-      "tournament" : "Badminton",
-      "headline" : "Christo Popov nouveau numéro 4 mondial",
-      "value" : "15 avril · Badminton · Christo Popov nouveau numéro 4 mondial",
-      "tone" : null
+      "stage" : "Éliminé (1/8 de finale ou plus loin)",
+      "tone" : "out",
+      "value" : "Open de Singapour · Éliminé (1/8 de finale ou plus loin)"
     }, {
       "label" : "Puis",
       "date" : "13 avril",
       "tournament" : "Championnats d'Europe",
-      "headline" : "Christo Popov rentre dans une nouvelle dimension",
-      "value" : "13 avril · Championnats d'Europe · Christo Popov rentre dans une nouvelle dimension",
-      "tone" : null
-    }, {
-      "label" : "Puis",
-      "date" : "12 avril",
-      "tournament" : "Championnats d'Europe",
-      "headline" : "Christo Popov est champion d'Europe",
-      "value" : "12 avril · Championnats d'Europe · Christo Popov est champion d'Europe",
-      "tone" : "win"
+      "stage" : "Vainqueur",
+      "tone" : "win",
+      "value" : "Championnats d'Europe · Vainqueur"
     } ]
   }, {
     "name" : "Toma Junior Popov",
@@ -109,23 +81,23 @@
       "label" : "Dernier",
       "date" : "5 juin",
       "tournament" : "Open d'Indonésie",
-      "headline" : "Fin de parcours pour Lanier et Popov, Gicquel-Delrue derniers rescapés",
-      "value" : "5 juin · Open d'Indonésie · Fin de parcours pour Lanier et Popov, Gicquel-Delrue derniers rescapés",
-      "tone" : null
+      "stage" : "Éliminé (stade non précisé)",
+      "tone" : "out",
+      "value" : "Open d'Indonésie · Éliminé (stade non précisé)"
     }, {
       "label" : "Puis",
       "date" : "12 avril",
       "tournament" : "Championnats d'Europe",
-      "headline" : "L'argent pour les frères Popov : la fin d'un règne continental en double",
-      "value" : "12 avril · Championnats d'Europe · L'argent pour les frères Popov : la fin d'un règne continental en double",
-      "tone" : null
+      "stage" : "Éliminé (stade non précisé)",
+      "tone" : "out",
+      "value" : "Championnats d'Europe · Éliminé (stade non précisé)"
     }, {
       "label" : "Puis",
       "date" : "23 mars",
       "tournament" : "Orléans Masters",
-      "headline" : "Alex Lanier domine Toma Junior Popov et réalise le doublé",
-      "value" : "23 mars · Orléans Masters · Alex Lanier domine Toma Junior Popov et réalise le doublé",
-      "tone" : null
+      "stage" : "Vainqueur",
+      "tone" : "win",
+      "value" : "Orléans Masters · Vainqueur"
     } ]
   }, {
     "name" : "Delphine Delrue / Thom Gicquel",
@@ -134,44 +106,30 @@
       "label" : "Dernier",
       "date" : "6 juin",
       "tournament" : "Open d'Indonésie",
-      "headline" : "Thom Delrue et Delphine Gicquel privés de doublé",
-      "value" : "6 juin · Open d'Indonésie · Thom Delrue et Delphine Gicquel privés de doublé",
-      "tone" : "out"
-    }, {
-      "label" : "Puis",
-      "date" : "5 juin",
-      "tournament" : "Open d'Indonésie",
-      "headline" : "Fin de parcours pour Lanier et Popov, Gicquel-Delrue derniers rescapés",
-      "value" : "5 juin · Open d'Indonésie · Fin de parcours pour Lanier et Popov, Gicquel-Delrue derniers rescapés",
-      "tone" : "out"
-    }, {
-      "label" : "Puis",
-      "date" : "5 juin",
-      "tournament" : "Open d'Indonésie",
-      "headline" : "Delphine Delrue et Thom Gicquel en quart de finale",
-      "value" : "5 juin · Open d'Indonésie · Delphine Delrue et Thom Gicquel en quart de finale",
-      "tone" : null
+      "stage" : "Éliminé en finale",
+      "tone" : "out",
+      "value" : "Open d'Indonésie · Éliminé en finale"
     }, {
       "label" : "Puis",
       "date" : "27 mai",
       "tournament" : "Open de Singapour",
-      "headline" : "Delphine Delrue et Thom Gicquel s'imposent pour leur retour",
-      "value" : "27 mai · Open de Singapour · Delphine Delrue et Thom Gicquel s'imposent pour leur retour",
-      "tone" : "win"
+      "stage" : "Éliminé (stade non précisé)",
+      "tone" : "out",
+      "value" : "Open de Singapour · Éliminé (stade non précisé)"
     }, {
       "label" : "Puis",
       "date" : "8 avril",
       "tournament" : "Championnats d'Europe",
-      "headline" : "Delphine Delrue et Thom Gicquel tombent dès le premier tour",
-      "value" : "8 avril · Championnats d'Europe · Delphine Delrue et Thom Gicquel tombent dès le premier tour",
-      "tone" : "out"
+      "stage" : "Éliminé au 1er tour",
+      "tone" : "out",
+      "value" : "Championnats d'Europe · Éliminé au 1er tour"
     }, {
       "label" : "Puis",
       "date" : "23 mars",
       "tournament" : "Orléans Masters",
-      "headline" : "Thom Gicquel et Delphine Delrue sacrés à Orléans",
-      "value" : "23 mars · Orléans Masters · Thom Gicquel et Delphine Delrue sacrés à Orléans",
-      "tone" : "win"
+      "stage" : "Vainqueur",
+      "tone" : "win",
+      "value" : "Orléans Masters · Vainqueur"
     } ]
   } ],
   "upcoming" : [ {
