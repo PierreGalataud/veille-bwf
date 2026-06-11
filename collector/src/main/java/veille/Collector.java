@@ -48,8 +48,13 @@ import org.jsoup.select.Elements;
  * d'enrichissement : si elle est indisponible, on retombe sur un frenchStatus
  * neutre « à vérifier » sans bloquer l'écriture (on ne blanchit rien).
  *
- * Hors périmètre de ce milestone (ÉTAPE 2) : {@code players[]} et les têtes de
- * série ({@code seeds}) ; la dotation et le fuseau restent neutres.
+ * Le tableau {@code players[]} (ÉTAPE 2) est alimenté par le fil daté d'actualités
+ * d'equipe-france (cf. {@link #buildPlayers}) : on découpe chaque entrée
+ * DATE · TOURNOI · TITRE, on retient celles qui citent un joueur suivi et on
+ * classe le titre en {@code tone} via une table de mots-clés déterministe.
+ *
+ * Hors périmètre de ce milestone : les têtes de série ({@code seeds}) ; la
+ * dotation et le fuseau restent neutres.
  *
  * Argument optionnel : chemin de sortie (défaut "public/data.json").
  */
@@ -215,8 +220,8 @@ public class Collector {
         }
         root.put("current", currentJson);
 
-        // players : alimenté plus tard par la lecture des draws/résultats.
-        root.put("players", new ArrayList<>());
+        // players : suivi des Français via le fil daté d'equipe-france.
+        root.put("players", buildPlayers());
 
         List<Object> upcomingJson = new ArrayList<>();
         for (Tournament t : upcoming) {
@@ -711,6 +716,186 @@ public class Collector {
         return FrenchStatus.unknown(sentence.isEmpty()
                 ? "Page equipe-france trouvée mais participation non lisible."
                 : "equipe-france : " + sentence);
+    }
+
+    // ============================================================
+    //  ÉTAPE 2 — suivi des Français (players[]) via le fil daté
+    // ============================================================
+
+    /**
+     * Joueurs suivis. Chaque entrée = libellé affiché + jetons de reconnaissance
+     * (sur texte normalisé : minuscules, accents et apostrophes retirés). Les deux
+     * frères Popov sont distingués par leur prénom ; un « popov » sans prénom est
+     * traité à part (ambigu, cf. {@link #buildPlayers}).
+     */
+    private static final String LANIER = "Alex Lanier";
+    private static final String CHRISTO = "Christo Popov";
+    private static final String TOMA = "Toma Junior Popov";
+    private static final String DOUBLE = "Delphine Delrue / Thom Gicquel";
+
+    /**
+     * Table de classement des titres en {@code tone} (déterministe, pas de LLM).
+     * Évaluée dans l'ordre : titre gagné (win) → sortie (out) → toujours en lice
+     * (null) → « s'impose » seul = victoire de match (win). Tout titre hors table
+     * retombe sur {@code null} en conservant le texte (futur point d'entrée IA).
+     * Mots-clés sur texte normalisé (sans accents ni apostrophes).
+     */
+    private static final String[] TONE_WIN = {
+            "sacre", "vainqueur", "remporte", "titre", "champion",
+            "simpose en finale", "soffre le titre"
+    };
+    private static final String[] TONE_OUT = {
+            "fin de parcours", "sincline", "elimin", "premier tour", "1er tour",
+            "prive", "chute"
+    };
+    private static final String[] TONE_STILL = {
+            "quart", "demi", "huitieme", "qualifie", "rejoint les",
+            "en finale", "finale", "rescap"
+    };
+    /** Nb max de lignes conservées par joueur (les plus récentes). */
+    private static final int MAX_LINES = 6;
+    private static final Pattern RANK_RE = Pattern.compile("numero (\\d+) mondial");
+
+    /** Une entrée du fil : DATE · TOURNOI · TITRE, plus le slug de l'URL (recall). */
+    private record FeedItem(String date, String tournoi, String title, String href) {}
+
+    /** Accumulateur de lignes pour un joueur (ordre = antéchronologique d'arrivée). */
+    private static final class PlayerAcc {
+        final String name;
+        String rank = "";
+        final List<Map<String, Object>> lines = new ArrayList<>();
+        final Set<String> seen = new HashSet<>();
+
+        PlayerAcc(String name) { this.name = name; }
+
+        /** Ajoute une ligne (dédup par tournoi+titre, plafonné à {@link #MAX_LINES}). */
+        void add(FeedItem it, String tone) {
+            if (lines.size() >= MAX_LINES) return;
+            String key = it.tournoi() + "|" + it.title();
+            if (!seen.add(key)) return;
+            Map<String, Object> line = new LinkedHashMap<>();
+            line.put("label", lines.isEmpty() ? "Dernier" : "Puis");
+            line.put("value", formatValue(it));
+            line.put("tone", tone);
+            lines.add(line);
+        }
+
+        Map<String, Object> toJson() {
+            Map<String, Object> o = new LinkedHashMap<>();
+            o.put("name", name);
+            o.put("rank", rank.isEmpty() ? null : rank);
+            o.put("lines", lines);
+            return o;
+        }
+    }
+
+    /** Rend une ligne au format « DATE · TOURNOI · TITRE » (parties vides omises). */
+    private static String formatValue(FeedItem it) {
+        StringBuilder sb = new StringBuilder();
+        if (!it.date().isEmpty()) sb.append(it.date()).append(" · ");
+        if (!it.tournoi().isEmpty()) sb.append(it.tournoi()).append(" · ");
+        sb.append(it.title());
+        return sb.toString();
+    }
+
+    /**
+     * Construit {@code players[]} depuis le fil daté d'equipe-france (accueil
+     * /badminton). Découpage déterministe DATE · TOURNOI · TITRE, rattachement par
+     * jetons de nom, classement du titre par table de mots-clés. Échec gracieux :
+     * toute indisponibilité de la source renvoie une liste vide (data.json reste
+     * écrit, on ne casse rien).
+     */
+    private static List<Object> buildPlayers() {
+        List<FeedItem> feed;
+        try {
+            Thread.sleep(EF_THROTTLE_MS); // politesse (cf. garde-fous)
+            feed = parseFeed(fetch(EF_BASE + "/badminton"));
+        } catch (Exception e) {
+            System.err.println("equipe-france (fil actus) KO — players[] vide : " + e);
+            return new ArrayList<>();
+        }
+
+        PlayerAcc lanier = new PlayerAcc(LANIER);
+        PlayerAcc christo = new PlayerAcc(CHRISTO);
+        PlayerAcc toma = new PlayerAcc(TOMA);
+        PlayerAcc dbl = new PlayerAcc(DOUBLE);
+
+        // Le fil est antéchronologique (plus récent en premier) : on l'exploite tel
+        // quel, la 1re ligne retenue par joueur devient « Dernier ».
+        for (FeedItem it : feed) {
+            String hay = norm(it.title() + " " + it.href() + " " + it.tournoi());
+            String tone = classifyTone(norm(it.title()));
+
+            boolean hasChristo = hay.contains("christo");
+            boolean hasToma = hay.contains("toma");
+            boolean hasPopov = hay.contains("popov");
+            boolean hasLanier = hay.contains("lanier");
+            boolean hasDouble = hay.contains("delrue") || hay.contains("gicquel");
+
+            if (hasLanier) lanier.add(it, tone);
+            if (hasChristo) christo.add(it, tone);
+            if (hasToma) toma.add(it, tone);
+            // « Popov » sans prénom : ambigu (deux frères). On rattache aux deux,
+            // mais en neutralisant le tone (null) : on ne PEUT pas affirmer lequel.
+            if (hasPopov && !hasChristo && !hasToma) {
+                christo.add(it, null);
+                toma.add(it, null);
+            }
+            if (hasDouble) dbl.add(it, tone);
+
+            // Classement mondial glané au passage (« numéro N mondial »).
+            Matcher rk = RANK_RE.matcher(norm(it.title()));
+            if (rk.find()) {
+                String r = "#" + rk.group(1) + " mondial";
+                if (hasLanier && lanier.rank.isEmpty()) lanier.rank = r;
+                if (hasChristo && christo.rank.isEmpty()) christo.rank = r;
+                if (hasToma && toma.rank.isEmpty()) toma.rank = r;
+            }
+        }
+
+        List<Object> out = new ArrayList<>();
+        for (PlayerAcc p : List.of(lanier, christo, toma, dbl)) {
+            if (!p.lines.isEmpty()) out.add(p.toJson());
+        }
+        return out;
+    }
+
+    /** Découpe le fil d'actualités (liste de {@code li[id^=article_]}). */
+    private static List<FeedItem> parseFeed(Document home) {
+        List<FeedItem> out = new ArrayList<>();
+        for (Element li : home.select("li[id^=article_]")) {
+            Element titleEl = li.selectFirst("div.title");
+            if (titleEl == null) continue;
+            String title = titleEl.text().trim();
+            if (title.isEmpty()) continue;
+            Element catEl = li.selectFirst("div.cat .catspan");
+            Element dateEl = li.selectFirst("div.date");
+            Element a = li.selectFirst("a[href]");
+            String tournoi = catEl != null ? catEl.text().trim() : "";
+            String date = dateEl != null ? dateEl.text().trim() : "";
+            String href = a != null ? a.attr("href").trim() : "";
+            out.add(new FeedItem(date, tournoi, title, href));
+        }
+        return out;
+    }
+
+    /**
+     * Classe un titre normalisé en {@code tone} via {@link #TONE_WIN}/{@code _OUT}/
+     * {@code _STILL}. Renvoie {@code "win"}, {@code "out"} ou {@code null} (toujours
+     * en lice OU titre non reconnu — dans les deux cas le texte est conservé).
+     */
+    private static String classifyTone(String t) {
+        for (String k : TONE_WIN) if (t.contains(k)) return "win";
+        for (String k : TONE_OUT) if (t.contains(k)) return "out";
+        for (String k : TONE_STILL) if (t.contains(k)) return null;
+        // « s'impose face à X » = victoire de match (win), pas un titre.
+        if (t.contains("simpose")) return "win";
+        return null; // hors table : on garde la ligne, tone neutre
+    }
+
+    /** Minuscules + accents retirés + apostrophes supprimées (matching robuste). */
+    private static String norm(String s) {
+        return stripAccents(s.toLowerCase(Locale.ROOT)).replaceAll("['`’]", "");
     }
 
     /** Chevauchement de la plage BWF avec une plage equipe-france {{m,d},{m,d}}. */
