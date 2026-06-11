@@ -756,6 +756,15 @@ public class Collector {
     private static final String[] OUT_MARKERS = {
             "fin de parcours", "sincline", "tombent", "prive", "elimin", "chute"
     };
+    /**
+     * Verbes d'OPPOSITION : un titre qui les contient ET nomme ≥ 2 joueurs suivis
+     * oppose ces joueurs (« X domine Y »). La table de mots-clés ne sait pas
+     * distinguer le gagnant du perdant → on neutralise le résultat des joueurs cités
+     * (tone null, « résultat à préciser ») plutôt que d'en sacrer un à tort.
+     */
+    private static final String[] OPP_VERBS = {
+            "domine", "bat", "simpose face", "elimin", "prive", "ecarte", "renverse"
+    };
     /** Catégories génériques du fil qui ne désignent pas un tournoi (à ignorer). */
     private static final Set<String> GENERIC_CATS = new HashSet<>(List.of("badminton"));
     /** Nb max de lignes conservées par joueur (les plus récentes). */
@@ -787,6 +796,7 @@ public class Collector {
         LocalDate lastDate;    // même date, parsée (pour décider « en cours »)
         boolean win = false;   // marqueur de victoire finale (sacré/vainqueur…)
         boolean explicitOut = false; // marqueur explicite de sortie (s'incline…)
+        boolean disputed = false; // titre d'opposition (≥2 suivis) → résultat à préciser
         int stage = 0;         // stade le plus avancé NOMMÉ (titres nominatifs)
 
         TourAgg(String tournoi, String date, LocalDate lastDate) {
@@ -799,12 +809,15 @@ public class Collector {
          * Absorbe un titre normalisé concernant ce joueur sur ce tournoi.
          * Nominatif : fournit l'issue (win/out) ET le stade. Ambigu (« Popov »
          * sans prénom) : vaut SEULEMENT signal de sortie, sans inventer le stade
-         * individuel (cf. règle d'ambiguïté CLAUDE.md).
+         * individuel. Opposition (« X domine Y » entre deux suivis) : on n'extrait
+         * NI issue NI stade — on ne sait pas qui a gagné → simple drapeau « disputed »
+         * (cf. règles CLAUDE.md).
          */
-        void absorb(String normTitle, boolean ambiguous, LocalDate titleDate) {
+        void absorb(String normTitle, boolean ambiguous, boolean disputed, LocalDate titleDate) {
             if (titleDate != null && (lastDate == null || titleDate.isAfter(lastDate))) {
                 lastDate = titleDate;
             }
+            if (disputed) { this.disputed = true; return; }
             if (ambiguous) { explicitOut = true; return; }
             if (containsAny(normTitle, WIN_MARKERS)) win = true;
             if (containsAny(normTitle, OUT_MARKERS)) explicitOut = true;
@@ -819,8 +832,10 @@ public class Collector {
          *   <li>sortie explicite (titre d'élimination) → {@code Éliminé <stade>} /
          *       out (stade exact = stade le plus avancé atteint) ;</li>
          *   <li>tournoi EN COURS, sans verdict → {@code <stade> (en cours)} / null ;</li>
-         *   <li>tournoi TERMINÉ sans victoire ni sortie nommée → le joueur est sorti,
-         *       borne basse {@code Éliminé (<stade> ou plus loin)} / out.</li>
+         *   <li>tournoi TERMINÉ avec un stade atteint → le joueur est sorti, borne
+         *       basse {@code Éliminé (<stade> ou plus loin)} / out ;</li>
+         *   <li>titre d'opposition seul (résultat indécidable) → {@code résultat à
+         *       préciser} / null — jamais « Vainqueur » à tort.</li>
          * </ul>
          */
         Map<String, Object> toLine(String label, boolean ongoing) {
@@ -839,11 +854,15 @@ public class Collector {
                 stade = stage > 0
                         ? capitalize(stageShort(stage)) + " (en cours)"
                         : "En lice (en cours)";
-            } else {                              // tournoi terminé, pas de verdict → sorti
+            } else if (stage > 0) {               // terminé, un stade atteint → sorti
                 tone = "out";
-                stade = stage > 0
-                        ? "Éliminé (" + stageShort(stage) + " ou plus loin)"
-                        : "Éliminé (stade non précisé)";
+                stade = "Éliminé (" + stageShort(stage) + " ou plus loin)";
+            } else if (disputed) {                // opposition seule → indécidable
+                tone = null;
+                stade = "résultat à préciser";
+            } else {                              // terminé, rien de nommé → sorti
+                tone = "out";
+                stade = "Éliminé (stade non précisé)";
             }
             Map<String, Object> line = new LinkedHashMap<>();
             line.put("label", label);
@@ -867,11 +886,11 @@ public class Collector {
         PlayerAcc(String name, String slug) { this.name = name; this.slug = slug; }
 
         /** Rattache un titre du fil au tournoi (ignore les catégories non-tournoi). */
-        void add(FeedItem it, boolean ambiguous, LocalDate titleDate) {
+        void add(FeedItem it, boolean ambiguous, boolean disputed, LocalDate titleDate) {
             String tour = it.tournoi();
             if (tour.isEmpty() || GENERIC_CATS.contains(norm(tour))) return;
             TourAgg agg = byTour.computeIfAbsent(tour, k -> new TourAgg(tour, it.date(), titleDate));
-            agg.absorb(norm(it.title()), ambiguous, titleDate);
+            agg.absorb(norm(it.title()), ambiguous, disputed, titleDate);
         }
 
         Map<String, Object> toJson(List<Tournament> bwf, LocalDate today) {
@@ -924,17 +943,24 @@ public class Collector {
             boolean hasPopov = hay.contains("popov");
             boolean hasLanier = hay.contains("lanier");
             boolean hasDouble = hay.contains("delrue") || hay.contains("gicquel");
+            boolean ambiguousPopov = hasPopov && !hasChristo && !hasToma;
 
-            if (hasLanier) lanier.add(it, false, titleDate);
-            if (hasChristo) christo.add(it, false, titleDate);
-            if (hasToma) toma.add(it, false, titleDate);
+            // Opposition : titre nommant ≥ 2 joueurs suivis distincts ET un verbe
+            // d'affrontement → résultat indécidable (cf. OPP_VERBS / TourAgg.absorb).
+            int tracked = (hasLanier ? 1 : 0) + (hasChristo ? 1 : 0) + (hasToma ? 1 : 0)
+                    + (ambiguousPopov ? 1 : 0) + (hasDouble ? 1 : 0);
+            boolean disputed = tracked >= 2 && containsAny(norm(it.title()), OPP_VERBS);
+
+            if (hasLanier) lanier.add(it, false, disputed, titleDate);
+            if (hasChristo) christo.add(it, false, disputed, titleDate);
+            if (hasToma) toma.add(it, false, disputed, titleDate);
             // « Popov » sans prénom : ambigu (deux frères). Signal de sortie pour
             // les DEUX, sans inventer le stade individuel (cf. TourAgg.absorb).
-            if (hasPopov && !hasChristo && !hasToma) {
-                christo.add(it, true, titleDate);
-                toma.add(it, true, titleDate);
+            if (ambiguousPopov) {
+                christo.add(it, true, disputed, titleDate);
+                toma.add(it, true, disputed, titleDate);
             }
-            if (hasDouble) dbl.add(it, false, titleDate);
+            if (hasDouble) dbl.add(it, false, disputed, titleDate);
         }
 
         // Classement mondial (simple messieurs) — source autoritaire pour rank.
