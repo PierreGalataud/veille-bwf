@@ -8,3 +8,7 @@ dist/
 # Java / Maven
 collector/target/
 *.class
+
+# IDE (config locale : chemins JDK/Maven propres à chaque machine)
+.idea/
+*.iml
