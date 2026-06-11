@@ -165,7 +165,15 @@ export default function App() {
                 </div>
                 {p.lines.map((l, k) => (
                   <div className="player__row" key={k}>
-                    <b>{l.label} :</b> <span className={toneClass(l.tone)}>{l.value}</span>
+                    <b>{l.label} :</b>{" "}
+                    <span>
+                      <span className={toneClass(l.tone)}>{l.headline || l.value}</span>
+                      {l.tournament && (
+                        <span className="player__ctx">
+                          {" "}· {l.tournament}{l.date ? ` · ${l.date}` : ""}
+                        </span>
+                      )}
+                    </span>
                   </div>
                 ))}
               </div>

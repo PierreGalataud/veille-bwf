@@ -754,33 +754,63 @@ public class Collector {
     };
     /** Nb max de lignes conservées par joueur (les plus récentes). */
     private static final int MAX_LINES = 6;
-    private static final Pattern RANK_RE = Pattern.compile("numero (\\d+) mondial");
+    /** Page de classement (simple messieurs) : source des {@code rank}. */
+    private static final String EF_RANK_M =
+            EF_BASE + "/badminton/classement-des-joueurs-masculin";
+    /** Slug equipe-france de chaque joueur, pour la jonction avec le classement. */
+    private static final String SLUG_LANIER = "alex-lanier";
+    private static final String SLUG_CHRISTO = "christo-popov";
+    private static final String SLUG_TOMA = "toma-junior-popov";
 
     /** Une entrée du fil : DATE · TOURNOI · TITRE, plus le slug de l'URL (recall). */
     private record FeedItem(String date, String tournoi, String title, String href) {}
 
+    /** Une ligne candidate : l'entrée du fil, son tone, et si elle est ambiguë. */
+    private record LineRec(FeedItem item, String tone, boolean ambiguous) {}
+
     /** Accumulateur de lignes pour un joueur (ordre = antéchronologique d'arrivée). */
     private static final class PlayerAcc {
         final String name;
+        final String slug;
         String rank = "";
-        final List<Map<String, Object>> lines = new ArrayList<>();
+        final List<LineRec> raw = new ArrayList<>();
         final Set<String> seen = new HashSet<>();
 
-        PlayerAcc(String name) { this.name = name; }
+        PlayerAcc(String name, String slug) { this.name = name; this.slug = slug; }
 
-        /** Ajoute une ligne (dédup par tournoi+titre, plafonné à {@link #MAX_LINES}). */
-        void add(FeedItem it, String tone) {
-            if (lines.size() >= MAX_LINES) return;
+        /** Mémorise une ligne candidate (dédup par tournoi+titre). */
+        void add(FeedItem it, String tone, boolean ambiguous) {
             String key = it.tournoi() + "|" + it.title();
             if (!seen.add(key)) return;
-            Map<String, Object> line = new LinkedHashMap<>();
-            line.put("label", lines.isEmpty() ? "Dernier" : "Puis");
-            line.put("value", formatValue(it));
-            line.put("tone", tone);
-            lines.add(line);
+            raw.add(new LineRec(it, tone, ambiguous));
         }
 
+        /**
+         * Finalise les lignes. Règle 1 (priorité nominative) : pour un tournoi où
+         * le joueur a une ligne nominative, on écarte ses lignes collectives
+         * ambiguës — la ligne nominative représente ce tournoi. Puis plafond,
+         * labels (« Dernier » / « Puis ») et sous-champs (date / tournament /
+         * headline) en plus de {@code value}.
+         */
         Map<String, Object> toJson() {
+            Set<String> nominativeTournois = new HashSet<>();
+            for (LineRec r : raw) {
+                if (!r.ambiguous()) nominativeTournois.add(r.item().tournoi());
+            }
+            List<Map<String, Object>> lines = new ArrayList<>();
+            for (LineRec r : raw) {
+                FeedItem it = r.item();
+                if (r.ambiguous() && nominativeTournois.contains(it.tournoi())) continue;
+                if (lines.size() >= MAX_LINES) break;
+                Map<String, Object> line = new LinkedHashMap<>();
+                line.put("label", lines.isEmpty() ? "Dernier" : "Puis");
+                line.put("date", it.date());
+                line.put("tournament", it.tournoi());
+                line.put("headline", it.title());
+                line.put("value", formatValue(it));
+                line.put("tone", r.tone());
+                lines.add(line);
+            }
             Map<String, Object> o = new LinkedHashMap<>();
             o.put("name", name);
             o.put("rank", rank.isEmpty() ? null : rank);
@@ -815,10 +845,10 @@ public class Collector {
             return new ArrayList<>();
         }
 
-        PlayerAcc lanier = new PlayerAcc(LANIER);
-        PlayerAcc christo = new PlayerAcc(CHRISTO);
-        PlayerAcc toma = new PlayerAcc(TOMA);
-        PlayerAcc dbl = new PlayerAcc(DOUBLE);
+        PlayerAcc lanier = new PlayerAcc(LANIER, SLUG_LANIER);
+        PlayerAcc christo = new PlayerAcc(CHRISTO, SLUG_CHRISTO);
+        PlayerAcc toma = new PlayerAcc(TOMA, SLUG_TOMA);
+        PlayerAcc dbl = new PlayerAcc(DOUBLE, null);
 
         // Le fil est antéchronologique (plus récent en premier) : on l'exploite tel
         // quel, la 1re ligne retenue par joueur devient « Dernier ».
@@ -832,32 +862,57 @@ public class Collector {
             boolean hasLanier = hay.contains("lanier");
             boolean hasDouble = hay.contains("delrue") || hay.contains("gicquel");
 
-            if (hasLanier) lanier.add(it, tone);
-            if (hasChristo) christo.add(it, tone);
-            if (hasToma) toma.add(it, tone);
+            if (hasLanier) lanier.add(it, tone, false);
+            if (hasChristo) christo.add(it, tone, false);
+            if (hasToma) toma.add(it, tone, false);
             // « Popov » sans prénom : ambigu (deux frères). On rattache aux deux,
             // mais en neutralisant le tone (null) : on ne PEUT pas affirmer lequel.
+            // Ces lignes sont marquées « ambiguous » → écartées par la priorité
+            // nominative (cf. PlayerAcc.toJson) si le joueur a mieux sur le tournoi.
             if (hasPopov && !hasChristo && !hasToma) {
-                christo.add(it, null);
-                toma.add(it, null);
+                christo.add(it, null, true);
+                toma.add(it, null, true);
             }
-            if (hasDouble) dbl.add(it, tone);
+            if (hasDouble) dbl.add(it, tone, false);
+        }
 
-            // Classement mondial glané au passage (« numéro N mondial »).
-            Matcher rk = RANK_RE.matcher(norm(it.title()));
-            if (rk.find()) {
-                String r = "#" + rk.group(1) + " mondial";
-                if (hasLanier && lanier.rank.isEmpty()) lanier.rank = r;
-                if (hasChristo && christo.rank.isEmpty()) christo.rank = r;
-                if (hasToma && toma.rank.isEmpty()) toma.rank = r;
-            }
+        // Classement mondial (simple messieurs) — source autoritaire pour rank.
+        Map<String, String> ranks = buildRanks();
+        for (PlayerAcc p : List.of(lanier, christo, toma)) {
+            String r = ranks.get(p.slug);
+            if (r != null) p.rank = r;
         }
 
         List<Object> out = new ArrayList<>();
         for (PlayerAcc p : List.of(lanier, christo, toma, dbl)) {
-            if (!p.lines.isEmpty()) out.add(p.toJson());
+            if (!p.raw.isEmpty()) out.add(p.toJson());
         }
         return out;
+    }
+
+    /**
+     * Lit la page de classement simple messieurs d'equipe-france et renvoie
+     * {@code slug -> "#N mondial"}. Échec gracieux : indisponibilité → map vide
+     * (les rank concernés restent {@code null}, on ne devine pas).
+     */
+    private static Map<String, String> buildRanks() {
+        Map<String, String> ranks = new HashMap<>();
+        try {
+            Thread.sleep(EF_THROTTLE_MS); // politesse (cf. garde-fous)
+            Document doc = fetch(EF_RANK_M);
+            for (Element tr : doc.select("table tbody tr")) {
+                Element a = tr.selectFirst("th[scope=row] a[href]");
+                Element num = tr.selectFirst("td strong");
+                if (a == null || num == null) continue;
+                String slug = pathOf(a.attr("href")).replaceAll("^.*/", "");
+                String n = num.text().replaceAll("\\D", "");
+                if (slug.isEmpty() || n.isEmpty()) continue;
+                ranks.putIfAbsent(slug, "#" + n + " mondial");
+            }
+        } catch (Exception e) {
+            System.err.println("equipe-france (classement) KO — rank null : " + e);
+        }
+        return ranks;
     }
 
     /** Découpe le fil d'actualités (liste de {@code li[id^=article_]}). */
