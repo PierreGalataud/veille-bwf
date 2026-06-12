@@ -365,16 +365,32 @@ class CollectorTest {
             assertEquals(original, LlmNet.applyVerdict(original, List.of(), "Alex Lanier"));
         }
 
-        /** Le filet AFFINE : un tone null de Haiku ne dégrade jamais un tone
-         *  déterministe déjà posé (il peut seulement préciser le stade). */
+        /** Le filet AFFINE, il ne contredit jamais : sur une ligne dont le tone
+         *  déterministe est déjà posé (out « stade non précisé »), seul un
+         *  verdict du MÊME tone est accepté — il précise le stade. Vu en réel :
+         *  Haiku renversait un out en win (« s'imposent pour leur retour ») ou
+         *  posait un stage « En lice » sur une ligne éliminée. */
         @Test
-        void toneNullDeHaikuNeDegradeJamais() {
+        void verdictOutAffineLeStadeDuneLigneOut() {
             DataJson.LineJson l = LlmNet.applyVerdict(
                     line("Éliminé (stade non précisé)", "out"),
-                    List.of(new LlmNet.Verdict("Alex Lanier", null, "Éliminé en 1/4 de finale")),
+                    List.of(new LlmNet.Verdict("Alex Lanier", "out", "Éliminé en 1/4 de finale")),
                     "Alex Lanier");
-            assertEquals("out", l.tone());      // conservé
+            assertEquals("out", l.tone());
             assertEquals("Éliminé en 1/4 de finale", l.stage());
+        }
+
+        @Test
+        void verdictContraireAuToneDeterministeEstIgnore() {
+            DataJson.LineJson out = line("Éliminé (stade non précisé)", "out");
+            // win contredit l'out déterministe → ignoré, ligne intacte
+            assertEquals(out, LlmNet.applyVerdict(out,
+                    List.of(new LlmNet.Verdict("Alex Lanier", "win", "Tournoi remporté")),
+                    "Alex Lanier"));
+            // null aussi : pas de stage « En lice » sur une ligne éliminée
+            assertEquals(out, LlmNet.applyVerdict(out,
+                    List.of(new LlmNet.Verdict("Alex Lanier", null, "En lice")),
+                    "Alex Lanier"));
         }
     }
 }

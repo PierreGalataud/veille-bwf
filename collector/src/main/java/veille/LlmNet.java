@@ -175,14 +175,19 @@ final class LlmNet {
     /**
      * Applique à la ligne le verdict du joueur (appariement par nom normalisé
      * EXACT — le prompt impose de recopier les noms de la liste). Le filet ne
-     * fait qu'AFFINER : un tone null de Haiku ne dégrade jamais un tone
-     * déterministe déjà posé ; sans verdict exploitable, la ligne sort intacte.
+     * fait qu'AFFINER, il ne contredit jamais : sur une ligne dont le tone
+     * déterministe est déjà posé (out « stade non précisé »), seul un verdict du
+     * MÊME tone est accepté — il précise le stade. Un verdict win ou null y est
+     * ignoré (vu en réel : Haiku renversait un out en win sur « s'imposent pour
+     * leur retour », ou posait « En lice » sur une ligne éliminée). Sans verdict
+     * exploitable, la ligne sort intacte.
      */
     static DataJson.LineJson applyVerdict(DataJson.LineJson line, List<Verdict> verdicts,
                                           String playerName) {
         String wanted = TextUtil.norm(playerName);
         for (Verdict v : verdicts) {
             if (!TextUtil.norm(v.player()).equals(wanted)) continue;
+            if (line.tone() != null && !line.tone().equals(v.tone())) return line;
             String tone = v.tone() != null ? v.tone() : line.tone();
             String stage = v.stage() != null ? v.stage() : line.stage();
             if (java.util.Objects.equals(tone, line.tone()) && stage.equals(line.stage())) {

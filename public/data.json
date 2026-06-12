@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-06-12T07:52:29.217447600Z",
+  "generatedAt" : "2026-06-12T08:20:15.979384Z",
   "weekLabel" : "Semaine du 8 – 14 juin 2026",
   "current" : [ {
     "name" : "SATHIO GROUP Australian Badminton Open 2026",
@@ -24,9 +24,9 @@
       "label" : "Dernier",
       "date" : "5 juin",
       "tournament" : "Open d'Indonésie",
-      "stage" : "Éliminé (stade non précisé)",
+      "stage" : "Éliminé",
       "tone" : "out",
-      "value" : "Open d'Indonésie · Éliminé (stade non précisé)"
+      "value" : "Open d'Indonésie · Éliminé"
     }, {
       "label" : "Puis",
       "date" : "31 mai",
@@ -45,9 +45,9 @@
       "label" : "Puis",
       "date" : "23 mars",
       "tournament" : "Orléans Masters",
-      "stage" : "résultat à préciser",
-      "tone" : null,
-      "value" : "Orléans Masters · résultat à préciser"
+      "stage" : "Vainqueur du tournoi",
+      "tone" : "win",
+      "value" : "Orléans Masters · Vainqueur du tournoi"
     } ]
   }, {
     "name" : "Christo Popov",
@@ -81,23 +81,23 @@
       "label" : "Dernier",
       "date" : "5 juin",
       "tournament" : "Open d'Indonésie",
-      "stage" : "Éliminé (stade non précisé)",
+      "stage" : "Éliminé",
       "tone" : "out",
-      "value" : "Open d'Indonésie · Éliminé (stade non précisé)"
+      "value" : "Open d'Indonésie · Éliminé"
     }, {
       "label" : "Puis",
       "date" : "12 avril",
       "tournament" : "Championnats d'Europe",
-      "stage" : "Éliminé (stade non précisé)",
+      "stage" : "Éliminé en double",
       "tone" : "out",
-      "value" : "Championnats d'Europe · Éliminé (stade non précisé)"
+      "value" : "Championnats d'Europe · Éliminé en double"
     }, {
       "label" : "Puis",
       "date" : "23 mars",
       "tournament" : "Orléans Masters",
-      "stage" : "résultat à préciser",
-      "tone" : null,
-      "value" : "Orléans Masters · résultat à préciser"
+      "stage" : "Finale",
+      "tone" : "out",
+      "value" : "Orléans Masters · Finale"
     } ]
   }, {
     "name" : "Delphine Delrue / Thom Gicquel",
