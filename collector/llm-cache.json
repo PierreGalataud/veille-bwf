@@ -1,0 +1,109 @@
+[ {
+  "tournament" : "Open d'Indonésie",
+  "titles" : [ "Fin de parcours pour Lanier et Popov, Gicquel-Delrue derniers rescapés", "Alex Lanier s'impose face à Anders Antonsen" ],
+  "verdicts" : [ {
+    "player" : "Alex Lanier",
+    "tone" : "out",
+    "stage" : "Éliminé en phases finales"
+  }, {
+    "player" : "Christo Popov",
+    "tone" : "out",
+    "stage" : "Éliminé en phases finales"
+  }, {
+    "player" : "Delphine Delrue",
+    "tone" : null,
+    "stage" : "Toujours en lice"
+  }, {
+    "player" : "Thom Gicquel",
+    "tone" : null,
+    "stage" : "Toujours en lice"
+  } ]
+}, {
+  "tournament" : "Championnats d'Europe",
+  "titles" : [ "Alex Lanier débute par une victoire" ],
+  "verdicts" : [ {
+    "player" : "Alex Lanier",
+    "tone" : null,
+    "stage" : "En lice"
+  } ]
+}, {
+  "tournament" : "Orléans Masters",
+  "titles" : [ "Alex Lanier domine Toma Junior Popov et réalise le doublé" ],
+  "verdicts" : [ {
+    "player" : "Alex Lanier",
+    "tone" : "win",
+    "stage" : "Tournoi remporté"
+  }, {
+    "player" : "Toma Junior Popov",
+    "tone" : "out",
+    "stage" : "Finale"
+  } ]
+}, {
+  "tournament" : "Open d'Indonésie",
+  "titles" : [ "Fin de parcours pour Lanier et Popov, Gicquel-Delrue derniers rescapés" ],
+  "verdicts" : [ {
+    "player" : "Alex Lanier",
+    "tone" : "out",
+    "stage" : "Éliminé"
+  }, {
+    "player" : "Christo Popov",
+    "tone" : "out",
+    "stage" : "Éliminé"
+  }, {
+    "player" : "Toma Junior Popov",
+    "tone" : "out",
+    "stage" : "Éliminé"
+  }, {
+    "player" : "Delphine Delrue",
+    "tone" : null,
+    "stage" : "En lice"
+  }, {
+    "player" : "Thom Gicquel",
+    "tone" : null,
+    "stage" : "En lice"
+  } ]
+}, {
+  "tournament" : "Championnats d'Europe",
+  "titles" : [ "L'argent pour les frères Popov : la fin d'un règne continental en double" ],
+  "verdicts" : [ {
+    "player" : "Alex Lanier",
+    "tone" : null,
+    "stage" : null
+  }, {
+    "player" : "Christo Popov",
+    "tone" : "out",
+    "stage" : "Éliminé en double"
+  }, {
+    "player" : "Toma Junior Popov",
+    "tone" : "out",
+    "stage" : "Éliminé en double"
+  }, {
+    "player" : "Delphine Delrue",
+    "tone" : null,
+    "stage" : null
+  }, {
+    "player" : "Thom Gicquel",
+    "tone" : null,
+    "stage" : null
+  } ]
+}, {
+  "tournament" : "Open de Singapour",
+  "titles" : [ "Delphine Delrue et Thom Gicquel s'imposent pour leur retour" ],
+  "verdicts" : [ {
+    "player" : "Alex Lanier",
+    "tone" : null,
+    "stage" : null
+  }, {
+    "player" : "Christo Popov",
+    "tone" : null,
+    "stage" : null
+  }, {
+    "player" : "Toma Junior Popov",
+    "tone" : null,
+    "stage" : null
+  }, {
+    "player" : "Delphine Delrue / Thom Gicquel",
+    "tone" : "win",
+    "stage" : "Vainqueurs du tournoi"
+  } ]
+} ]
