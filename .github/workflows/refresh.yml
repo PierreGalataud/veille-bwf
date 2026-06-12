@@ -31,6 +31,10 @@ jobs:
         run: mvn -q -B -f collector/pom.xml test
 
       - name: Lancer le collecteur (écrit public/data.json)
+        # Filet LLM (étape A) : la clé vient des secrets GitHub Actions, jamais
+        # du code ni de Vercel. Secret absent → filet inerte, pipeline identique.
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: >
           mvn -q -B -f collector/pom.xml compile exec:java
           -Dexec.args="${{ github.workspace }}/public/data.json"

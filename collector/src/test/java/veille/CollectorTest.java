@@ -273,4 +273,108 @@ class CollectorTest {
                     null, List.of(), LocalDate.of(2026, 6, 11)));
         }
     }
+
+    // ------------------------------------------------------------
+    // Filet LLM (étape A) — fonctions pures uniquement : le ciblage des cas
+    // marqués, le parsing du verdict Haiku et son application. L'appel réseau
+    // lui-même n'est pas testé (cf. CLAUDE.md : jamais de réseau en test).
+    // ------------------------------------------------------------
+    @Nested
+    class FiletLlm {
+
+        private DataJson.LineJson line(String stage, String tone) {
+            return new DataJson.LineJson("Dernier", "23 mars", "Orléans Masters",
+                    stage, tone, "Orléans Masters · " + stage);
+        }
+
+        /** Seuls les cas MARQUÉS par le déterministe partent vers Haiku. */
+        @Test
+        void cibleLesOppositionsEtStadesNonPrecises() {
+            assertTrue(LlmNet.isUncertain(line("résultat à préciser", null)));
+            assertTrue(LlmNet.isUncertain(line("Éliminé (stade non précisé)", "out")));
+        }
+
+        /** « En cours » (tone null) est un état normal, pas une règle qui sèche ;
+         *  un verdict déjà posé (win/out nominal) ne repart jamais vers Haiku. */
+        @Test
+        void neCiblePasLesLignesSures() {
+            assertFalse(LlmNet.isUncertain(line("En lice (en cours)", null)));
+            assertFalse(LlmNet.isUncertain(line("1/4 de finale (en cours)", null)));
+            assertFalse(LlmNet.isUncertain(line("Vainqueur", "win")));
+            assertFalse(LlmNet.isUncertain(line("Éliminé au 1er tour", "out")));
+            assertFalse(LlmNet.isUncertain(null));
+        }
+
+        @Test
+        void parseVerdictsLitLeTableauJson() {
+            List<LlmNet.Verdict> v = LlmNet.parseVerdicts(
+                    "[{\"player\":\"Toma Junior Popov\",\"tone\":\"out\","
+                            + "\"stage\":\"Éliminé au 2e tour\"}]");
+            assertEquals(1, v.size());
+            assertEquals("Toma Junior Popov", v.get(0).player());
+            assertEquals("out", v.get(0).tone());
+            assertEquals("Éliminé au 2e tour", v.get(0).stage());
+        }
+
+        /** Haiku est sommé de répondre JSON nu, mais on tolère prose/clôtures
+         *  Markdown autour du tableau (premier « [ » … dernier « ] »). */
+        @Test
+        void parseVerdictsTolereLesClotures() {
+            List<LlmNet.Verdict> v = LlmNet.parseVerdicts(
+                    "```json\n[{\"player\":\"Alex Lanier\",\"tone\":null,\"stage\":\"Qualifié\"}]\n```");
+            assertEquals(1, v.size());
+            assertNull(v.get(0).tone());        // null JSON = tone null
+        }
+
+        /** « null » en chaîne vaut tone null ; un tone hors contrat disqualifie
+         *  le verdict ; un JSON cassé donne une liste vide, jamais d'exception. */
+        @Test
+        void parseVerdictsResteDansLeContrat() {
+            List<LlmNet.Verdict> v = LlmNet.parseVerdicts(
+                    "[{\"player\":\"A\",\"tone\":\"null\"},"
+                            + "{\"player\":\"B\",\"tone\":\"vainqueur\"},"
+                            + "{\"tone\":\"out\"}]");
+            assertEquals(1, v.size());          // B (tone inconnu) et sans player écartés
+            assertNull(v.get(0).tone());
+            assertTrue(LlmNet.parseVerdicts("pas du json").isEmpty());
+            assertTrue(LlmNet.parseVerdicts("{\"player\":\"A\"}").isEmpty());
+            assertTrue(LlmNet.parseVerdicts(null).isEmpty());
+        }
+
+        /** Le cas Orléans : « Lanier domine Toma » → Toma passe out, la valeur
+         *  d'affichage est recomposée « tournoi · stade ». */
+        @Test
+        void verdictAppliqueToneEtStade() {
+            DataJson.LineJson l = LlmNet.applyVerdict(
+                    line("résultat à préciser", null),
+                    List.of(new LlmNet.Verdict("Toma Junior Popov", "out", "Éliminé au 2e tour")),
+                    "Toma Junior Popov");
+            assertEquals("out", l.tone());
+            assertEquals("Éliminé au 2e tour", l.stage());
+            assertEquals("Orléans Masters · Éliminé au 2e tour", l.value());
+        }
+
+        /** Sans verdict pour CE joueur (nom non recopié exactement, ou absent),
+         *  la ligne déterministe sort intacte — on n'invente rien. */
+        @Test
+        void verdictSansCorrespondanceConserveLaLigne() {
+            DataJson.LineJson original = line("résultat à préciser", null);
+            assertEquals(original, LlmNet.applyVerdict(original,
+                    List.of(new LlmNet.Verdict("Quelqu'un d'autre", "out", "Éliminé")),
+                    "Alex Lanier"));
+            assertEquals(original, LlmNet.applyVerdict(original, List.of(), "Alex Lanier"));
+        }
+
+        /** Le filet AFFINE : un tone null de Haiku ne dégrade jamais un tone
+         *  déterministe déjà posé (il peut seulement préciser le stade). */
+        @Test
+        void toneNullDeHaikuNeDegradeJamais() {
+            DataJson.LineJson l = LlmNet.applyVerdict(
+                    line("Éliminé (stade non précisé)", "out"),
+                    List.of(new LlmNet.Verdict("Alex Lanier", null, "Éliminé en 1/4 de finale")),
+                    "Alex Lanier");
+            assertEquals("out", l.tone());      // conservé
+            assertEquals("Éliminé en 1/4 de finale", l.stage());
+        }
+    }
 }

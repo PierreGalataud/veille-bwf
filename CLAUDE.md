@@ -146,11 +146,16 @@ Le code a été audité et durci (détail : historique git, commits « Audit lot
       data.json près de `generatedAt`).
 
 ### Prochaines étapes — bascule vers l'IA
-- [ ] **Étape A — Filet LLM (Haiku), ciblé.** Appels ponctuels UNIQUEMENT sur les cas
-      que le déterministe a marqués comme incertains (`tone: null`, `stage` « non
-      précisé », titres d'opposition). Une fonction texte->texte appelée par le Java
-      quand une règle sèche — **pas un agent**. Le LLM affine, il ne remplace pas le
-      pipeline. Clé `ANTHROPIC_API_KEY` -> GitHub Actions secrets.
+- [x] **Étape A — Filet LLM (Haiku), ciblé.** FAIT (`LlmNet.java`) : appels
+      `claude-haiku-4-5` UNIQUEMENT sur les cas marqués incertains (oppositions
+      « résultat à préciser », sorties « stade non précisé » — jamais les lignes
+      « en cours »). Une fonction texte->texte appelée par `PlayerResults.toJson`
+      quand une règle sèche — **pas un agent**. Échec gracieux total : sans
+      `ANTHROPIC_API_KEY` (GitHub Actions secrets, passée par refresh.yml) ou sur
+      toute erreur, la valeur déterministe est conservée — data.json identique.
+      Chaque cas envoyé/appliqué est loggé (règle vs filet). Fonctions pures
+      (`isUncertain`/`parseVerdicts`/`applyVerdict`) testées ; seul `ask` fait
+      du réseau.
 - [ ] **Étape B — Agent « La Dépêche des Français ».** Produit un résumé hebdo/mensuel
       des Bleus à partir des faits DÉJÀ collectés, ton pince-sans-rire. Variante agent :
       peut aller chercher l'ambiance côté presse (s'inspirer du registre, **sans

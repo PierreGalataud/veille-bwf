@@ -25,15 +25,15 @@ final class PlayerResults {
      * Joueurs suivis. Les deux frères Popov sont distingués par leur prénom ; un
      * « popov » sans prénom est traité à part (ambigu, cf. {@link #classify}).
      */
-    private static final String LANIER = "Alex Lanier";
-    private static final String CHRISTO = "Christo Popov";
-    private static final String TOMA = "Toma Junior Popov";
+    static final String LANIER = "Alex Lanier";
+    static final String CHRISTO = "Christo Popov";
+    static final String TOMA = "Toma Junior Popov";
     /**
      * Le rank du double reste VOLONTAIREMENT null : equipe-france ne publie que
      * les classements de SIMPLE (Delrue figure en « Non classé » sur la page
      * féminine — vérifié juin 2026), aucun classement par paire exploitable.
      */
-    private static final String DOUBLE = "Delphine Delrue / Thom Gicquel";
+    static final String DOUBLE = "Delphine Delrue / Thom Gicquel";
 
     /** Slug equipe-france de chaque joueur, pour la jonction avec le classement. */
     private static final String SLUG_LANIER = "alex-lanier";
@@ -83,6 +83,8 @@ final class PlayerResults {
     private static final Set<String> GENERIC_CATS = new HashSet<>(List.of("badminton"));
     /** Nb max de lignes conservées par joueur (les plus récentes). */
     private static final int MAX_LINES = 6;
+    /** Nb max de titres bruts gardés par tournoi pour le filet LLM (étape A). */
+    private static final int LLM_MAX_TITLES = 4;
     /**
      * Hors calendrier BWF (Championnats d'Europe, Orléans…), faute de dates
      * précises : un tournoi est réputé terminé si son titre le plus récent date de
@@ -136,6 +138,9 @@ final class PlayerResults {
         boolean explicitOut = false; // marqueur explicite de sortie (s'incline…)
         boolean disputed = false; // titre d'opposition (≥2 suivis) → résultat à préciser
         int stage = 0;         // stade le plus avancé NOMMÉ (titres nominatifs)
+        /** Titres BRUTS (non normalisés) du fil, pour le filet LLM si la ligne
+         *  sort marquée incertaine (cf. {@link LlmNet}). */
+        final List<String> titles = new ArrayList<>();
 
         TourAgg(String tournoi, String date, LocalDate lastDate) {
             this.tournoi = tournoi;
@@ -222,6 +227,7 @@ final class PlayerResults {
             String tour = it.tournoi();
             if (tour.isEmpty() || GENERIC_CATS.contains(TextUtil.norm(tour))) return;
             TourAgg agg = byTour.computeIfAbsent(tour, k -> new TourAgg(tour, it.date(), titleDate));
+            if (agg.titles.size() < LLM_MAX_TITLES) agg.titles.add(it.title());
             agg.absorb(TextUtil.norm(it.title()), ambiguous, disputed, titleDate);
         }
 
@@ -230,7 +236,11 @@ final class PlayerResults {
             for (TourAgg agg : byTour.values()) {
                 if (lines.size() >= MAX_LINES) break;
                 boolean ongoing = isOngoing(agg.tournoi, agg.lastDate, bwf, today);
-                lines.add(agg.toLine(lines.isEmpty() ? "Dernier" : "Puis", ongoing));
+                DataJson.LineJson line = agg.toLine(lines.isEmpty() ? "Dernier" : "Puis", ongoing);
+                // Filet LLM (étape A) : n'agit QUE sur les lignes marquées
+                // incertaines, et seulement si ANTHROPIC_API_KEY est présente.
+                // Sans clé ou sur échec, la ligne déterministe passe telle quelle.
+                lines.add(LlmNet.refine(name, line, agg.titles));
             }
             return new DataJson.PlayerJson(name, rank.isEmpty() ? null : rank, lines);
         }
