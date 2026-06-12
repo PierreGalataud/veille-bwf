@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-06-12T08:20:15.979384Z",
+  "generatedAt" : "2026-06-12T09:33:00.177453500Z",
   "weekLabel" : "Semaine du 8 – 14 juin 2026",
   "current" : [ {
     "name" : "SATHIO GROUP Australian Badminton Open 2026",
@@ -24,9 +24,9 @@
       "label" : "Dernier",
       "date" : "5 juin",
       "tournament" : "Open d'Indonésie",
-      "stage" : "Éliminé",
+      "stage" : "Éliminé en phases finales",
       "tone" : "out",
-      "value" : "Open d'Indonésie · Éliminé"
+      "value" : "Open d'Indonésie · Éliminé en phases finales"
     }, {
       "label" : "Puis",
       "date" : "31 mai",
@@ -45,9 +45,9 @@
       "label" : "Puis",
       "date" : "23 mars",
       "tournament" : "Orléans Masters",
-      "stage" : "Vainqueur du tournoi",
+      "stage" : "Tournoi remporté",
       "tone" : "win",
-      "value" : "Orléans Masters · Vainqueur du tournoi"
+      "value" : "Orléans Masters · Tournoi remporté"
     } ]
   }, {
     "name" : "Christo Popov",

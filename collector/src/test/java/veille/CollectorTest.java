@@ -380,6 +380,36 @@ class CollectorTest {
             assertEquals("Éliminé en 1/4 de finale", l.stage());
         }
 
+        /** Le cache persistant rend les runs idempotents : un (tournoi, titres)
+         *  déjà vu ressort identique à l'octet près, sans appel Haiku. */
+        @Test
+        void cacheAllerRetourSansPerte() throws Exception {
+            var cache = new java.util.LinkedHashMap<String, List<LlmNet.Verdict>>();
+            cache.put(LlmNet.cacheKey("Orléans Masters",
+                            List.of("Alex Lanier domine Toma Junior Popov", "Autre titre")),
+                    List.of(new LlmNet.Verdict("Toma Junior Popov", "out", "Finale"),
+                            new LlmNet.Verdict("Alex Lanier", "win", "Vainqueur du tournoi")));
+            assertEquals(cache, LlmNet.cacheFromJson(LlmNet.cacheToJson(cache)));
+        }
+
+        /** Les verdicts vides (échec d'appel, réponse inexploitable) ne se figent
+         *  jamais dans le fichier : on retentera au prochain run. */
+        @Test
+        void cacheNeConserveJamaisLesEchecs() throws Exception {
+            var cache = new java.util.LinkedHashMap<String, List<LlmNet.Verdict>>();
+            cache.put(LlmNet.cacheKey("Tournoi X", List.of("titre")), List.of());
+            assertTrue(LlmNet.cacheFromJson(LlmNet.cacheToJson(cache)).isEmpty());
+        }
+
+        /** Cache corrompu → on repart à vide (au pire des appels refaits),
+         *  jamais d'exception qui casserait le collecteur. */
+        @Test
+        void cacheCorrompuRepartAVide() {
+            assertTrue(LlmNet.cacheFromJson("pas du json").isEmpty());
+            assertTrue(LlmNet.cacheFromJson("{\"pas\":\"un tableau\"}").isEmpty());
+            assertTrue(LlmNet.cacheFromJson("[{\"tournament\":null}]").isEmpty());
+        }
+
         @Test
         void verdictContraireAuToneDeterministeEstIgnore() {
             DataJson.LineJson out = line("Éliminé (stade non précisé)", "out");

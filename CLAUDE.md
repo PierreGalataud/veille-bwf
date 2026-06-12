@@ -35,7 +35,9 @@ src/main.jsx                               -> point d'entrée React
 src/App.jsx                                -> TOUT l'affichage, piloté par data.json
 src/styles.css                             -> thème (maquette validée)
 public/data.json                           -> le contrat de données
-collector/pom.xml                          -> Maven, Java 17 (Jsoup + JUnit 5)
+collector/pom.xml                          -> Maven, Java 17 (Jsoup + JUnit 5 + SDK Anthropic)
+collector/llm-cache.json                   -> verdicts Haiku persistés (committé par le
+                                              workflow ; un titre déjà vu = zéro appel)
 collector/src/main/java/veille/           -> le collecteur, découpé par rôle :
   Collector.java       orchestration + écriture atomique de data.json
   BwfCalendar.java     calendrier BWF (tiers, dates, dotation)
@@ -154,8 +156,13 @@ Le code a été audité et durci (détail : historique git, commits « Audit lot
       `ANTHROPIC_API_KEY` (GitHub Actions secrets, passée par refresh.yml) ou sur
       toute erreur, la valeur déterministe est conservée — data.json identique.
       Chaque cas envoyé/appliqué est loggé (règle vs filet). Fonctions pures
-      (`isUncertain`/`parseVerdicts`/`applyVerdict`) testées ; seul `ask` fait
-      du réseau.
+      (`isUncertain`/`parseVerdicts`/`applyVerdict`/`cacheTo|FromJson`) testées ;
+      seul `ask` fait du réseau. Les verdicts sont PERSISTÉS dans
+      `collector/llm-cache.json` (committé par le workflow) : les titres
+      d'equipe-france étant immuables, un (tournoi, titres) déjà vu ne repart
+      jamais vers Haiku — zéro token inutile, et data.json reste stable d'un run
+      à l'autre (Haiku reformule sinon, d'où commits/rebuilds parasites). Les
+      verdicts vides ou en échec ne se persistent pas (retentés au run suivant).
 - [ ] **Étape B — Agent « La Dépêche des Français ».** Produit un résumé hebdo/mensuel
       des Bleus à partir des faits DÉJÀ collectés, ton pince-sans-rire. Variante agent :
       peut aller chercher l'ambiance côté presse (s'inspirer du registre, **sans

@@ -3,12 +3,17 @@ package veille;
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.okhttp.AnthropicOkHttpClient;
 import com.anthropic.models.messages.MessageCreateParams;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -44,13 +49,23 @@ final class LlmNet {
     private static final String STAGE_UNSPECIFIED = "stade non précisé";
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    /** Un appel par (tournoi, titres) : « Lanier domine Toma » concerne deux
-     *  joueurs mais ne coûte qu'une requête. */
-    private static final Map<String, List<Verdict>> CACHE = new HashMap<>();
+    /**
+     * Cache des verdicts PERSISTÉ entre les runs (fichier committé par le
+     * workflow, comme data.json). Les titres d'equipe-france sont immuables :
+     * un (tournoi, titres) déjà vu ne repart JAMAIS vers Haiku — zéro token
+     * inutile, et data.json reste stable à l'octet près d'un run à l'autre
+     * (Haiku reformule sinon ses réponses, d'où commits + rebuilds parasites).
+     * « Lanier domine Toma » concerne deux joueurs mais ne coûte qu'une requête.
+     */
+    static final Path CACHE_FILE = Path.of("collector", "llm-cache.json");
+    private static Map<String, List<Verdict>> cache;
     private static AnthropicClient client;
 
     /** Verdict de Haiku pour un joueur : tone ∈ win|out|null, stage libre (FR). */
     record Verdict(String player, String tone, String stage) {}
+
+    /** Entrée du fichier de cache — format lisible et diffable au commit. */
+    record CacheEntry(String tournament, List<String> titles, List<Verdict> verdicts) {}
 
     /** La clé API est-elle disponible ? Sans elle, le filet est inerte. */
     static boolean enabled() {
@@ -77,12 +92,15 @@ final class LlmNet {
      */
     static DataJson.LineJson refine(String playerName, DataJson.LineJson line, List<String> titles) {
         if (!isUncertain(line) || titles.isEmpty() || !enabled()) return line;
-        String key = line.tournament() + "\n" + String.join("\n", titles);
+        String key = cacheKey(line.tournament(), titles);
         try {
-            List<Verdict> verdicts = CACHE.get(key);
+            List<Verdict> verdicts = cache().get(key);
             if (verdicts == null) {
                 verdicts = ask(line.tournament(), titles);
-                CACHE.put(key, verdicts);
+                cache().put(key, verdicts);
+                // Les réponses vides ne se persistent pas : probable raté de
+                // formatage de Haiku, on retentera au prochain run.
+                if (!verdicts.isEmpty()) saveCache();
             }
             DataJson.LineJson refined = applyVerdict(line, verdicts, playerName);
             if (refined != line) {
@@ -95,9 +113,9 @@ final class LlmNet {
             }
             return refined;
         } catch (Exception e) {
-            // Échec gracieux : on ne retentera pas ce cas (cache vide) et la
-            // valeur déterministe (tone: null) reste en place.
-            CACHE.putIfAbsent(key, List.of());
+            // Échec gracieux : on ne retente pas ce cas DANS CE RUN (entrée vide
+            // en mémoire, jamais persistée) et la valeur déterministe reste.
+            cache().putIfAbsent(key, List.of());
             System.err.println("filet LLM KO (" + playerName + " · " + line.tournament()
                     + ") — valeur déterministe conservée : " + e);
             return line;
@@ -197,6 +215,77 @@ final class LlmNet {
                     stage, tone, line.tournament() + " · " + stage);
         }
         return line;                              // joueur absent du verdict
+    }
+
+    /** Clé de cache d'un cas : le tournoi puis les titres, un par ligne. Les
+     *  titres du fil sont mono-ligne, la clé est donc réversible (cf. cacheToJson). */
+    static String cacheKey(String tournament, List<String> titles) {
+        return tournament + "\n" + String.join("\n", titles);
+    }
+
+    /**
+     * Sérialise le cache en JSON lisible (une entrée par cas). Les listes de
+     * verdicts VIDES (échec d'appel ou réponse inexploitable) sont écartées :
+     * elles ne valent rien à figer, on retentera au prochain run.
+     */
+    static String cacheToJson(Map<String, List<Verdict>> cache) throws Exception {
+        List<CacheEntry> entries = new ArrayList<>();
+        for (Map.Entry<String, List<Verdict>> e : cache.entrySet()) {
+            if (e.getValue().isEmpty()) continue;
+            String[] lines = e.getKey().split("\n", -1);
+            entries.add(new CacheEntry(lines[0],
+                    List.of(Arrays.copyOfRange(lines, 1, lines.length)), e.getValue()));
+        }
+        return MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(entries);
+    }
+
+    /** Relit le cache. Tout fichier corrompu ou incomplet → cache vide, jamais
+     *  d'exception : au pire on rappelle Haiku, on ne casse rien. */
+    static Map<String, List<Verdict>> cacheFromJson(String json) {
+        Map<String, List<Verdict>> out = new LinkedHashMap<>();
+        try {
+            List<CacheEntry> entries =
+                    MAPPER.readValue(json, new TypeReference<List<CacheEntry>>() {});
+            for (CacheEntry e : entries) {
+                if (e.tournament() == null || e.titles() == null
+                        || e.verdicts() == null || e.verdicts().isEmpty()) continue;
+                out.put(cacheKey(e.tournament(), e.titles()), e.verdicts());
+            }
+        } catch (Exception ex) {
+            return new LinkedHashMap<>();
+        }
+        return out;
+    }
+
+    /** Cache unique, chargé paresseusement depuis {@link #CACHE_FILE} (jamais
+     *  touché si aucune ligne incertaine ne se présente). */
+    private static synchronized Map<String, List<Verdict>> cache() {
+        if (cache == null) {
+            cache = new LinkedHashMap<>();
+            try {
+                if (Files.exists(CACHE_FILE)) {
+                    cache.putAll(cacheFromJson(Files.readString(CACHE_FILE, StandardCharsets.UTF_8)));
+                    System.out.println("filet LLM : cache chargé, " + cache.size()
+                            + " entrée(s) (" + CACHE_FILE + ")");
+                }
+            } catch (Exception e) {
+                System.err.println("filet LLM : cache illisible, reparti à vide : " + e);
+            }
+        }
+        return cache;
+    }
+
+    /** Persiste le cache après chaque nouveau verdict (fichier minuscule : seuls
+     *  les cas incertains y entrent). Échec gracieux : un raté d'écriture coûte
+     *  au pire des appels refaits au prochain run. */
+    private static void saveCache() {
+        try {
+            if (CACHE_FILE.getParent() != null) Files.createDirectories(CACHE_FILE.getParent());
+            Files.writeString(CACHE_FILE, cacheToJson(cache()), StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            System.err.println("filet LLM : échec d'écriture du cache "
+                    + "(appels refaits au prochain run) : " + e);
+        }
     }
 
     /** Client unique, paresseux (jamais construit si la clé manque). */
