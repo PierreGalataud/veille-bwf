@@ -1,22 +1,7 @@
 {
-  "generatedAt" : "2026-06-13T19:43:20.104960362Z",
+  "generatedAt" : "2026-06-14T04:42:05.866477914Z",
   "weekLabel" : "Semaine du 8 – 14 juin 2026",
-  "current" : [ {
-    "name" : "SATHIO GROUP Australian Badminton Open 2026",
-    "tier" : "500",
-    "location" : "Sydney, AUS",
-    "dates" : "9 – 14 juin 2026",
-    "prize" : "500 000 $",
-    "timezone" : "—",
-    "dayLabel" : "Jour 5 / 6 · 13 juin",
-    "seeds" : [ ],
-    "frenchStatus" : {
-      "present" : false,
-      "title" : "Aucun Français engagé",
-      "note" : "equipe-france : Aucun français ne participe à cette compétition.",
-      "confirm" : false
-    }
-  } ],
+  "current" : [ ],
   "players" : [ {
     "name" : "Alex Lanier",
     "rank" : "#8 mondial",
