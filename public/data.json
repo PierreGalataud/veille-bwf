@@ -1,10 +1,10 @@
 {
-  "generatedAt" : "2026-06-15T04:55:53.176811317Z",
+  "generatedAt" : "2026-06-15T12:26:54.213353899Z",
   "weekLabel" : "Semaine du 15 – 21 juin 2026",
   "current" : [ ],
   "players" : [ {
     "name" : "Alex Lanier",
-    "rank" : "#8 mondial",
+    "rank" : "#7 mondial",
     "lines" : [ {
       "label" : "Dernier",
       "date" : "5 juin",
@@ -36,7 +36,7 @@
     } ]
   }, {
     "name" : "Christo Popov",
-    "rank" : "#4 mondial",
+    "rank" : "#5 mondial",
     "lines" : [ {
       "label" : "Dernier",
       "date" : "5 juin",
@@ -61,7 +61,7 @@
     } ]
   }, {
     "name" : "Toma Junior Popov",
-    "rank" : "#17 mondial",
+    "rank" : "#16 mondial",
     "lines" : [ {
       "label" : "Dernier",
       "date" : "5 juin",
