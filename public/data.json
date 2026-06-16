@@ -1,7 +1,22 @@
 {
-  "generatedAt" : "2026-06-15T21:10:09.745457231Z",
+  "generatedAt" : "2026-06-16T04:53:19.199940625Z",
   "weekLabel" : "Semaine du 15 – 21 juin 2026",
-  "current" : [ ],
+  "current" : [ {
+    "name" : "SANDS CHINA LTD. Macau Open 2026",
+    "tier" : "300",
+    "location" : "Macau, MAC",
+    "dates" : "16 – 21 juin 2026",
+    "prize" : "370 000 $",
+    "timezone" : "—",
+    "dayLabel" : "Jour 1 / 6 · 16 juin",
+    "seeds" : [ ],
+    "frenchStatus" : {
+      "present" : null,
+      "title" : "Statut français inconnu",
+      "note" : "Statut inconnu : aucune page equipe-france appariée (réconciliation à affiner).",
+      "confirm" : true
+    }
+  } ],
   "players" : [ {
     "name" : "Alex Lanier",
     "rank" : "#7 mondial",
@@ -118,11 +133,6 @@
     } ]
   } ],
   "upcoming" : [ {
-    "dates" : "16 – 21 juin",
-    "name" : "SANDS CHINA LTD. Macau Open 2026",
-    "tier" : "300",
-    "french" : "FR : à confirmer"
-  }, {
     "dates" : "23 – 28 juin",
     "name" : "YONEX US Open 2026",
     "tier" : "300",
