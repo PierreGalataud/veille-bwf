@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-06-16T20:58:19.402583524Z",
+  "generatedAt" : "2026-06-17T04:42:04.041011237Z",
   "weekLabel" : "Semaine du 15 – 21 juin 2026",
   "current" : [ {
     "name" : "SANDS CHINA LTD. Macau Open 2026",
@@ -8,16 +8,130 @@
     "dates" : "16 – 21 juin 2026",
     "prize" : "370 000 $",
     "timezone" : "—",
-    "dayLabel" : "Jour 1 / 6 · 16 juin",
+    "dayLabel" : "Jour 2 / 6 · 17 juin",
     "seeds" : [ ],
     "frenchStatus" : {
       "present" : null,
       "title" : "Statut français inconnu",
-      "note" : "Suivi equipe-france momentanément indisponible — statut inconnu.",
+      "note" : "Statut inconnu : aucune page equipe-france appariée (réconciliation à affiner).",
       "confirm" : true
     }
   } ],
-  "players" : [ ],
+  "players" : [ {
+    "name" : "Alex Lanier",
+    "rank" : "#7 mondial",
+    "lines" : [ {
+      "label" : "Dernier",
+      "date" : "5 juin",
+      "tournament" : "Open d'Indonésie",
+      "stage" : "Éliminé en phases finales",
+      "tone" : "out",
+      "value" : "Open d'Indonésie · Éliminé en phases finales"
+    }, {
+      "label" : "Puis",
+      "date" : "31 mai",
+      "tournament" : "Open de Singapour",
+      "stage" : "Vainqueur",
+      "tone" : "win",
+      "value" : "Open de Singapour · Vainqueur"
+    }, {
+      "label" : "Puis",
+      "date" : "9 avril",
+      "tournament" : "Championnats d'Europe",
+      "stage" : "Éliminé (stade non précisé)",
+      "tone" : "out",
+      "value" : "Championnats d'Europe · Éliminé (stade non précisé)"
+    }, {
+      "label" : "Puis",
+      "date" : "23 mars",
+      "tournament" : "Orléans Masters",
+      "stage" : "Tournoi remporté",
+      "tone" : "win",
+      "value" : "Orléans Masters · Tournoi remporté"
+    } ]
+  }, {
+    "name" : "Christo Popov",
+    "rank" : "#5 mondial",
+    "lines" : [ {
+      "label" : "Dernier",
+      "date" : "5 juin",
+      "tournament" : "Open d'Indonésie",
+      "stage" : "Éliminé au 1er tour",
+      "tone" : "out",
+      "value" : "Open d'Indonésie · Éliminé au 1er tour"
+    }, {
+      "label" : "Puis",
+      "date" : "28 mai",
+      "tournament" : "Open de Singapour",
+      "stage" : "Éliminé (1/8 de finale ou plus loin)",
+      "tone" : "out",
+      "value" : "Open de Singapour · Éliminé (1/8 de finale ou plus loin)"
+    }, {
+      "label" : "Puis",
+      "date" : "13 avril",
+      "tournament" : "Championnats d'Europe",
+      "stage" : "Vainqueur",
+      "tone" : "win",
+      "value" : "Championnats d'Europe · Vainqueur"
+    } ]
+  }, {
+    "name" : "Toma Junior Popov",
+    "rank" : "#16 mondial",
+    "lines" : [ {
+      "label" : "Dernier",
+      "date" : "5 juin",
+      "tournament" : "Open d'Indonésie",
+      "stage" : "Éliminé",
+      "tone" : "out",
+      "value" : "Open d'Indonésie · Éliminé"
+    }, {
+      "label" : "Puis",
+      "date" : "12 avril",
+      "tournament" : "Championnats d'Europe",
+      "stage" : "Éliminé en double",
+      "tone" : "out",
+      "value" : "Championnats d'Europe · Éliminé en double"
+    }, {
+      "label" : "Puis",
+      "date" : "23 mars",
+      "tournament" : "Orléans Masters",
+      "stage" : "Finale",
+      "tone" : "out",
+      "value" : "Orléans Masters · Finale"
+    } ]
+  }, {
+    "name" : "Delphine Delrue / Thom Gicquel",
+    "rank" : null,
+    "lines" : [ {
+      "label" : "Dernier",
+      "date" : "6 juin",
+      "tournament" : "Open d'Indonésie",
+      "stage" : "Éliminé en finale",
+      "tone" : "out",
+      "value" : "Open d'Indonésie · Éliminé en finale"
+    }, {
+      "label" : "Puis",
+      "date" : "27 mai",
+      "tournament" : "Open de Singapour",
+      "stage" : "Éliminé (stade non précisé)",
+      "tone" : "out",
+      "value" : "Open de Singapour · Éliminé (stade non précisé)"
+    }, {
+      "label" : "Puis",
+      "date" : "8 avril",
+      "tournament" : "Championnats d'Europe",
+      "stage" : "Éliminé au 1er tour",
+      "tone" : "out",
+      "value" : "Championnats d'Europe · Éliminé au 1er tour"
+    }, {
+      "label" : "Puis",
+      "date" : "23 mars",
+      "tournament" : "Orléans Masters",
+      "stage" : "Vainqueur",
+      "tone" : "win",
+      "value" : "Orléans Masters · Vainqueur"
+    } ]
+  } ],
   "upcoming" : [ {
     "dates" : "23 – 28 juin",
     "name" : "YONEX US Open 2026",
