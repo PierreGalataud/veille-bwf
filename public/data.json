@@ -1,7 +1,22 @@
 {
-  "generatedAt" : "2026-06-22T20:54:28.027493595Z",
+  "generatedAt" : "2026-06-23T03:58:26.748598553Z",
   "weekLabel" : "Semaine du 22 – 28 juin 2026",
-  "current" : [ ],
+  "current" : [ {
+    "name" : "YONEX US Open 2026",
+    "tier" : "300",
+    "location" : "Fullerton, CA, USA",
+    "dates" : "23 – 28 juin 2026",
+    "prize" : "250 000 $",
+    "timezone" : "—",
+    "dayLabel" : "Jour 1 / 6 · 23 juin",
+    "seeds" : [ ],
+    "frenchStatus" : {
+      "present" : null,
+      "title" : "Statut français inconnu",
+      "note" : "Statut inconnu : aucune page equipe-france appariée (réconciliation à affiner).",
+      "confirm" : true
+    }
+  } ],
   "players" : [ {
     "name" : "Alex Lanier",
     "rank" : "#7 mondial",
@@ -118,11 +133,6 @@
     } ]
   } ],
   "upcoming" : [ {
-    "dates" : "23 – 28 juin",
-    "name" : "YONEX US Open 2026",
-    "tier" : "300",
-    "french" : "FR : à confirmer"
-  }, {
     "dates" : "30 juin – 5 juillet",
     "name" : "YONEX Canada Open 2026",
     "tier" : "300",
