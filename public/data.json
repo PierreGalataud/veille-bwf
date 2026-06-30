@@ -1,7 +1,22 @@
 {
-  "generatedAt" : "2026-06-29T20:05:20.018446320Z",
+  "generatedAt" : "2026-06-30T04:03:04.813983966Z",
   "weekLabel" : "Semaine du 29 juin – 5 juillet 2026",
-  "current" : [ ],
+  "current" : [ {
+    "name" : "YONEX Canada Open 2026",
+    "tier" : "300",
+    "location" : "Markham Ontario, CAN",
+    "dates" : "30 juin – 5 juillet 2026",
+    "prize" : "250 000 $",
+    "timezone" : "—",
+    "dayLabel" : "Jour 1 / 6 · 30 juin",
+    "seeds" : [ ],
+    "frenchStatus" : {
+      "present" : null,
+      "title" : "Statut français inconnu",
+      "note" : "Page equipe-france trouvée mais participation non lisible.",
+      "confirm" : true
+    }
+  } ],
   "players" : [ {
     "name" : "Alex Lanier",
     "rank" : "#7 mondial",
@@ -118,11 +133,6 @@
     } ]
   } ],
   "upcoming" : [ {
-    "dates" : "30 juin – 5 juillet",
-    "name" : "YONEX Canada Open 2026",
-    "tier" : "300",
-    "french" : "FR : à confirmer"
-  }, {
     "dates" : "14 – 19 juillet",
     "name" : "DAIHATSU Japan Open 2026",
     "tier" : "750",
