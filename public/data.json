@@ -1,22 +1,7 @@
 {
-  "generatedAt" : "2026-07-04T19:21:10.146955365Z",
+  "generatedAt" : "2026-07-05T03:53:20.703284240Z",
   "weekLabel" : "Semaine du 29 juin – 5 juillet 2026",
-  "current" : [ {
-    "name" : "YONEX Canada Open 2026",
-    "tier" : "300",
-    "location" : "Markham Ontario, CAN",
-    "dates" : "30 juin – 5 juillet 2026",
-    "prize" : "250 000 $",
-    "timezone" : "—",
-    "dayLabel" : "Jour 5 / 6 · 4 juillet",
-    "seeds" : [ ],
-    "frenchStatus" : {
-      "present" : null,
-      "title" : "Statut français inconnu",
-      "note" : "Page equipe-france trouvée mais participation non lisible.",
-      "confirm" : true
-    }
-  } ],
+  "current" : [ ],
   "players" : [ {
     "name" : "Alex Lanier",
     "rank" : "#7 mondial",
