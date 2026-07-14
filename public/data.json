@@ -1,7 +1,22 @@
 {
-  "generatedAt" : "2026-07-13T19:29:07.259599159Z",
+  "generatedAt" : "2026-07-14T02:49:57.771879856Z",
   "weekLabel" : "Semaine du 13 – 19 juillet 2026",
-  "current" : [ ],
+  "current" : [ {
+    "name" : "DAIHATSU Japan Open 2026",
+    "tier" : "750",
+    "location" : "Tokyo, JPN",
+    "dates" : "14 – 19 juillet 2026",
+    "prize" : "950 000 $",
+    "timezone" : "—",
+    "dayLabel" : "Jour 1 / 6 · 14 juillet",
+    "seeds" : [ ],
+    "frenchStatus" : {
+      "present" : null,
+      "title" : "Statut français inconnu",
+      "note" : "Page equipe-france trouvée mais participation non lisible.",
+      "confirm" : true
+    }
+  } ],
   "players" : [ {
     "name" : "Alex Lanier",
     "rank" : "#7 mondial",
@@ -118,11 +133,6 @@
     } ]
   } ],
   "upcoming" : [ {
-    "dates" : "14 – 19 juillet",
-    "name" : "DAIHATSU Japan Open 2026",
-    "tier" : "750",
-    "french" : "FR : à confirmer"
-  }, {
     "dates" : "21 – 26 juillet",
     "name" : "VICTOR China Open 2026",
     "tier" : "1000",
