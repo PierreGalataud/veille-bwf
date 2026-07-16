@@ -106,4 +106,20 @@
     "tone" : "win",
     "stage" : "Vainqueurs du tournoi"
   } ]
+}, {
+  "tournament" : "Open du Japon",
+  "titles" : [ "Alex Lanier OK, les frères Popov KO: les résultats du premier tour" ],
+  "verdicts" : [ {
+    "player" : "Alex Lanier",
+    "tone" : "win",
+    "stage" : "Premier tour"
+  }, {
+    "player" : "Christo Popov",
+    "tone" : "out",
+    "stage" : "Premier tour"
+  }, {
+    "player" : "Toma Junior Popov",
+    "tone" : "out",
+    "stage" : "Premier tour"
+  } ]
 } ]

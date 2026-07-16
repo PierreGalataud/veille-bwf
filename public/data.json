@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-07-16T02:55:13.855904004Z",
+  "generatedAt" : "2026-07-16T08:20:58.415504468Z",
   "weekLabel" : "Semaine du 13 – 19 juillet 2026",
   "current" : [ {
     "name" : "DAIHATSU Japan Open 2026",
@@ -22,6 +22,13 @@
     "rank" : "#7 mondial",
     "lines" : [ {
       "label" : "Dernier",
+      "date" : "8h15",
+      "tournament" : "Open du Japon",
+      "stage" : "Éliminé (1er tour ou plus loin)",
+      "tone" : "out",
+      "value" : "Open du Japon · Éliminé (1er tour ou plus loin)"
+    }, {
+      "label" : "Puis",
       "date" : "5 juin",
       "tournament" : "Open d'Indonésie",
       "stage" : "Éliminé en phases finales",
@@ -54,6 +61,13 @@
     "rank" : "#5 mondial",
     "lines" : [ {
       "label" : "Dernier",
+      "date" : "8h15",
+      "tournament" : "Open du Japon",
+      "stage" : "Premier tour",
+      "tone" : "out",
+      "value" : "Open du Japon · Premier tour"
+    }, {
+      "label" : "Puis",
       "date" : "5 juin",
       "tournament" : "Open d'Indonésie",
       "stage" : "Éliminé au 1er tour",
@@ -79,6 +93,13 @@
     "rank" : "#16 mondial",
     "lines" : [ {
       "label" : "Dernier",
+      "date" : "8h15",
+      "tournament" : "Open du Japon",
+      "stage" : "Premier tour",
+      "tone" : "out",
+      "value" : "Open du Japon · Premier tour"
+    }, {
+      "label" : "Puis",
       "date" : "5 juin",
       "tournament" : "Open d'Indonésie",
       "stage" : "Éliminé",
