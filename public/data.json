@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-07-16T19:19:26.225330852Z",
+  "generatedAt" : "2026-07-17T02:57:42.210334967Z",
   "weekLabel" : "Semaine du 13 – 19 juillet 2026",
   "current" : [ {
     "name" : "DAIHATSU Japan Open 2026",
@@ -8,7 +8,7 @@
     "dates" : "14 – 19 juillet 2026",
     "prize" : "950 000 $",
     "timezone" : "—",
-    "dayLabel" : "Jour 3 / 6 · 16 juillet",
+    "dayLabel" : "Jour 4 / 6 · 17 juillet",
     "seeds" : [ ],
     "frenchStatus" : {
       "present" : null,
@@ -22,11 +22,11 @@
     "rank" : "#7 mondial",
     "lines" : [ {
       "label" : "Dernier",
-      "date" : "8h15",
+      "date" : "16 juillet",
       "tournament" : "Open du Japon",
-      "stage" : "Éliminé (1er tour ou plus loin)",
-      "tone" : "out",
-      "value" : "Open du Japon · Éliminé (1er tour ou plus loin)"
+      "stage" : "1er tour (en cours)",
+      "tone" : null,
+      "value" : "Open du Japon · 1er tour (en cours)"
     }, {
       "label" : "Puis",
       "date" : "5 juin",
@@ -61,7 +61,7 @@
     "rank" : "#5 mondial",
     "lines" : [ {
       "label" : "Dernier",
-      "date" : "8h15",
+      "date" : "16 juillet",
       "tournament" : "Open du Japon",
       "stage" : "Premier tour",
       "tone" : "out",
@@ -93,7 +93,7 @@
     "rank" : "#16 mondial",
     "lines" : [ {
       "label" : "Dernier",
-      "date" : "8h15",
+      "date" : "16 juillet",
       "tournament" : "Open du Japon",
       "stage" : "Premier tour",
       "tone" : "out",
