@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-07-18T07:59:27.983378607Z",
+  "generatedAt" : "2026-07-18T13:25:27.791516555Z",
   "weekLabel" : "Semaine du 13 – 19 juillet 2026",
   "current" : [ {
     "name" : "DAIHATSU Japan Open 2026",
@@ -61,11 +61,11 @@
     "rank" : "#5 mondial",
     "lines" : [ {
       "label" : "Dernier",
-      "date" : "16 juillet",
+      "date" : "14h30",
       "tournament" : "Open du Japon",
-      "stage" : "Premier tour",
+      "stage" : "Éliminé en finale",
       "tone" : "out",
-      "value" : "Open du Japon · Premier tour"
+      "value" : "Open du Japon · Éliminé en finale"
     }, {
       "label" : "Puis",
       "date" : "5 juin",
@@ -144,13 +144,6 @@
       "stage" : "Éliminé au 1er tour",
       "tone" : "out",
       "value" : "Championnats d'Europe · Éliminé au 1er tour"
-    }, {
-      "label" : "Puis",
-      "date" : "23 mars",
-      "tournament" : "Orléans Masters",
-      "stage" : "Vainqueur",
-      "tone" : "win",
-      "value" : "Orléans Masters · Vainqueur"
     } ]
   } ],
   "upcoming" : [ {
