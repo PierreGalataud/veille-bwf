@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-07-19T08:25:49.096566627Z",
+  "generatedAt" : "2026-07-19T13:26:45.850882099Z",
   "weekLabel" : "Semaine du 13 – 19 juillet 2026",
   "current" : [ ],
   "players" : [ {
@@ -33,19 +33,19 @@
       "stage" : "Éliminé (stade non précisé)",
       "tone" : "out",
       "value" : "Championnats d'Europe · Éliminé (stade non précisé)"
-    }, {
-      "label" : "Puis",
-      "date" : "23 mars",
-      "tournament" : "Orléans Masters",
-      "stage" : "Tournoi remporté",
-      "tone" : "win",
-      "value" : "Orléans Masters · Tournoi remporté"
     } ]
   }, {
     "name" : "Christo Popov",
     "rank" : "#5 mondial",
     "lines" : [ {
       "label" : "Dernier",
+      "date" : "12h56",
+      "tournament" : "Simple messieurs",
+      "stage" : "Vainqueur",
+      "tone" : "win",
+      "value" : "Simple messieurs · Vainqueur"
+    }, {
+      "label" : "Puis",
       "date" : "18 juillet",
       "tournament" : "Open du Japon",
       "stage" : "Éliminé en finale",
@@ -97,13 +97,6 @@
       "stage" : "Éliminé en double",
       "tone" : "out",
       "value" : "Championnats d'Europe · Éliminé en double"
-    }, {
-      "label" : "Puis",
-      "date" : "23 mars",
-      "tournament" : "Orléans Masters",
-      "stage" : "Finale",
-      "tone" : "out",
-      "value" : "Orléans Masters · Finale"
     } ]
   }, {
     "name" : "Delphine Delrue / Thom Gicquel",
