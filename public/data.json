@@ -1,6 +1,6 @@
 {
-  "generatedAt" : "2026-07-19T19:11:56.393995026Z",
-  "weekLabel" : "Semaine du 13 – 19 juillet 2026",
+  "generatedAt" : "2026-07-20T03:34:37.992237469Z",
+  "weekLabel" : "Semaine du 20 – 26 juillet 2026",
   "current" : [ ],
   "players" : [ {
     "name" : "Alex Lanier",
@@ -39,7 +39,7 @@
     "rank" : "#5 mondial",
     "lines" : [ {
       "label" : "Dernier",
-      "date" : "12h56",
+      "date" : "19 juillet",
       "tournament" : "Simple messieurs",
       "stage" : "Vainqueur",
       "tone" : "win",
