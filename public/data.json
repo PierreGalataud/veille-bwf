@@ -1,7 +1,22 @@
 {
-  "generatedAt" : "2026-07-20T19:48:30.029847548Z",
+  "generatedAt" : "2026-07-21T03:15:21.586086977Z",
   "weekLabel" : "Semaine du 20 – 26 juillet 2026",
-  "current" : [ ],
+  "current" : [ {
+    "name" : "VICTOR China Open 2026",
+    "tier" : "1000",
+    "location" : "Changzhou, CHN",
+    "dates" : "21 – 26 juillet 2026",
+    "prize" : "2 000 000 $",
+    "timezone" : "—",
+    "dayLabel" : "Jour 1 / 6 · 21 juillet",
+    "seeds" : [ ],
+    "frenchStatus" : {
+      "present" : null,
+      "title" : "Statut français inconnu",
+      "note" : "Page equipe-france trouvée mais participation non lisible.",
+      "confirm" : true
+    }
+  } ],
   "players" : [ {
     "name" : "Alex Lanier",
     "rank" : "#7 mondial",
@@ -125,11 +140,6 @@
     } ]
   } ],
   "upcoming" : [ {
-    "dates" : "21 – 26 juillet",
-    "name" : "VICTOR China Open 2026",
-    "tier" : "1000",
-    "french" : "FR : à confirmer"
-  }, {
     "dates" : "28 juillet – 2 août",
     "name" : "YONEX Taipei Open 2026",
     "tier" : "300",
