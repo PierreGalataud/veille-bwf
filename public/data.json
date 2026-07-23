@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-07-23T14:12:28.483553007Z",
+  "generatedAt" : "2026-07-23T19:24:26.150607729Z",
   "weekLabel" : "Semaine du 20 – 26 juillet 2026",
   "current" : [ {
     "name" : "VICTOR China Open 2026",
@@ -54,11 +54,11 @@
     "rank" : "#5 mondial",
     "lines" : [ {
       "label" : "Dernier",
-      "date" : "8h15",
+      "date" : "19h00",
       "tournament" : "Open de Chine",
-      "stage" : "Éliminé (1er tour ou plus loin)",
+      "stage" : "Éliminé (1/4 de finale ou plus loin)",
       "tone" : "out",
-      "value" : "Open de Chine · Éliminé (1er tour ou plus loin)"
+      "value" : "Open de Chine · Éliminé (1/4 de finale ou plus loin)"
     }, {
       "label" : "Puis",
       "date" : "19 juillet",
@@ -100,11 +100,11 @@
     "rank" : "#16 mondial",
     "lines" : [ {
       "label" : "Dernier",
-      "date" : "8h15",
+      "date" : "19h00",
       "tournament" : "Open de Chine",
-      "stage" : "Éliminé (1er tour ou plus loin)",
+      "stage" : "Éliminé (1/4 de finale ou plus loin)",
       "tone" : "out",
-      "value" : "Open de Chine · Éliminé (1er tour ou plus loin)"
+      "value" : "Open de Chine · Éliminé (1/4 de finale ou plus loin)"
     }, {
       "label" : "Puis",
       "date" : "16 juillet",
