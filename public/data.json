@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-07-23T03:20:01.123901414Z",
+  "generatedAt" : "2026-07-23T08:36:52.447099988Z",
   "weekLabel" : "Semaine du 20 – 26 juillet 2026",
   "current" : [ {
     "name" : "VICTOR China Open 2026",
@@ -54,6 +54,13 @@
     "rank" : "#5 mondial",
     "lines" : [ {
       "label" : "Dernier",
+      "date" : "8h15",
+      "tournament" : "Open de Chine",
+      "stage" : "Éliminé (1er tour ou plus loin)",
+      "tone" : "out",
+      "value" : "Open de Chine · Éliminé (1er tour ou plus loin)"
+    }, {
+      "label" : "Puis",
       "date" : "19 juillet",
       "tournament" : "Simple messieurs",
       "stage" : "Vainqueur",
@@ -93,6 +100,13 @@
     "rank" : "#16 mondial",
     "lines" : [ {
       "label" : "Dernier",
+      "date" : "8h15",
+      "tournament" : "Open de Chine",
+      "stage" : "Éliminé (1er tour ou plus loin)",
+      "tone" : "out",
+      "value" : "Open de Chine · Éliminé (1er tour ou plus loin)"
+    }, {
+      "label" : "Puis",
       "date" : "16 juillet",
       "tournament" : "Open du Japon",
       "stage" : "Premier tour",
@@ -130,13 +144,6 @@
       "stage" : "Éliminé (stade non précisé)",
       "tone" : "out",
       "value" : "Open de Singapour · Éliminé (stade non précisé)"
-    }, {
-      "label" : "Puis",
-      "date" : "8 avril",
-      "tournament" : "Championnats d'Europe",
-      "stage" : "Éliminé au 1er tour",
-      "tone" : "out",
-      "value" : "Championnats d'Europe · Éliminé au 1er tour"
     } ]
   } ],
   "upcoming" : [ {
