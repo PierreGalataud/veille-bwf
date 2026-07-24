@@ -1,7 +1,7 @@
 {
-  "formatVersion" : 3,
+  "formatVersion" : 4,
   "wikiRevisionId" : 1362273323,
-  "extractedAt" : "2026-07-24T17:13:38.473527664Z",
+  "extractedAt" : "2026-07-24T17:31:46.556249271Z",
   "rank" : "#7 mondial",
   "lines" : [ {
     "label" : "Dernier",
@@ -14,11 +14,11 @@
   }, {
     "label" : "Puis",
     "date" : null,
-    "tournament" : "Thomas Cup",
+    "tournament" : "Coupe Thomas",
     "stage" : "Finaliste",
     "medal" : "🥈",
     "tone" : "out",
-    "value" : "Thomas Cup · Finaliste"
+    "value" : "Coupe Thomas · Finaliste"
   }, {
     "label" : "Puis",
     "date" : null,
@@ -30,10 +30,10 @@
   }, {
     "label" : "Puis",
     "date" : null,
-    "tournament" : "European Men's Team Championships",
+    "tournament" : "Championnats d'Europe par équipes",
     "stage" : "Vainqueur",
     "medal" : "🥇",
     "tone" : "win",
-    "value" : "European Men's Team Championships · Vainqueur"
+    "value" : "Championnats d'Europe par équipes · Vainqueur"
   } ]
 }
