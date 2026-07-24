@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-07-24T08:33:14.568748251Z",
+  "generatedAt" : "2026-07-24T10:59:50.994453101Z",
   "weekLabel" : "Semaine du 20 – 26 juillet 2026",
   "current" : [ {
     "name" : "VICTOR China Open 2026",
@@ -11,10 +11,10 @@
     "dayLabel" : "Jour 4 / 6 · 24 juillet",
     "seeds" : [ ],
     "frenchStatus" : {
-      "present" : null,
-      "title" : "Statut français inconnu",
-      "note" : "Page equipe-france trouvée mais participation non lisible.",
-      "confirm" : true
+      "present" : true,
+      "title" : "Français au tableau",
+      "note" : "Christo Popov — 2e tour · Toma Junior Popov — En lice",
+      "confirm" : false
     }
   } ],
   "players" : [ {
@@ -22,128 +22,78 @@
     "rank" : "#7 mondial",
     "lines" : [ {
       "label" : "Dernier",
-      "date" : "16 juillet",
-      "tournament" : "Open du Japon",
-      "stage" : "1er tour (en cours)",
-      "tone" : null,
-      "value" : "Open du Japon · 1er tour (en cours)"
-    }, {
-      "label" : "Puis",
-      "date" : "5 juin",
-      "tournament" : "Open d'Indonésie",
-      "stage" : "Éliminé en phases finales",
-      "tone" : "out",
-      "value" : "Open d'Indonésie · Éliminé en phases finales"
-    }, {
-      "label" : "Puis",
-      "date" : "31 mai",
+      "date" : "octobre",
       "tournament" : "Open de Singapour",
       "stage" : "Vainqueur",
       "tone" : "win",
       "value" : "Open de Singapour · Vainqueur"
     }, {
       "label" : "Puis",
-      "date" : "9 avril",
-      "tournament" : "Championnats d'Europe",
-      "stage" : "Éliminé (stade non précisé)",
+      "date" : "juin",
+      "tournament" : "Coupe Thomas",
+      "stage" : "Finaliste",
       "tone" : "out",
-      "value" : "Championnats d'Europe · Éliminé (stade non précisé)"
+      "value" : "Coupe Thomas · Finaliste"
+    }, {
+      "label" : "Puis",
+      "date" : "avril",
+      "tournament" : "Masters d'Orléans",
+      "stage" : "Vainqueur",
+      "tone" : "win",
+      "value" : "Masters d'Orléans · Vainqueur"
+    }, {
+      "label" : "Puis",
+      "date" : "mars",
+      "tournament" : "Championnats d'Europe par équipes hommes",
+      "stage" : "Vainqueur",
+      "tone" : "win",
+      "value" : "Championnats d'Europe par équipes hommes · Vainqueur"
     } ]
   }, {
     "name" : "Christo Popov",
     "rank" : "#5 mondial",
     "lines" : [ {
       "label" : "Dernier",
-      "date" : "23 juillet",
-      "tournament" : "Open de Chine",
-      "stage" : "1/4 de finale (en cours)",
-      "tone" : null,
-      "value" : "Open de Chine · 1/4 de finale (en cours)"
-    }, {
-      "label" : "Puis",
-      "date" : "19 juillet",
-      "tournament" : "Simple messieurs",
+      "date" : "juillet",
+      "tournament" : "Open du Japon",
       "stage" : "Vainqueur",
       "tone" : "win",
-      "value" : "Simple messieurs · Vainqueur"
+      "value" : "Open du Japon · Vainqueur"
     }, {
       "label" : "Puis",
-      "date" : "18 juillet",
-      "tournament" : "Open du Japon",
-      "stage" : "Éliminé en finale",
-      "tone" : "out",
-      "value" : "Open du Japon · Éliminé en finale"
-    }, {
-      "label" : "Puis",
-      "date" : "5 juin",
-      "tournament" : "Open d'Indonésie",
-      "stage" : "Éliminé au 1er tour",
-      "tone" : "out",
-      "value" : "Open d'Indonésie · Éliminé au 1er tour"
-    }, {
-      "label" : "Puis",
-      "date" : "28 mai",
-      "tournament" : "Open de Singapour",
-      "stage" : "Éliminé (1/8 de finale ou plus loin)",
-      "tone" : "out",
-      "value" : "Open de Singapour · Éliminé (1/8 de finale ou plus loin)"
-    }, {
-      "label" : "Puis",
-      "date" : "13 avril",
+      "date" : "avril",
       "tournament" : "Championnats d'Europe",
       "stage" : "Vainqueur",
       "tone" : "win",
       "value" : "Championnats d'Europe · Vainqueur"
-    } ]
-  }, {
-    "name" : "Toma Junior Popov",
-    "rank" : "#16 mondial",
-    "lines" : [ {
-      "label" : "Dernier",
-      "date" : "23 juillet",
-      "tournament" : "Open de Chine",
-      "stage" : "1/4 de finale (en cours)",
-      "tone" : null,
-      "value" : "Open de Chine · 1/4 de finale (en cours)"
     }, {
       "label" : "Puis",
-      "date" : "16 juillet",
-      "tournament" : "Open du Japon",
-      "stage" : "Premier tour",
+      "date" : "avril",
+      "tournament" : "Coupe Thomas",
+      "stage" : "Finaliste",
       "tone" : "out",
-      "value" : "Open du Japon · Premier tour"
+      "value" : "Coupe Thomas · Finaliste"
     }, {
       "label" : "Puis",
-      "date" : "5 juin",
-      "tournament" : "Open d'Indonésie",
-      "stage" : "Éliminé",
-      "tone" : "out",
-      "value" : "Open d'Indonésie · Éliminé"
+      "date" : "mars",
+      "tournament" : "Open d'Allemagne",
+      "stage" : "Vainqueur",
+      "tone" : "win",
+      "value" : "Open d'Allemagne · Vainqueur"
     }, {
       "label" : "Puis",
-      "date" : "12 avril",
-      "tournament" : "Championnats d'Europe",
-      "stage" : "Éliminé en double",
-      "tone" : "out",
-      "value" : "Championnats d'Europe · Éliminé en double"
-    } ]
-  }, {
-    "name" : "Delphine Delrue / Thom Gicquel",
-    "rank" : null,
-    "lines" : [ {
-      "label" : "Dernier",
-      "date" : "6 juin",
-      "tournament" : "Open d'Indonésie",
-      "stage" : "Éliminé en finale",
-      "tone" : "out",
-      "value" : "Open d'Indonésie · Éliminé en finale"
+      "date" : "février",
+      "tournament" : "Championnat d'Europe par équipes hommes",
+      "stage" : "Vainqueur",
+      "tone" : "win",
+      "value" : "Championnat d'Europe par équipes hommes · Vainqueur"
     }, {
       "label" : "Puis",
-      "date" : "27 mai",
-      "tournament" : "Open de Singapour",
-      "stage" : "Éliminé (stade non précisé)",
+      "date" : "janvier",
+      "tournament" : "Open de l'Inde",
+      "stage" : "1/4 de finale",
       "tone" : "out",
-      "value" : "Open de Singapour · Éliminé (stade non précisé)"
+      "value" : "Open de l'Inde · 1/4 de finale"
     } ]
   } ],
   "upcoming" : [ {
