@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-07-24T13:53:57.032866897Z",
+  "generatedAt" : "2026-07-24T17:13:36.810807287Z",
   "weekLabel" : "Semaine du 20 – 26 juillet 2026",
   "current" : [ {
     "name" : "VICTOR China Open 2026",
@@ -22,80 +22,88 @@
     "rank" : "#7 mondial",
     "lines" : [ {
       "label" : "Dernier",
-      "date" : "août",
-      "tournament" : "Open de Singapour",
+      "date" : null,
+      "tournament" : "Singapore Open",
       "stage" : "Vainqueur",
       "medal" : "🥇",
       "tone" : "win",
-      "value" : "Open de Singapour · Vainqueur"
+      "value" : "Singapore Open · Vainqueur"
     }, {
       "label" : "Puis",
-      "date" : "juillet",
-      "tournament" : "Coupe Thomas",
+      "date" : null,
+      "tournament" : "Thomas Cup",
       "stage" : "Finaliste",
       "medal" : "🥈",
       "tone" : "out",
-      "value" : "Coupe Thomas · Finaliste"
+      "value" : "Thomas Cup · Finaliste"
     }, {
       "label" : "Puis",
-      "date" : "juin",
-      "tournament" : "Masters d'Orléans",
+      "date" : null,
+      "tournament" : "Orléans Masters",
       "stage" : "Vainqueur",
       "medal" : "🥇",
       "tone" : "win",
-      "value" : "Masters d'Orléans · Vainqueur"
+      "value" : "Orléans Masters · Vainqueur"
     }, {
       "label" : "Puis",
-      "date" : "avril",
-      "tournament" : "Championnats d'Europe par équipes hommes",
+      "date" : null,
+      "tournament" : "European Men's Team Championships",
       "stage" : "Vainqueur",
       "medal" : "🥇",
       "tone" : "win",
-      "value" : "Championnats d'Europe par équipes hommes · Vainqueur"
+      "value" : "European Men's Team Championships · Vainqueur"
     } ]
   }, {
     "name" : "Christo Popov",
     "rank" : "#5 mondial",
     "lines" : [ {
       "label" : "Dernier",
-      "date" : "juillet",
-      "tournament" : "Open du Japon",
-      "stage" : "Vainqueur",
-      "medal" : "🥇",
-      "tone" : "win",
-      "value" : "Open du Japon · Vainqueur"
-    }, {
-      "label" : "Puis",
-      "date" : "avril",
-      "tournament" : "Championnats d'Europe",
-      "stage" : "Vainqueur",
-      "medal" : "🥇",
-      "tone" : "win",
-      "value" : "Championnats d'Europe · Vainqueur"
-    }, {
-      "label" : "Puis",
-      "date" : "mars",
-      "tournament" : "Open d'Allemagne",
-      "stage" : "Vainqueur",
-      "medal" : "🥇",
-      "tone" : "win",
-      "value" : "Open d'Allemagne · Vainqueur"
-    }, {
-      "label" : "Puis",
-      "date" : "février",
-      "tournament" : "Championnats d'Europe par équipes hommes",
-      "stage" : "Vainqueur",
-      "medal" : "🥇",
-      "tone" : "win",
-      "value" : "Championnats d'Europe par équipes hommes · Vainqueur"
-    }, {
-      "label" : "Puis",
-      "date" : "janvier",
-      "tournament" : "Open de l'Inde",
+      "date" : "24 – 29 novembre",
+      "tournament" : "India Open",
       "stage" : "1/4 de finale",
       "medal" : "⚫",
       "tone" : "out",
-      "value" : "Open de l'Inde · 1/4 de finale"
+      "value" : "India Open · 1/4 de finale"
+    }, {
+      "label" : "Puis",
+      "date" : "10 – 15 novembre",
+      "tournament" : "Japan Open",
+      "stage" : "Vainqueur",
+      "medal" : "🥇",
+      "tone" : "win",
+      "value" : "Japan Open · Vainqueur"
+    }, {
+      "label" : "Puis",
+      "date" : null,
+      "tournament" : "Thomas Cup",
+      "stage" : "Finaliste",
+      "medal" : "🥈",
+      "tone" : "out",
+      "value" : "Thomas Cup · Finaliste"
+    }, {
+      "label" : "Puis",
+      "date" : null,
+      "tournament" : "European Championships",
+      "stage" : "Vainqueur",
+      "medal" : "🥇",
+      "tone" : "win",
+      "value" : "European Championships · Vainqueur"
+    }, {
+      "label" : "Puis",
+      "date" : null,
+      "tournament" : "German Open",
+      "stage" : "Vainqueur",
+      "medal" : "🥇",
+      "tone" : "win",
+      "value" : "German Open · Vainqueur"
+    }, {
+      "label" : "Puis",
+      "date" : null,
+      "tournament" : "European Men's Team Badminton Championship",
+      "stage" : "Vainqueur",
+      "medal" : "🥇",
+      "tone" : "win",
+      "value" : "European Men's Team Badminton Championship · Vainqueur"
     } ]
   } ],
   "upcoming" : [ {

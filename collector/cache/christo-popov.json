@@ -1,47 +1,55 @@
 {
-  "formatVersion" : 2,
+  "formatVersion" : 3,
   "wikiRevisionId" : 1364975677,
-  "extractedAt" : "2026-07-24T11:47:43.556826150Z",
+  "extractedAt" : "2026-07-24T17:13:41.349914046Z",
   "rank" : "#5 mondial",
   "lines" : [ {
     "label" : "Dernier",
-    "date" : "juillet",
-    "tournament" : "Open du Japon",
-    "stage" : "Vainqueur",
-    "medal" : "🥇",
-    "tone" : "win",
-    "value" : "Open du Japon · Vainqueur"
-  }, {
-    "label" : "Puis",
-    "date" : "avril",
-    "tournament" : "Championnats d'Europe",
-    "stage" : "Vainqueur",
-    "medal" : "🥇",
-    "tone" : "win",
-    "value" : "Championnats d'Europe · Vainqueur"
-  }, {
-    "label" : "Puis",
-    "date" : "mars",
-    "tournament" : "Open d'Allemagne",
-    "stage" : "Vainqueur",
-    "medal" : "🥇",
-    "tone" : "win",
-    "value" : "Open d'Allemagne · Vainqueur"
-  }, {
-    "label" : "Puis",
-    "date" : "février",
-    "tournament" : "Championnats d'Europe par équipes hommes",
-    "stage" : "Vainqueur",
-    "medal" : "🥇",
-    "tone" : "win",
-    "value" : "Championnats d'Europe par équipes hommes · Vainqueur"
-  }, {
-    "label" : "Puis",
-    "date" : "janvier",
-    "tournament" : "Open de l'Inde",
+    "date" : "24 – 29 novembre",
+    "tournament" : "India Open",
     "stage" : "1/4 de finale",
     "medal" : "⚫",
     "tone" : "out",
-    "value" : "Open de l'Inde · 1/4 de finale"
+    "value" : "India Open · 1/4 de finale"
+  }, {
+    "label" : "Puis",
+    "date" : "10 – 15 novembre",
+    "tournament" : "Japan Open",
+    "stage" : "Vainqueur",
+    "medal" : "🥇",
+    "tone" : "win",
+    "value" : "Japan Open · Vainqueur"
+  }, {
+    "label" : "Puis",
+    "date" : null,
+    "tournament" : "Thomas Cup",
+    "stage" : "Finaliste",
+    "medal" : "🥈",
+    "tone" : "out",
+    "value" : "Thomas Cup · Finaliste"
+  }, {
+    "label" : "Puis",
+    "date" : null,
+    "tournament" : "European Championships",
+    "stage" : "Vainqueur",
+    "medal" : "🥇",
+    "tone" : "win",
+    "value" : "European Championships · Vainqueur"
+  }, {
+    "label" : "Puis",
+    "date" : null,
+    "tournament" : "German Open",
+    "stage" : "Vainqueur",
+    "medal" : "🥇",
+    "tone" : "win",
+    "value" : "German Open · Vainqueur"
+  }, {
+    "label" : "Puis",
+    "date" : null,
+    "tournament" : "European Men's Team Badminton Championship",
+    "stage" : "Vainqueur",
+    "medal" : "🥇",
+    "tone" : "win",
+    "value" : "European Men's Team Badminton Championship · Vainqueur"
   } ]
 }
