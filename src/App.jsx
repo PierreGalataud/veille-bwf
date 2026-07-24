@@ -214,7 +214,7 @@ export default function App() {
         <aside>
           <h2 className="sec-label">Vos Français</h2>
           {players.length === 0 && (
-            <div className="card empty">Aucun résultat récent des Bleus dans le fil equipe-france.</div>
+            <div className="card empty">Aucun résultat récent des Bleus sur Wikipédia.</div>
           )}
           <div className="players">
             {players.map((p) => (
@@ -250,7 +250,7 @@ export default function App() {
 
       <footer className="vbwf__foot">
         Données rafraîchies par le collecteur — dernière mise à jour : <b className="stamp">{stamp}</b>.<br />
-        Sources : calendrier BWF World Tour (corporate.bwfbadminton.com) et suivi des Bleus via equipe-france.fr / FFBaD.
+        Sources : calendrier BWF World Tour (corporate.bwfbadminton.com) et suivi des Français via Wikipédia (tableaux des tournois et pages des joueurs).
         Résultats au grain « tour » (pas de score live). Les mentions « à confirmer » indiquent le niveau de confiance de la donnée.
       </footer>
     </div>

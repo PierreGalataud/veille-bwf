@@ -58,11 +58,15 @@ jobs:
         run: |
           git config user.name "veille-bot"
           git config user.email "actions@users.noreply.github.com"
-          # llm-cache.json : verdicts Haiku persistés (un titre déjà vu ne
-          # redéclenche jamais d'appel — zéro token inutile, data.json stable).
-          # Le fichier n'existe qu'après un premier cas incertain, d'où le test.
+          # Mémoires persistées (runners jetables : sans commit, reperdues à chaque run) :
+          #  - collector/cache/     : cache Haiku par joueur, clé = révision Wikipédia
+          #    (révision déjà vue -> zéro appel Haiku, data.json stable) ;
+          #  - collector/aliases.json : appariement tournoi BWF -> article Wikipédia
+          #    vérifié (entrée présente -> zéro recherche MediaWiki, zéro Haiku).
+          # Ces chemins n'existent qu'après un premier succès, d'où les tests.
           git add public/data.json
-          if [ -f collector/llm-cache.json ]; then git add collector/llm-cache.json; fi
+          if [ -d collector/cache ]; then git add collector/cache; fi
+          if [ -f collector/aliases.json ]; then git add collector/aliases.json; fi
           git diff --staged --quiet || git commit -m "data: refresh $(date -u +%FT%TZ)"
           # Un commit a pu arriver sur main entre le checkout et ce push (modif
           # manuelle, autre run) : on rebase notre éventuel commit data avant de pousser.

@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -18,10 +19,10 @@ import java.util.Map;
  * Collecteur v2 — orchestration du pipeline (cf. CLAUDE.md, carte des sources).
  *
  * <pre>
- *   BwfCalendar   — calendrier World Tour (source PRIMAIRE : échec = exit 1)
- *   EquipeFrance  — frenchStatus + fil des Bleus + classement (SECONDAIRE, best-effort)
- *   PlayerResults — agrégation players[] par tables de mots-clés (déterministe)
- *   DataJson      — le contrat data.json, sérialisé par Jackson
+ *   BwfCalendar     — calendrier World Tour (source PRIMAIRE : échec = exit 1)
+ *   WikiTournament  — frenchStatus depuis les tableaux Wikipédia (Source A, best-effort)
+ *   PlayerResults   — players[] via WikiPlayer (rank d'infobox + prose→Haiku, Source B)
+ *   DataJson        — le contrat data.json, sérialisé par Jackson
  * </pre>
  *
  * Échec gracieux : si le calendrier BWF échoue ou ne donne rien, on NE réécrit
@@ -79,21 +80,22 @@ public class Collector {
         current.sort((a, b) -> a.start().compareTo(b.start()));
         upcoming.sort((a, b) -> a.start().compareTo(b.start()));
 
-        // Enrichissement du statut français via equipe-france (best-effort).
-        // On résout AUSSI les tournois à venir PROCHES (départ ≤ 14 jours) : leur
-        // page equipe-france existe déjà et alimente upcoming[].french au lieu du
-        // « à confirmer » permanent. Au-delà, la sélection n'est pas publiée —
-        // inutile de sonder.
-        List<Tournament> toResolve = new ArrayList<>(current);
+        // Statut français lu dans les tableaux Wikipédia (Source A, déterministe).
+        // On résout les tournois en cours ET les à-venir PROCHES (départ ≤ 14 jours) :
+        // leur page Wikipédia existe déjà et alimente upcoming[].french. Au-delà,
+        // l'article de l'édition n'est en général pas encore créé — inutile de sonder.
+        Map<String, WikiTournament.FrenchStatus> frByName = new HashMap<>();
+        for (Tournament t : current) frByName.put(t.name(), WikiTournament.resolve(t));
         for (Tournament t : upcoming) {
-            if (!t.start().isAfter(today.plusDays(UPCOMING_FR_DAYS))) toResolve.add(t);
+            if (!t.start().isAfter(today.plusDays(UPCOMING_FR_DAYS))) {
+                frByName.put(t.name(), WikiTournament.resolve(t));
+            }
         }
-        Map<String, EquipeFrance.FrenchStatus> frByName = EquipeFrance.buildFrenchStatus(toResolve);
 
         List<DataJson.CurrentJson> currentJson = new ArrayList<>();
         for (Tournament t : current) {
-            EquipeFrance.FrenchStatus fs =
-                    frByName.getOrDefault(t.name(), EquipeFrance.FrenchStatus.SOURCE_DOWN);
+            WikiTournament.FrenchStatus fs = frByName.getOrDefault(t.name(),
+                    WikiTournament.FrenchStatus.unknown("Statut inconnu."));
             currentJson.add(new DataJson.CurrentJson(
                     t.name(), t.tier(), t.location(),
                     FrDates.dateRange(t.start(), t.end(), true),
@@ -111,14 +113,14 @@ public class Collector {
                     t.name(), t.tier(), frenchLabel(frByName.get(t.name()))));
         }
 
-        // players : suivi des Français via le fil daté d'equipe-france. On passe le
-        // calendrier BWF (dates des tournois) et la date du jour pour décider si un
-        // tournoi est « en cours » à partir des DATES, jamais des mots du titre.
+        // players : suivi individuel des Français (Lanier, Christo Popov) via
+        // Wikipédia — classement d'infobox + historique de saison (Haiku, caché
+        // par révision). Cf. PlayerResults / WikiPlayer.
         DataJson root = new DataJson(
                 Instant.now().toString(),
                 weekLabel(today),
                 currentJson,
-                PlayerResults.buildPlayers(all, today),
+                PlayerResults.buildPlayers(today.getYear()),
                 upcomingJson);
 
         return new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(root);
@@ -128,14 +130,13 @@ public class Collector {
     private static final long UPCOMING_FR_DAYS = 14;
 
     /**
-     * Libellé court FR d'un tournoi à venir. On n'affirme que le confirmé
-     * (mêmes trois états que frenchStatus) : non résolu ou inconnu → « à
-     * confirmer », jamais un « aucun » inventé.
+     * Libellé court FR d'un tournoi à venir. On n'affirme que le confirmé : un
+     * Français au tableau → « engagés ». Sinon « à confirmer » — pour un tournoi
+     * à venir, un tableau Wikipédia incomplet (« aucun Français ») ne prouve rien
+     * (l'article n'est pas figé), on n'invente donc jamais un « aucun ».
      */
-    private static String frenchLabel(EquipeFrance.FrenchStatus fs) {
-        if (fs == null) return "FR : à confirmer";
-        if (Boolean.TRUE.equals(fs.present())) return "FR : engagés";
-        if (Boolean.FALSE.equals(fs.present())) return "FR : aucun engagé";
+    private static String frenchLabel(WikiTournament.FrenchStatus fs) {
+        if (fs != null && Boolean.TRUE.equals(fs.present())) return "FR : engagés";
         return "FR : à confirmer";
     }
 
