@@ -225,19 +225,32 @@ class CollectorTest {
             assertEquals("In 2026, Lanier won the Orléans Masters. Bravo", out);
         }
 
-        /** La section « Career » est isolée (jusqu'au prochain titre de niveau 2),
-         *  nettoyée, puis filtrée sur l'année — les refs datés 2027 ne polluent pas. */
+        /** DÉCOUPAGE PAR SAISON, pas par mention : un paragraphe qui raconte 2025 mais
+         *  cite « 2026 » en passant NE doit PAS être retenu (sinon Haiku extrait deux
+         *  saisons — bug en amont du LLM). Seule la section 2026 remonte. */
         @Test
-        void seasonTextIsoleLAnneeVisee() {
+        void seasonTextDecoupeParSaisonPasParMention() {
             String wt = "== Career ==\n\n"
-                    + "In 2025, he reached a final.\n\n"
+                    + "In 2025, he reached the Malaysia final, a springboard he hoped to build on "
+                    + "in 2026.\n\n"                                   // ouvre sur 2025 → écarté
                     + "In 2026, he won the [[Foo Open]].<ref>{{cite web |date=3 Jan 2027}}</ref>\n\n"
                     + "== Achievements ==\n\nUnrelated table mentioning 2026 everywhere.\n";
             String season = WikiPlayer.seasonText(wt, 2026);
             assertTrue(season.contains("he won the Foo Open"));
-            assertFalse(season.contains("2025"));
+            assertFalse(season.contains("Malaysia"));                 // le paragraphe 2025 est exclu
             assertFalse(season.contains("Achievements"));
             assertFalse(season.contains("Unrelated"));
+        }
+
+        /** Sous-titre d'année (=== 2026 ===) : la prose suivante hérite de la saison
+         *  même si elle n'ouvre pas sur l'année. */
+        @Test
+        void seasonTextSuitLesSousTitresDannee() {
+            String wt = "== Career ==\n\n=== 2025 ===\n\nA quiet year.\n\n"
+                    + "=== 2026 ===\n\nIn July, he won the [[Bar Open]].\n";
+            String season = WikiPlayer.seasonText(wt, 2026);
+            assertTrue(season.contains("he won the Bar Open"));
+            assertFalse(season.contains("quiet"));
         }
 
         @Test
@@ -246,13 +259,13 @@ class CollectorTest {
         }
 
         /** Le cache par joueur fait l'aller-retour JSON sans perte (idempotence des
-         *  runs : révision inchangée → même sortie, zéro appel Haiku). */
+         *  runs : révision inchangée + format identique → même sortie, zéro Haiku). */
         @Test
         void cacheJoueurAllerRetour() throws Exception {
             WikiPlayer.PlayerCache c = new WikiPlayer.PlayerCache(
-                    1362273323L, "2026-07-24T00:00:00Z", "#7 mondial",
+                    WikiPlayer.EXTRACTION_VERSION, 1362273323L, "2026-07-24T00:00:00Z", "#7 mondial",
                     List.of(new DataJson.LineJson("Dernier", "juin", "Open du Japon",
-                            "Vainqueur", "win", "Open du Japon · Vainqueur")));
+                            "Vainqueur", "🥇", "win", "Open du Japon · Vainqueur")));
             assertEquals(c, WikiPlayer.cacheFromJson(WikiPlayer.cacheToJson(c)));
         }
 
@@ -272,16 +285,42 @@ class CollectorTest {
         @Test
         void parseSeasonLinesLitLeTableau() {
             List<DataJson.LineJson> l = LlmNet.parseSeasonLines(
-                    "[{\"date\":\"juin\",\"tournament\":\"Open du Japon\","
+                    "[{\"year\":2026,\"date\":\"juillet\",\"tournament\":\"Open du Japon\","
                             + "\"stage\":\"Vainqueur\",\"tone\":\"win\"},"
-                            + "{\"date\":\"mars\",\"tournament\":\"Orléans Masters\","
-                            + "\"stage\":\"Vainqueur\",\"tone\":\"win\"}]");
+                            + "{\"year\":2026,\"date\":\"mars\",\"tournament\":\"Orléans Masters\","
+                            + "\"stage\":\"Vainqueur\",\"tone\":\"win\"}]", 2026);
             assertEquals(2, l.size());
             assertEquals("Dernier", l.get(0).label());
             assertEquals("Open du Japon", l.get(0).tournament());
             assertEquals("win", l.get(0).tone());
+            assertEquals("🥇", l.get(0).medal());
             assertEquals("Open du Japon · Vainqueur", l.get(0).value());
             assertEquals("Puis", l.get(1).label());
+        }
+
+        /** Filet DÉTERMINISTE : toute ligne d'une AUTRE saison (year ≠ visé) est
+         *  rejetée, même si Haiku la remonte. */
+        @Test
+        void parseSeasonLinesRejetteLesAutresSaisons() {
+            List<DataJson.LineJson> l = LlmNet.parseSeasonLines(
+                    "[{\"year\":2026,\"date\":\"mai\",\"tournament\":\"Open de Singapour\","
+                            + "\"stage\":\"Vainqueur\",\"tone\":\"win\"},"
+                            + "{\"year\":2025,\"date\":\"octobre\",\"tournament\":\"Open de France\","
+                            + "\"stage\":\"Vainqueur\",\"tone\":\"win\"}]", 2026);
+            assertEquals(1, l.size());
+            assertEquals("Open de Singapour", l.get(0).tournament());
+        }
+
+        /** Tri chronologique décroissant imposé côté collecteur : « octobre » ne
+         *  passe jamais avant « mai », quel que soit l'ordre rendu par Haiku. */
+        @Test
+        void parseSeasonLinesTrieParDateDecroissante() {
+            List<DataJson.LineJson> l = LlmNet.parseSeasonLines(
+                    "[{\"year\":2026,\"date\":\"mai\",\"tournament\":\"A\",\"stage\":\"Finaliste\"},"
+                            + "{\"year\":2026,\"date\":\"octobre\",\"tournament\":\"B\",\"stage\":\"Finaliste\"}]",
+                    2026);
+            assertEquals("B", l.get(0).tournament());   // octobre d'abord
+            assertEquals("A", l.get(1).tournament());   // puis mai
         }
 
         /** On tolère prose/clôtures Markdown ; un tone hors contrat → null ; une
@@ -289,18 +328,33 @@ class CollectorTest {
         @Test
         void parseSeasonLinesToleranteEtDansLeContrat() {
             List<DataJson.LineJson> l = LlmNet.parseSeasonLines(
-                    "```json\n[{\"tournament\":\"Open d'Indonésie\",\"stage\":\"Éliminé au 1er tour\","
-                            + "\"tone\":\"sorti\"},{\"date\":\"mai\"}]\n```");
+                    "```json\n[{\"year\":2026,\"tournament\":\"Open d'Indonésie\","
+                            + "\"stage\":\"Éliminé au 1er tour\",\"tone\":\"sorti\"},"
+                            + "{\"date\":\"mai\"}]\n```", 2026);
             assertEquals(1, l.size());                 // la 2e entrée (vide) est écartée
             assertNull(l.get(0).tone());               // « sorti » hors contrat → null
+            assertEquals("⚫", l.get(0).medal());       // 1er tour → éliminé avant les demies
             assertEquals("Open d'Indonésie", l.get(0).tournament());
         }
 
         @Test
         void parseSeasonLinesVideSurJsonInvalide() {
-            assertTrue(LlmNet.parseSeasonLines("pas du json").isEmpty());
-            assertTrue(LlmNet.parseSeasonLines(null).isEmpty());
-            assertTrue(LlmNet.parseSeasonLines("{\"tournament\":\"X\"}").isEmpty());
+            assertTrue(LlmNet.parseSeasonLines("pas du json", 2026).isEmpty());
+            assertTrue(LlmNet.parseSeasonLines(null, 2026).isEmpty());
+            assertTrue(LlmNet.parseSeasonLines("{\"tournament\":\"X\"}", 2026).isEmpty());
+        }
+
+        /** Médaille DÉTERMINISTE selon le stade (échelle badminton : deux demies = 🥉). */
+        @Test
+        void medalForMappeLeStade() {
+            assertEquals("🥇", LlmNet.medalFor("Vainqueur", "win"));
+            assertEquals("🥈", LlmNet.medalFor("Finaliste", "out"));
+            assertEquals("🥉", LlmNet.medalFor("Demi-finaliste", "out"));
+            assertEquals("🥉", LlmNet.medalFor("1/2 finale", null));
+            assertEquals("⚫", LlmNet.medalFor("1/4 de finale", "out"));
+            assertEquals("⚫", LlmNet.medalFor("Éliminé au 1er tour", "out"));
+            assertEquals("⚫", LlmNet.medalFor("Éliminé (stade non précisé)", "out"));
+            assertEquals("🎯", LlmNet.medalFor("En lice (en cours)", null));
         }
     }
 

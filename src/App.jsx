@@ -223,25 +223,31 @@ export default function App() {
                   <span>{p.name}</span>
                   {p.rank && <span className="player__rank">{p.rank}</span>}
                 </div>
-                {p.lines.map((l, k) => {
-                  // Affichage structuré : tournoi en gras, date discrète, stade
-                  // coloré par tone. Repli sur value si un sous-champ manque.
-                  const structured = l.tournament && l.stage;
-                  return (
-                    <div className="player__row" key={k}>
-                      <b>{l.label} :</b>
-                      {structured ? (
-                        <>
-                          <span className="player__tour">{l.tournament}</span>
-                          {l.date && <span className="player__date">{l.date}</span>}
-                          <span className={toneClass(l.tone)}>{l.stage}</span>
-                        </>
-                      ) : (
-                        <span className={toneClass(l.tone)}>{l.value}</span>
-                      )}
-                    </div>
-                  );
-                })}
+                {/* Liste à puces, ordre chronologique décroissant (le plus récent
+                    en haut, fixé côté collecteur). Médaille en tête selon le stade,
+                    plus de labels « Dernier »/« Puis ». */}
+                <ul className="player__lines">
+                  {p.lines.map((l, k) => {
+                    // Affichage structuré : tournoi en gras, date discrète, stade
+                    // coloré par tone. Repli sur value si un sous-champ manque.
+                    const structured = l.tournament && l.stage;
+                    return (
+                      <li className="player__row" key={k}>
+                        {/* medal vient du collecteur (déterministe) ; repli neutre. */}
+                        <span className="player__medal" aria-hidden="true">{l.medal || "•"}</span>
+                        {structured ? (
+                          <>
+                            <span className="player__tour">{l.tournament}</span>
+                            {l.date && <span className="player__date">{l.date}</span>}
+                            <span className={toneClass(l.tone)}>{l.stage}</span>
+                          </>
+                        ) : (
+                          <span className={toneClass(l.tone)}>{l.value}</span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
             ))}
           </div>

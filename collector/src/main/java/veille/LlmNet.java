@@ -78,14 +78,17 @@ final class LlmNet {
         System.out.println("filet LLM → Haiku : historique " + year + " d'" + player
                 + " (" + prose.length() + " car.)");
 
-        String user = "Voici l'historique " + year + " d'" + player
-                + " (saison en cours), en prose issue de Wikipédia :\n\n" + prose + "\n\n"
-                + "Extrait chaque résultat de tournoi de " + year + ", du PLUS RÉCENT au plus ancien. "
-                + "Réponds UNIQUEMENT avec un tableau JSON, format exact :\n"
-                + "[{\"date\":\"<mois en français, ex. juin>\","
+        String user = "Voici un extrait Wikipédia sur " + player + " :\n\n" + prose + "\n\n"
+                + "N'extrais QUE les résultats de la saison " + year + ". IGNORE toute mention "
+                + "d'une autre saison (année ≠ " + year + "), même citée en passant.\n"
+                + "Du PLUS RÉCENT au plus ancien, réponds UNIQUEMENT avec un tableau JSON, "
+                + "format exact :\n"
+                + "[{\"year\":" + year + ",\"date\":\"<mois en français, avec le jour si connu, "
+                + "ex. « 31 mai » ou « juillet »>\","
                 + "\"tournament\":\"<nom du tournoi en français, ex. Open du Japon>\","
-                + "\"stage\":\"<résultat en français, ex. Vainqueur, Finaliste, "
+                + "\"stage\":\"<résultat en français, ex. Vainqueur, Finaliste, Demi-finaliste, "
                 + "1/4 de finale, Éliminé au 1er tour>\",\"tone\":\"win|out|null\"}]\n"
+                + "\"year\" : l'année du résultat (doit valoir " + year + ").\n"
                 + "\"tone\" : \"win\" = remporte le tournoi ; \"out\" = éliminé ; "
                 + "null = en cours ou indéterminé.\n"
                 + "Traduis les noms de tournois en français. Maximum " + MAX_LINES
@@ -101,43 +104,61 @@ final class LlmNet {
         StringBuilder text = new StringBuilder();
         client().messages().create(params).content()
                 .forEach(b -> b.text().ifPresent(tb -> text.append(tb.text())));
-        return parseSeasonLines(text.toString());
+        return parseSeasonLines(text.toString(), year);
     }
 
+    /** Entrée brute avant tri/étiquetage (filet déterministe par-dessus Haiku). */
+    private record Raw(String date, String tournament, String stage, String tone) {}
+
     /**
-     * Transforme la réponse de Haiku en {@code lines}. Tolère prose ou clôtures
-     * Markdown autour du tableau (premier {@code [} … dernier {@code ]}). Chaque
-     * entrée devient une {@code LineJson} : label « Dernier » puis « Puis »,
-     * {@code value} = « tournoi · stade » (repli d'affichage). Un tone hors contrat
-     * (≠ win/out/null) est ramené à null ; une entrée sans tournoi ni stade est
-     * écartée. Tout JSON invalide → liste vide, jamais d'exception.
+     * Transforme la réponse de Haiku en {@code lines} pour la saison {@code year}.
+     * Filet DÉTERMINISTIQUE par-dessus le LLM :
+     * <ul>
+     *   <li>toute entrée dont le champ {@code year} ≠ {@code year} visé est REJETÉE
+     *       (Haiku remonte parfois une autre saison) ;</li>
+     *   <li>tri chronologique DÉCROISSANT par date (« octobre » ne passe jamais
+     *       avant « mai ») — on ne se fie pas à l'ordre rendu par Haiku ;</li>
+     *   <li>{@code medal} calculée depuis le stade ({@link #medalFor}).</li>
+     * </ul>
+     * Tolère prose/clôtures Markdown (premier {@code [} … dernier {@code ]}). Un
+     * tone hors contrat → null ; une entrée sans tournoi ni stade est écartée. Tout
+     * JSON invalide → liste vide, jamais d'exception.
      */
-    static List<DataJson.LineJson> parseSeasonLines(String raw) {
+    static List<DataJson.LineJson> parseSeasonLines(String raw, int year) {
         if (raw == null) return List.of();
         int a = raw.indexOf('[');
         int b = raw.lastIndexOf(']');
         if (a < 0 || b <= a) return List.of();
-        List<DataJson.LineJson> out = new ArrayList<>();
+        List<Raw> rows = new ArrayList<>();
         try {
             JsonNode arr = MAPPER.readTree(raw.substring(a, b + 1));
             if (!arr.isArray()) return List.of();
             for (JsonNode n : arr) {
-                if (out.size() >= MAX_LINES) break;
                 String tournament = txt(n, "tournament");
                 String stage = txt(n, "stage");
                 if (tournament == null && stage == null) continue;   // rien d'exploitable
-                String date = txt(n, "date");
+                Integer y = yearOf(n);
+                if (y != null && y != year) continue;                // saison étrangère → rejetée
                 JsonNode toneNode = n.path("tone");
                 String tone = toneNode.isTextual() ? toneNode.asText().trim() : null;
                 if (tone != null && !"win".equals(tone) && !"out".equals(tone)) tone = null;
-                String label = out.isEmpty() ? "Dernier" : "Puis";
-                String value = tournament != null && stage != null
-                        ? tournament + " · " + stage
-                        : (tournament != null ? tournament : stage);
-                out.add(new DataJson.LineJson(label, date, tournament, stage, tone, value));
+                rows.add(new Raw(txt(n, "date"), tournament, stage, tone));
             }
         } catch (Exception e) {
             return List.of();
+        }
+        // Tri chronologique décroissant (stable) : le plus récent en premier.
+        rows.sort((x, z) -> Integer.compare(sortKey(z.date()), sortKey(x.date())));
+
+        List<DataJson.LineJson> out = new ArrayList<>();
+        for (Raw r : rows) {
+            if (out.size() >= MAX_LINES) break;
+            String label = out.isEmpty() ? "Dernier" : "Puis";
+            String value = r.tournament() != null && r.stage() != null
+                    ? r.tournament() + " · " + r.stage()
+                    : (r.tournament() != null ? r.tournament() : r.stage());
+            out.add(new DataJson.LineJson(label, r.date(), r.tournament(), r.stage(),
+                    medalFor(r.stage(), r.tone()), r.tone(), value));
         }
         return out;
     }
@@ -146,6 +167,51 @@ final class LlmNet {
     private static String txt(JsonNode n, String field) {
         JsonNode f = n.path(field);
         return f.isTextual() && !f.asText().isBlank() ? f.asText().trim() : null;
+    }
+
+    /** Année d'une entrée ({@code "year":2026} ou {@code "year":"2026"}), sinon null. */
+    private static Integer yearOf(JsonNode n) {
+        JsonNode y = n.path("year");
+        if (y.isInt()) return y.asInt();
+        if (y.isTextual() && y.asText().trim().matches("\\d{4}")) return Integer.parseInt(y.asText().trim());
+        return null;
+    }
+
+    /**
+     * Clé de tri d'une date FR (« 31 mai », « juillet ») : {@code mois*100 + jour}.
+     * Mois inconnu → 0 (rejeté en fin de liste). Ne confond pas une année (4
+     * chiffres) avec un jour (le motif {@code \b\d{1,2}\b} ne matche pas « 2026 »).
+     */
+    static int sortKey(String date) {
+        if (date == null) return 0;
+        String low = TextUtil.stripAccents(date.toLowerCase(java.util.Locale.ROOT));
+        int month = 0;
+        for (var e : FrDates.FR_MONTH_NUM.entrySet()) {
+            if (low.contains(TextUtil.stripAccents(e.getKey()))) { month = e.getValue(); break; }
+        }
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\b(\\d{1,2})\\b").matcher(low);
+        int day = m.find() ? Integer.parseInt(m.group(1)) : 0;
+        return month * 100 + day;
+    }
+
+    /**
+     * Médaille d'un stade (DÉTERMINISTE, jamais Haiku ni le front) selon l'échelle
+     * badminton — pas de match pour la 3e place, les DEUX demi-finalistes ont le
+     * bronze : 🥇 vainqueur, 🥈 finaliste, 🥉 demi-finaliste, 🎯 encore en lice,
+     * ⚫ éliminé avant les demies (1/4, 1/8, tours, stade non précisé). L'ordre des
+     * tests importe : « demi »/« 1/2 » AVANT « finaliste », et « de finale » (1/4,
+     * 1/8) ne doit pas être pris pour une finale.
+     */
+    static String medalFor(String stage, String tone) {
+        String s = stage == null ? "" : TextUtil.norm(stage);
+        if ("win".equals(tone) || s.contains("vainqueur") || s.contains("sacre")
+                || s.contains("champion")) return "🥇";
+        if (s.contains("demi") || s.contains("1/2")) return "🥉";
+        if (s.contains("finaliste")
+                || (s.contains("finale") && !s.contains("de finale")
+                    && !s.contains("1/4") && !s.contains("1/8"))) return "🥈";
+        if (s.contains("en lice") || s.contains("en cours")) return "🎯";
+        return "⚫";
     }
 
     // ------------------------------------------------------------

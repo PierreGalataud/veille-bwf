@@ -29,9 +29,15 @@ record DataJson(
 
     record PlayerJson(String name, String rank, List<LineJson> lines) {}
 
-    /** {@code tone} ∈ win|out|null. {@code value} = repli d'affichage non structuré. */
+    /**
+     * {@code tone} ∈ win|out|null. {@code medal} = médaille d'affichage calculée
+     * DÉTERMINISTIQUEMENT depuis le stade (🥇 vainqueur, 🥈 finaliste, 🥉 demi,
+     * ⚫ éliminé avant les demies, 🎯 en lice) — jamais devinée par le front ni par
+     * Haiku. {@code label} (« Dernier »/« Puis ») conservé pour compat mais plus
+     * affiché. {@code value} = repli d'affichage non structuré.
+     */
     record LineJson(String label, String date, String tournament,
-                    String stage, String tone, String value) {}
+                    String stage, String medal, String tone, String value) {}
 
     record UpcomingJson(String dates, String name, String tier, String french) {}
 }

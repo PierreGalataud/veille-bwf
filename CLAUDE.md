@@ -69,6 +69,11 @@ fichier ET `src/App.jsx`, même commit. Le workflow VALIDE le contrat (step jq) 
 tout commit de data.json.
 
 `tier` ∈ `"wtf" | "1000" | "750" | "500" | "300"`. `tone` ∈ `"win" | "out" | null`.
+`medal` (échelle badminton — deux demi-finalistes ont le bronze, pas de petite
+finale) : `🥇` vainqueur · `🥈` finaliste · `🥉` demi-finaliste · `⚫` éliminé avant
+les demies (1/4, 1/8, tours, stade non précisé) · `🎯` encore en lice. Calculée
+DÉTERMINISTIQUEMENT côté collecteur (`LlmNet.medalFor`, depuis `stage`) — jamais par
+Haiku ni deviné par le front.
 
 ```json
 {
@@ -86,11 +91,11 @@ tout commit de data.json.
     {
       "name": "…",
       "rank": "#x mondial",        // ou null si introuvable
-      "lines": [
+      "lines": [                         // triées du + récent au + ancien (collecteur)
         { "label": "Dernier", "date": "5 juin", "tournament": "Open d'Indonésie",
-          "stage": "Éliminé au 1er tour", "tone": "out",
+          "stage": "Éliminé au 1er tour", "medal": "⚫", "tone": "out",
           "value": "Open d'Indonésie · Éliminé au 1er tour" }   // value = repli
-      ]
+      ]                                   // label conservé mais PLUS affiché
     }
   ],
   "upcoming": [
@@ -183,18 +188,20 @@ Le code a été audité et durci (détail : historique git, commits « Audit lot
       `parseInfoboxDates`, `parseFrenchStatus`, `stageFr`, `parsePickedTitle`,
       `Aliases.to|fromJson`) ; seuls `resolve`/`Wiki.*`/`askArticle` font du réseau.
 - [x] **Source B — historique de saison (Haiku sur prose).** `WikiPlayer` lit le
-      `rank` de l'infobox (déterministe) puis passe la prose « Career » de l'année
-      à Haiku (`LlmNet.parseSeasonLines`, JSON strict) pour `lines[]`. **Cache
-      AGRESSIF par révision Wikipédia** : avant tout appel Haiku, on lit
-      `revisionId` ; si elle est identique au cache `collector/cache/<slug>.json`,
-      on réutilise rank + lines SANS réseau ni token. Le cache est committé par le
-      workflow (runners jetables). Échec gracieux TOTAL : sans `ANTHROPIC_API_KEY`
-      (GitHub Actions secret), sur page absente ou erreur, on garde la dernière
-      bonne valeur du cache (et le `rank` déterministe reste servi). On NE fige pas
-      une révision dont l'extraction a échoué (retentée au run suivant). Fonctions
-      pures testées (`parseCurrentRanking`, `cleanWikitext`, `seasonText`,
-      `cacheTo|FromJson`, `parseSeasonLines`) ; seuls `Wiki.*`, `WikiPlayer.resolve`
-      et `LlmNet.ask` font du réseau.
+      `rank` de l'infobox (déterministe) puis passe la prose de la SAISON de l'année
+      (découpée par section, cf. règles) à Haiku (`LlmNet.parseSeasonLines`, JSON
+      strict) pour `lines[]` : filtre `year` déterministe + tri par date + `medal`
+      calculée du stade. **Cache AGRESSIF par révision Wikipédia + `formatVersion`** :
+      avant tout appel Haiku, on lit `revisionId` ; si elle est identique au cache
+      `collector/cache/<slug>.json` ET que le format n'a pas changé, on réutilise
+      rank + lines SANS réseau ni token. Le cache est committé par le workflow
+      (runners jetables). Échec gracieux TOTAL : sans `ANTHROPIC_API_KEY` (GitHub
+      Actions secret), sur page absente ou erreur, on garde la dernière bonne valeur
+      du cache (et le `rank` déterministe reste servi). On NE fige pas une révision
+      dont l'extraction a échoué (retentée au run suivant). Fonctions pures testées
+      (`parseCurrentRanking`, `cleanWikitext`, `seasonText`, `declaredYear`,
+      `cacheTo|FromJson`, `parseSeasonLines`, `medalFor`, `sortKey`) ; seuls
+      `Wiki.*`, `WikiPlayer.resolve` et `LlmNet.ask` font du réseau.
 - [ ] **Étape B — Agent « La Dépêche des Français ».** Produit un résumé hebdo/mensuel
       des Bleus à partir des faits DÉJÀ collectés, ton pince-sans-rire. Variante agent :
       peut aller chercher l'ambiance côté presse (s'inspirer du registre, **sans
@@ -234,10 +241,23 @@ Le code a été audité et durci (détail : historique git, commits « Audit lot
 - **Rank depuis l'infobox** (`WikiPlayer.parseCurrentRanking`) : 1er entier du champ
   `current_ranking` (le simple ; le double suit après `<br />`). Ne jamais confondre
   avec `highest_ranking` ni `current_ranking_date`. Champ absent -> `null`.
-- **Prose de saison** (`WikiPlayer.seasonText`) : on NETTOIE le wikitexte AVANT de
-  filtrer par année — sinon « 2026 » traîne dans les dates d'accès des `<ref>` (faux
-  positifs). On isole « Career » jusqu'au prochain titre de niveau 2, puis on garde
-  les paragraphes citant l'année.
+- **Prose de saison — DÉCOUPAGE PAR SAISON, pas par mention** (`WikiPlayer.seasonText`).
+  Le bug à éviter : un paragraphe qui raconte 2025 mais cite « 2026 » en passant,
+  retenu en entier, fait extraire DEUX saisons par Haiku (le défaut est en amont du
+  LLM). On isole donc la SECTION de l'année : on nettoie « Career » (retirer les
+  `<ref>` AVANT toute détection d'année — leurs dates d'accès polluent), puis on
+  parcourt les blocs en suivant une « saison active » posée par un sous-titre
+  d'année (`=== 2026 ===`) ou par un paragraphe qui OUVRE sur l'année
+  (`declaredYear` : année dans les ~40 premiers caractères). On ne garde que les
+  blocs de l'année visée ; une année citée en passant ne déclare rien.
+- **Double filet côté extraction** : (1) le prompt Haiku somme « n'extrais QUE la
+  saison <année> » et demande un champ `year` par ligne ; (2) `parseSeasonLines`
+  REJETTE toute ligne dont `year` ≠ année visée et **trie** les lignes par date
+  décroissante (octobre jamais avant mai — on ne se fie pas à l'ordre de Haiku).
+- **Cache versionné** (`WikiPlayer.EXTRACTION_VERSION`) : une évolution de la logique
+  d'extraction périme les entrées de `collector/cache/` MÊME à révision Wikipédia
+  identique. Le cache stocke `formatVersion` ; s'il diffère, on ré-extrait (sinon on
+  servirait des lignes périmées). Bump la constante à chaque changement d'extraction.
 
 ## Limites assumées (vérifiées, ne pas re-creuser)
 

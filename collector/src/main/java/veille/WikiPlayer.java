@@ -39,9 +39,18 @@ final class WikiPlayer {
     /** Un joueur suivi : nom d'affichage (FR), titre d'article Wikipédia, slug de cache. */
     record Roster(String display, String title, String slug) {}
 
-    /** Contenu persisté du cache d'un joueur (fichier committé, un par joueur). */
-    record PlayerCache(long wikiRevisionId, String extractedAt, String rank,
-                       List<DataJson.LineJson> lines) {}
+    /**
+     * Contenu persisté du cache d'un joueur (fichier committé, un par joueur).
+     * {@code formatVersion} versionne la LOGIQUE d'extraction : une révision
+     * Wikipédia inchangée ne suffit pas à réutiliser le cache si le format a évolué
+     * (découpage par saison, filtre d'année, médailles…) — sinon on servirait des
+     * lignes périmées. Bump {@link #EXTRACTION_VERSION} à chaque changement.
+     */
+    record PlayerCache(int formatVersion, long wikiRevisionId, String extractedAt,
+                       String rank, List<DataJson.LineJson> lines) {}
+
+    /** Version de la logique d'extraction (cf. {@link PlayerCache}). Bump = ré-extraction. */
+    static final int EXTRACTION_VERSION = 2;
 
     static final Path CACHE_DIR = Path.of("collector", "cache");
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -71,10 +80,15 @@ final class WikiPlayer {
             return fromCache(r, cache);
         }
 
-        if (cache != null && rev > 0 && cache.wikiRevisionId() == rev) {
+        if (cache != null && rev > 0 && cache.wikiRevisionId() == rev
+                && cache.formatVersion() == EXTRACTION_VERSION) {
             System.out.println("Wikipédia : « " + r.display() + " » révision inchangée ("
                     + rev + ") — cache réutilisé, pas d'appel Haiku");
             return new DataJson.PlayerJson(r.display(), cache.rank(), cache.lines());
+        }
+        if (cache != null && cache.formatVersion() != EXTRACTION_VERSION) {
+            System.out.println("cache joueur périmé (format v" + cache.formatVersion()
+                    + " ≠ v" + EXTRACTION_VERSION + ") — ré-extraction de « " + r.display() + " »");
         }
 
         String wt;
@@ -108,7 +122,7 @@ final class WikiPlayer {
                     cache != null ? cache.lines() : List.of());
         }
 
-        saveCache(r.slug(), new PlayerCache(rev, Instant.now().toString(), rank, lines));
+        saveCache(r.slug(), new PlayerCache(EXTRACTION_VERSION, rev, Instant.now().toString(), rank, lines));
         return new DataJson.PlayerJson(r.display(), rank, lines);
     }
 
@@ -142,12 +156,22 @@ final class WikiPlayer {
         return null;
     }
 
+    /** Un an décrit un début de propos si l'année apparaît dans les ~40 premiers
+     *  caractères d'un paragraphe (« In 2026, … », « The 2026 season … »). */
+    private static final int SEASON_OPEN_THRESHOLD = 40;
+    private static final Pattern YEAR = Pattern.compile("\\b(?:19|20)\\d{2}\\b");
+
     /**
-     * Extrait la prose de saison de l'année visée : on isole la section
-     * « Career » (jusqu'au prochain titre de niveau 2), on nettoie le wikitexte,
-     * puis on garde les paragraphes citant l'année. Le nettoyage AVANT le filtrage
-     * est essentiel : « 2026 » traîne dans les dates d'accès des {@code <ref>}
-     * (faux positifs) avant qu'on ne les retire. {@code null} si rien pour l'année.
+     * Extrait la prose de la SAISON visée. On DÉCOUPE par saison, jamais par simple
+     * mention : un paragraphe qui raconte 2025 mais cite « 2026 » en passant ne doit
+     * PAS être retenu (sinon Haiku extrait deux saisons — le bug est en amont du LLM).
+     *
+     * Méthode : on isole « Career » (jusqu'au prochain titre de niveau 2), on nettoie
+     * le wikitexte (retirer les {@code <ref>} AVANT toute détection d'année, sinon
+     * leurs dates d'accès polluent), puis on parcourt les blocs en suivant une
+     * « saison active » — posée par un sous-titre d'année ({@code === 2026 ===}) ou
+     * par un paragraphe qui OUVRE sur l'année. On ne garde que les blocs de l'année
+     * visée. {@code null} si rien pour l'année.
      */
     static String seasonText(String wikitext, int year) {
         if (wikitext == null) return null;
@@ -161,14 +185,32 @@ final class WikiPlayer {
             body = wikitext;
         }
         String clean = cleanWikitext(body);
+        int active = 0;
         StringBuilder sb = new StringBuilder();
-        for (String para : clean.split("\\n\\n+")) {
-            if (para.matches("(?s).*\\b" + year + "\\b.*")) {
+        for (String block : clean.split("\\n\\n+")) {
+            String b = block.trim();
+            if (b.isEmpty()) continue;
+            Integer declared = declaredYear(b);
+            if (declared != null) active = declared;
+            // Les sous-titres (=== 2026 ===) posent la saison mais ne sont pas de la prose.
+            if (active == year && !b.startsWith("=")) {
                 if (sb.length() > 0) sb.append("\n\n");
-                sb.append(para.trim());
+                sb.append(b);
             }
         }
         return sb.length() == 0 ? null : sb.toString();
+    }
+
+    /**
+     * Saison « déclarée » par un bloc : l'année d'un sous-titre ({@code === 2026 ===}),
+     * ou l'année qui OUVRE un paragraphe (dans les premiers caractères). {@code null}
+     * si le bloc ne fait que citer une année plus loin (mention en passant).
+     */
+    static Integer declaredYear(String block) {
+        Matcher m = YEAR.matcher(block);
+        if (!m.find()) return null;
+        if (block.startsWith("=")) return Integer.parseInt(m.group());   // sous-titre d'année
+        return m.start() <= SEASON_OPEN_THRESHOLD ? Integer.parseInt(m.group()) : null;
     }
 
     /**
