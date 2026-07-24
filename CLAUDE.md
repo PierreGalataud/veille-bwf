@@ -199,10 +199,12 @@ Le code a été audité et durci (détail : historique git, commits « Audit lot
       Actions secret), sur page absente ou erreur, on garde la dernière bonne valeur
       du cache (et le `rank` déterministe reste servi). On NE fige pas une révision
       dont l'extraction a échoué (retentée au run suivant). Les DATES viennent du
-      calendrier BWF (`matchDates`), jamais de Haiku (règle « pas de fait absent de
-      la source »). Fonctions pures testées (`parseCurrentRanking`, `cleanWikitext`,
-      `seasonText`, `declaredYear`, `cacheTo|FromJson`, `parseSeasonLines`,
-      `matchDates`, `medalFor`) ; seuls `Wiki.*`, `WikiPlayer.resolve` et
+      calendrier BWF (`matchTournament`, appariement STRICT + cohérence chrono),
+      jamais de Haiku (règle « pas de fait absent de la source ») ; nom d'affichage
+      = nom du calendrier ou table `frenchName`. Fonctions pures testées
+      (`parseCurrentRanking`, `cleanWikitext`, `seasonText`, `declaredYear`,
+      `cacheTo|FromJson`, `parseSeasonLines`, `coreTokens`, `matchTournament`,
+      `frenchName`, `medalFor`) ; seuls `Wiki.*`, `WikiPlayer.resolve` et
       `LlmNet.ask` font du réseau.
 - [ ] **Étape B — Agent « La Dépêche des Français ».** Produit un résumé hebdo/mensuel
       des Bleus à partir des faits DÉJÀ collectés, ton pince-sans-rire. Variante agent :
@@ -262,12 +264,26 @@ Le code a été audité et durci (détail : historique git, commits « Audit lot
   le prompt n'exige plus `date` (schéma = `year`, `tournament`, `stage`, `tone` ;
   consigne « n'invente jamais de date, omets tout fait absent »), et le nom de
   tournoi est gardé en langue SOURCE (anglais) — pas traduit — pour l'apparier au
-  calendrier BWF. `LlmNet.matchDates` apparie ce nom au calendrier (jetons, hors
-  jetons faibles) et prend SES dates ; hors calendrier World Tour (Coupe Thomas,
-  Europe par équipes) ou appariement impossible -> `date: null` (le front n'affiche
-  rien plutôt qu'une date fausse). NB : le calendrier BWF ne sert que les mois à
-  venir — beaucoup de tournois passés de la saison en sont absents, donc `date: null`
-  est un cas NORMAL, pas un bug.
+  calendrier BWF.
+- **APPARIEMENT STRICT du tournoi** (`LlmNet.matchTournament`, dans l'esprit de
+  `matchesTournament`) : un simple jeton partagé ne suffit PAS (sinon « Japan Open »
+  attrape « Kumamoto Masters Japan » et « India Open » attrape « Syed Modi India
+  International »). On exige (1) que le NOYAU du nom extrait (jetons distinctifs,
+  sponsors/années/niveaux retirés mais type d'épreuve `open`/`masters`/… CONSERVÉ,
+  cf. `coreTokens`) soit un SOUS-ENSEMBLE des jetons du tournoi du calendrier ; (2)
+  au moins un jeton non générique (« Open » seul n'apparie rien) ; (3) **cohérence
+  chronologique** : un résultat de saison est un fait passé, un tournoi commençant
+  APRÈS `today` ne peut l'expliquer et est écarté (c'est ce qui bloquait les dates de
+  novembre pour un titre de juillet). Plusieurs éditions passées valides -> la plus
+  récente. Aucun appariement fiable -> `date: null`.
+- **NOM d'affichage en français** : un tournoi apparié prend le nom du CALENDRIER
+  (déjà en usage côté current/upcoming), pas l'anglais de Haiku. Hors World Tour
+  (Coupe Thomas, Championnats d'Europe, … par équipes) -> petite table de traduction
+  en dur (`LlmNet.frenchName`, appariée par jetons, robuste aux variantes). Aucun
+  équivalent connu -> nom d'origine (on n'invente pas de traduction).
+- **Calendrier BWF = mois À VENIR seulement** : beaucoup de tournois passés de la
+  saison en sont absents, donc `date: null` (et nom d'origine) est un cas NORMAL,
+  pas un bug — mieux vaut pas de date qu'une fausse.
 - **Tri par ces dates déterministes** : `parseSeasonLines` ordonne les lignes du
   plus récent au plus ancien sur les dates du calendrier ; les lignes sans date
   passent après, sans casser l'ordre. On ne se fie jamais à l'ordre rendu par Haiku.

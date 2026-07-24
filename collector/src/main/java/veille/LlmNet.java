@@ -9,7 +9,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Filet LLM (Source B de CLAUDE.md) : l'historique de saison d'un joueur est en
@@ -65,10 +69,10 @@ final class LlmNet {
      * ou toute erreur — l'appelant garde alors sa dernière bonne valeur.
      */
     static List<DataJson.LineJson> extractSeason(String player, int year, String prose,
-                                                 List<Tournament> calendar) {
+                                                 List<Tournament> calendar, LocalDate today) {
         if (!enabled() || prose == null || prose.isBlank()) return List.of();
         try {
-            return ask(player, year, prose, calendar);
+            return ask(player, year, prose, calendar, today);
         } catch (Exception e) {
             System.err.println("filet LLM KO (" + player + ") — dernière valeur conservée : " + e);
             return List.of();
@@ -77,7 +81,7 @@ final class LlmNet {
 
     /** Seule méthode réseau du filet (non testée unitairement, cf. CLAUDE.md). */
     private static List<DataJson.LineJson> ask(String player, int year, String prose,
-                                               List<Tournament> calendar) {
+                                               List<Tournament> calendar, LocalDate today) {
         System.out.println("filet LLM → Haiku : historique " + year + " d'" + player
                 + " (" + prose.length() + " car.)");
 
@@ -109,7 +113,7 @@ final class LlmNet {
         StringBuilder text = new StringBuilder();
         client().messages().create(params).content()
                 .forEach(b -> b.text().ifPresent(tb -> text.append(tb.text())));
-        return parseSeasonLines(text.toString(), year, calendar);
+        return parseSeasonLines(text.toString(), year, calendar, today);
     }
 
     /** Entrée brute avant tri/étiquetage (filet déterministe par-dessus Haiku). */
@@ -122,10 +126,11 @@ final class LlmNet {
      * <ul>
      *   <li>toute entrée dont le champ {@code year} ≠ {@code year} visé est REJETÉE
      *       (Haiku remonte parfois une autre saison) ;</li>
-     *   <li>la DATE ne vient JAMAIS de Haiku (il l'inventait — instable d'un run à
-     *       l'autre) : on apparie le nom de tournoi au calendrier BWF
-     *       ({@link #matchDates}) et on prend SES dates ; hors calendrier World Tour
-     *       ou appariement impossible → {@code date = null} (le front n'affiche rien) ;</li>
+     *   <li>la DATE et le NOM d'affichage viennent du calendrier BWF, jamais de Haiku
+     *       (qui inventait les dates) : on apparie STRICTEMENT le nom au calendrier
+     *       ({@link #matchTournament}) et on prend ses dates + son nom (déjà en usage
+     *       côté current/upcoming). Hors calendrier World Tour → date {@code null} et
+     *       nom français si connu ({@link #frenchName}), sinon nom d'origine ;</li>
      *   <li>tri chronologique DÉCROISSANT par ces dates déterministes ; les lignes
      *       sans date passent APRÈS celles qui en ont, sans casser l'ordre ;</li>
      *   <li>{@code medal} calculée depuis le stade ({@link #medalFor}).</li>
@@ -135,7 +140,7 @@ final class LlmNet {
      * JSON invalide → liste vide, jamais d'exception.
      */
     static List<DataJson.LineJson> parseSeasonLines(String raw, int year,
-                                                    List<Tournament> calendar) {
+                                                    List<Tournament> calendar, LocalDate today) {
         if (raw == null) return List.of();
         int a = raw.indexOf('[');
         int b = raw.lastIndexOf(']');
@@ -153,11 +158,12 @@ final class LlmNet {
                 JsonNode toneNode = n.path("tone");
                 String tone = toneNode.isTextual() ? toneNode.asText().trim() : null;
                 if (tone != null && !"win".equals(tone) && !"out".equals(tone)) tone = null;
-                // Date DÉTERMINISTE depuis le calendrier BWF — jamais depuis Haiku.
-                LocalDate[] d = tournament != null ? matchDates(tournament, calendar) : null;
-                LocalDate sortDate = d != null ? d[0] : null;
-                String dateLabel = d != null ? FrDates.dateRange(d[0], d[1], false) : null;
-                rows.add(new Raw(sortDate, dateLabel, tournament, stage, tone));
+                // Date + nom DÉTERMINISTES via appariement strict au calendrier BWF.
+                Tournament m = tournament != null ? matchTournament(tournament, calendar, today) : null;
+                LocalDate sortDate = m != null ? m.start() : null;
+                String dateLabel = m != null ? FrDates.dateRange(m.start(), m.end(), false) : null;
+                String name = m != null ? m.name() : frenchName(tournament);
+                rows.add(new Raw(sortDate, dateLabel, name, stage, tone));
             }
         } catch (Exception e) {
             return List.of();
@@ -198,26 +204,83 @@ final class LlmNet {
         return null;
     }
 
+    /** Mots à retirer des noms de tournoi pour l'appariement : articles, génériques,
+     *  sponsors, années, niveaux. On GARDE le type d'épreuve (open/masters/…) et la
+     *  géographie — ce sont eux qui distinguent « Japan Open » de « … Masters Japan ». */
+    private static final Set<String> NAME_NOISE = Set.of(
+            "de", "du", "des", "d", "l", "le", "la", "les", "et", "the", "of", "and", "for", "a",
+            "badminton", "super", "tournament", "world", "tour", "bwf",
+            "hsbc", "yonex", "victor", "daihatsu", "sands", "li", "ning", "lining",
+            "petronas", "perodua", "toyota", "kapal", "api", "sathio", "group", "ltd", "co",
+            "powered", "by", "presented", "polytron", "kff", "antica", "sunrise", "hylo",
+            "clash", "clans", "celcomdigi", "guwahati");
+    /** Types d'épreuve : ne peuvent PAS suffire seuls à apparier (« Open » tout court). */
+    private static final Set<String> EVENT_TYPES = Set.of(
+            "open", "masters", "international", "championships", "championship",
+            "finals", "final", "cup", "series", "challenge", "games", "olympics");
+
     /**
-     * Apparie le nom de tournoi (langue SOURCE, anglais) rendu par Haiku à un tournoi
-     * du calendrier BWF et renvoie {@code [début, fin]}, ou {@code null} si aucun ne
-     * correspond (Coupe Thomas, Championnats d'Europe par équipes, ou tournoi absent
-     * du calendrier World Tour). Réutilise la normalisation de noms existante
-     * (jetons), en IGNORANT les jetons faibles ({@code minusWeak} : « masters » seul
-     * ne relie pas Orléans à Kumamoto). Le meilleur score de jetons distinctifs gagne.
+     * Jetons DISTINCTIFS d'un nom (type d'épreuve + géographie), sponsors/années/
+     * niveaux retirés — mais on garde « open »/« masters » (à la différence de
+     * {@code nameTokens}) : c'est le type d'épreuve qui sépare « Japan Open » de
+     * « Kumamoto Masters Japan ».
      */
-    static LocalDate[] matchDates(String tournament, List<Tournament> calendar) {
-        if (calendar == null) return null;
-        java.util.Set<String> want = TextUtil.minusWeak(TextUtil.nameTokens(tournament));
-        if (want.isEmpty()) return null;
-        Tournament best = null;
-        int bestScore = 0;
-        for (Tournament t : calendar) {
-            java.util.Set<String> have = TextUtil.minusWeak(TextUtil.nameTokens(t.name() + " " + t.location()));
-            int s = TextUtil.sharedTokens(want, have);
-            if (s > bestScore) { bestScore = s; best = t; }
+    static Set<String> coreTokens(String name) {
+        Set<String> out = new HashSet<>();
+        for (String w : TextUtil.stripAccents(name.toLowerCase(Locale.ROOT)).split("[^a-z0-9]+")) {
+            if (w.length() < 2 || w.matches("\\d{4}") || w.matches("100|300|500|750|1000")) continue;
+            if (!NAME_NOISE.contains(w)) out.add(w);
         }
-        return best != null ? new LocalDate[]{best.start(), best.end()} : null;
+        return out;
+    }
+
+    /**
+     * Apparie STRICTEMENT le nom rendu par Haiku (langue source) à un tournoi du
+     * calendrier BWF — dans l'esprit de {@code WikiTournament.matchesTournament} :
+     * <ul>
+     *   <li>correspondance sur le NOYAU du nom : chaque jeton distinctif de l'extrait
+     *       doit être présent dans le tournoi du calendrier (sous-ensemble). Ainsi
+     *       « Japan Open » ⊄ « Kumamoto Masters Japan » (il manque « open ») et
+     *       « India Open » ⊄ « Syed Modi India International » ;</li>
+     *   <li>il faut au moins un jeton NON générique (pas seulement « open ») ;</li>
+     *   <li>COHÉRENCE CHRONOLOGIQUE : un résultat de saison est un fait passé — un
+     *       tournoi commençant APRÈS {@code today} ne peut l'expliquer, on l'écarte
+     *       (c'est ce qui bloquait « Japan Open » → « Kumamoto Masters » de novembre).</li>
+     * </ul>
+     * Plusieurs éditions passées valides → la plus récente. Aucun appariement fiable
+     * → {@code null} (le front n'affiche alors pas de date : mieux que fausse).
+     */
+    static Tournament matchTournament(String extracted, List<Tournament> calendar, LocalDate today) {
+        if (extracted == null || calendar == null) return null;
+        Set<String> core = coreTokens(extracted);
+        boolean hasDistinctive = core.stream().anyMatch(t -> !EVENT_TYPES.contains(t));
+        if (!hasDistinctive) return null;                       // « Open » seul n'apparie rien
+        Tournament best = null;
+        for (Tournament t : calendar) {
+            Set<String> have = coreTokens(t.name() + " " + t.location());
+            if (!have.containsAll(core)) continue;              // noyau exigé (sous-ensemble)
+            if (today != null && t.start().isAfter(today)) continue;   // pas de tournoi futur
+            if (best == null || t.start().isAfter(best.start())) best = t;   // édition la + récente
+        }
+        return best;
+    }
+
+    /**
+     * Nom d'affichage français d'un tournoi HORS calendrier World Tour (Coupe Thomas,
+     * Championnats d'Europe…). Table courte et stable, appariée par jetons (robuste
+     * aux variantes « Badminton »/pluriel). Aucun équivalent connu → nom d'origine
+     * (on n'invente pas de traduction).
+     */
+    static String frenchName(String original) {
+        if (original == null) return null;
+        String n = TextUtil.norm(original);
+        if (n.contains("thomas") && n.contains("cup")) return "Coupe Thomas";
+        if (n.contains("uber") && n.contains("cup")) return "Coupe Uber";
+        if (n.contains("sudirman")) return "Coupe Sudirman";
+        if (n.contains("european") && n.contains("team")) return "Championnats d'Europe par équipes";
+        if (n.contains("european") && n.contains("championship")) return "Championnats d'Europe";
+        if (n.contains("world") && n.contains("championship")) return "Championnats du monde";
+        return original;                                        // pas d'équivalent connu
     }
 
     /**

@@ -50,8 +50,9 @@ final class WikiPlayer {
                        String rank, List<DataJson.LineJson> lines) {}
 
     /** Version de la logique d'extraction (cf. {@link PlayerCache}). Bump = ré-extraction.
-     *  v3 : dates issues du calendrier BWF (plus jamais de date inventée par Haiku). */
-    static final int EXTRACTION_VERSION = 3;
+     *  v3 : dates issues du calendrier BWF. v4 : appariement STRICT (noyau du nom +
+     *  cohérence chronologique) et noms de tournoi affichés en français. */
+    static final int EXTRACTION_VERSION = 4;
 
     static final Path CACHE_DIR = Path.of("collector", "cache");
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -71,7 +72,8 @@ final class WikiPlayer {
      * Sans clé API : rank frais + lignes du cache, sans persister (on retentera
      * l'extraction quand une clé sera présente). Toute erreur réseau → cache.
      */
-    static DataJson.PlayerJson resolve(Roster r, int year, List<Tournament> calendar) {
+    static DataJson.PlayerJson resolve(Roster r, int year, List<Tournament> calendar,
+                                       java.time.LocalDate today) {
         PlayerCache cache = loadCache(r.slug());
         long rev;
         try {
@@ -114,7 +116,7 @@ final class WikiPlayer {
         }
 
         List<DataJson.LineJson> lines =
-                LlmNet.extractSeason(r.display(), year, seasonText(wt, year), calendar);
+                LlmNet.extractSeason(r.display(), year, seasonText(wt, year), calendar, today);
         if (lines.isEmpty()) {
             // Haiku indisponible / réponse vide : on garde la dernière bonne valeur
             // et on NE fige PAS cette révision (retentée au prochain run).
