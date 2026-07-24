@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -63,10 +64,11 @@ final class LlmNet {
      * Wikipédia (via Haiku). Renvoie une liste VIDE sur clé absente, prose vide,
      * ou toute erreur — l'appelant garde alors sa dernière bonne valeur.
      */
-    static List<DataJson.LineJson> extractSeason(String player, int year, String prose) {
+    static List<DataJson.LineJson> extractSeason(String player, int year, String prose,
+                                                 List<Tournament> calendar) {
         if (!enabled() || prose == null || prose.isBlank()) return List.of();
         try {
-            return ask(player, year, prose);
+            return ask(player, year, prose, calendar);
         } catch (Exception e) {
             System.err.println("filet LLM KO (" + player + ") — dernière valeur conservée : " + e);
             return List.of();
@@ -74,7 +76,8 @@ final class LlmNet {
     }
 
     /** Seule méthode réseau du filet (non testée unitairement, cf. CLAUDE.md). */
-    private static List<DataJson.LineJson> ask(String player, int year, String prose) {
+    private static List<DataJson.LineJson> ask(String player, int year, String prose,
+                                               List<Tournament> calendar) {
         System.out.println("filet LLM → Haiku : historique " + year + " d'" + player
                 + " (" + prose.length() + " car.)");
 
@@ -83,15 +86,17 @@ final class LlmNet {
                 + "d'une autre saison (année ≠ " + year + "), même citée en passant.\n"
                 + "Du PLUS RÉCENT au plus ancien, réponds UNIQUEMENT avec un tableau JSON, "
                 + "format exact :\n"
-                + "[{\"year\":" + year + ",\"date\":\"<mois en français, avec le jour si connu, "
-                + "ex. « 31 mai » ou « juillet »>\","
-                + "\"tournament\":\"<nom du tournoi en français, ex. Open du Japon>\","
+                + "[{\"year\":" + year + ","
+                + "\"tournament\":\"<nom du tournoi TEL QUEL dans le texte, sans le traduire, "
+                + "ex. Japan Open, Singapore Open, Orléans Masters>\","
                 + "\"stage\":\"<résultat en français, ex. Vainqueur, Finaliste, Demi-finaliste, "
                 + "1/4 de finale, Éliminé au 1er tour>\",\"tone\":\"win|out|null\"}]\n"
                 + "\"year\" : l'année du résultat (doit valoir " + year + ").\n"
                 + "\"tone\" : \"win\" = remporte le tournoi ; \"out\" = éliminé ; "
                 + "null = en cours ou indéterminé.\n"
-                + "Traduis les noms de tournois en français. Maximum " + MAX_LINES
+                + "NE DONNE JAMAIS de date : les dates ne sont pas dans le texte, ne les invente "
+                + "pas. Si une information n'est pas EXPLICITEMENT écrite, OMETS-la. "
+                + "Garde le nom du tournoi tel quel (ne traduis pas). Maximum " + MAX_LINES
                 + " entrées. N'invente rien : n'inclus que ce qui est écrit.";
 
         MessageCreateParams params = MessageCreateParams.builder()
@@ -104,11 +109,12 @@ final class LlmNet {
         StringBuilder text = new StringBuilder();
         client().messages().create(params).content()
                 .forEach(b -> b.text().ifPresent(tb -> text.append(tb.text())));
-        return parseSeasonLines(text.toString(), year);
+        return parseSeasonLines(text.toString(), year, calendar);
     }
 
     /** Entrée brute avant tri/étiquetage (filet déterministe par-dessus Haiku). */
-    private record Raw(String date, String tournament, String stage, String tone) {}
+    private record Raw(LocalDate sortDate, String dateLabel, String tournament,
+                       String stage, String tone) {}
 
     /**
      * Transforme la réponse de Haiku en {@code lines} pour la saison {@code year}.
@@ -116,15 +122,20 @@ final class LlmNet {
      * <ul>
      *   <li>toute entrée dont le champ {@code year} ≠ {@code year} visé est REJETÉE
      *       (Haiku remonte parfois une autre saison) ;</li>
-     *   <li>tri chronologique DÉCROISSANT par date (« octobre » ne passe jamais
-     *       avant « mai ») — on ne se fie pas à l'ordre rendu par Haiku ;</li>
+     *   <li>la DATE ne vient JAMAIS de Haiku (il l'inventait — instable d'un run à
+     *       l'autre) : on apparie le nom de tournoi au calendrier BWF
+     *       ({@link #matchDates}) et on prend SES dates ; hors calendrier World Tour
+     *       ou appariement impossible → {@code date = null} (le front n'affiche rien) ;</li>
+     *   <li>tri chronologique DÉCROISSANT par ces dates déterministes ; les lignes
+     *       sans date passent APRÈS celles qui en ont, sans casser l'ordre ;</li>
      *   <li>{@code medal} calculée depuis le stade ({@link #medalFor}).</li>
      * </ul>
      * Tolère prose/clôtures Markdown (premier {@code [} … dernier {@code ]}). Un
      * tone hors contrat → null ; une entrée sans tournoi ni stade est écartée. Tout
      * JSON invalide → liste vide, jamais d'exception.
      */
-    static List<DataJson.LineJson> parseSeasonLines(String raw, int year) {
+    static List<DataJson.LineJson> parseSeasonLines(String raw, int year,
+                                                    List<Tournament> calendar) {
         if (raw == null) return List.of();
         int a = raw.indexOf('[');
         int b = raw.lastIndexOf(']');
@@ -142,13 +153,23 @@ final class LlmNet {
                 JsonNode toneNode = n.path("tone");
                 String tone = toneNode.isTextual() ? toneNode.asText().trim() : null;
                 if (tone != null && !"win".equals(tone) && !"out".equals(tone)) tone = null;
-                rows.add(new Raw(txt(n, "date"), tournament, stage, tone));
+                // Date DÉTERMINISTE depuis le calendrier BWF — jamais depuis Haiku.
+                LocalDate[] d = tournament != null ? matchDates(tournament, calendar) : null;
+                LocalDate sortDate = d != null ? d[0] : null;
+                String dateLabel = d != null ? FrDates.dateRange(d[0], d[1], false) : null;
+                rows.add(new Raw(sortDate, dateLabel, tournament, stage, tone));
             }
         } catch (Exception e) {
             return List.of();
         }
-        // Tri chronologique décroissant (stable) : le plus récent en premier.
-        rows.sort((x, z) -> Integer.compare(sortKey(z.date()), sortKey(x.date())));
+        // Tri chronologique décroissant sur les dates déterministes ; les lignes sans
+        // date passent après (List.sort est stable → leur ordre relatif est préservé).
+        rows.sort((x, z) -> {
+            if (x.sortDate() == null && z.sortDate() == null) return 0;
+            if (x.sortDate() == null) return 1;
+            if (z.sortDate() == null) return -1;
+            return z.sortDate().compareTo(x.sortDate());
+        });
 
         List<DataJson.LineJson> out = new ArrayList<>();
         for (Raw r : rows) {
@@ -157,7 +178,7 @@ final class LlmNet {
             String value = r.tournament() != null && r.stage() != null
                     ? r.tournament() + " · " + r.stage()
                     : (r.tournament() != null ? r.tournament() : r.stage());
-            out.add(new DataJson.LineJson(label, r.date(), r.tournament(), r.stage(),
+            out.add(new DataJson.LineJson(label, r.dateLabel(), r.tournament(), r.stage(),
                     medalFor(r.stage(), r.tone()), r.tone(), value));
         }
         return out;
@@ -178,20 +199,25 @@ final class LlmNet {
     }
 
     /**
-     * Clé de tri d'une date FR (« 31 mai », « juillet ») : {@code mois*100 + jour}.
-     * Mois inconnu → 0 (rejeté en fin de liste). Ne confond pas une année (4
-     * chiffres) avec un jour (le motif {@code \b\d{1,2}\b} ne matche pas « 2026 »).
+     * Apparie le nom de tournoi (langue SOURCE, anglais) rendu par Haiku à un tournoi
+     * du calendrier BWF et renvoie {@code [début, fin]}, ou {@code null} si aucun ne
+     * correspond (Coupe Thomas, Championnats d'Europe par équipes, ou tournoi absent
+     * du calendrier World Tour). Réutilise la normalisation de noms existante
+     * (jetons), en IGNORANT les jetons faibles ({@code minusWeak} : « masters » seul
+     * ne relie pas Orléans à Kumamoto). Le meilleur score de jetons distinctifs gagne.
      */
-    static int sortKey(String date) {
-        if (date == null) return 0;
-        String low = TextUtil.stripAccents(date.toLowerCase(java.util.Locale.ROOT));
-        int month = 0;
-        for (var e : FrDates.FR_MONTH_NUM.entrySet()) {
-            if (low.contains(TextUtil.stripAccents(e.getKey()))) { month = e.getValue(); break; }
+    static LocalDate[] matchDates(String tournament, List<Tournament> calendar) {
+        if (calendar == null) return null;
+        java.util.Set<String> want = TextUtil.minusWeak(TextUtil.nameTokens(tournament));
+        if (want.isEmpty()) return null;
+        Tournament best = null;
+        int bestScore = 0;
+        for (Tournament t : calendar) {
+            java.util.Set<String> have = TextUtil.minusWeak(TextUtil.nameTokens(t.name() + " " + t.location()));
+            int s = TextUtil.sharedTokens(want, have);
+            if (s > bestScore) { bestScore = s; best = t; }
         }
-        java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\b(\\d{1,2})\\b").matcher(low);
-        int day = m.find() ? Integer.parseInt(m.group(1)) : 0;
-        return month * 100 + day;
+        return best != null ? new LocalDate[]{best.start(), best.end()} : null;
     }
 
     /**

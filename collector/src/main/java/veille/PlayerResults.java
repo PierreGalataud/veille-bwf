@@ -24,13 +24,15 @@ final class PlayerResults {
             new WikiPlayer.Roster("Christo Popov", "Christo Popov", "christo-popov"));
 
     /**
-     * Construit {@code players[]} pour la saison de l'année {@code year}. Un joueur
-     * n'est retenu que s'il apporte quelque chose (un rank ou au moins une ligne).
+     * Construit {@code players[]} pour la saison {@code year}. Le {@code calendar}
+     * BWF (tous les tournois de la saison) sert à DATER déterministiquement les
+     * lignes (cf. {@link LlmNet#matchDates}). Un joueur n'est retenu que s'il
+     * apporte quelque chose (un rank ou au moins une ligne).
      */
-    static List<DataJson.PlayerJson> buildPlayers(int year) {
+    static List<DataJson.PlayerJson> buildPlayers(int year, List<Tournament> calendar) {
         List<DataJson.PlayerJson> out = new ArrayList<>();
         for (WikiPlayer.Roster r : ROSTER) {
-            DataJson.PlayerJson p = WikiPlayer.resolve(r, year);
+            DataJson.PlayerJson p = WikiPlayer.resolve(r, year, calendar);
             if (p.rank() != null || !p.lines().isEmpty()) out.add(p);
         }
         return out;

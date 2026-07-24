@@ -92,10 +92,10 @@ Haiku ni deviné par le front.
       "name": "…",
       "rank": "#x mondial",        // ou null si introuvable
       "lines": [                         // triées du + récent au + ancien (collecteur)
-        { "label": "Dernier", "date": "5 juin", "tournament": "Open d'Indonésie",
-          "stage": "Éliminé au 1er tour", "medal": "⚫", "tone": "out",
-          "value": "Open d'Indonésie · Éliminé au 1er tour" }   // value = repli
-      ]                                   // label conservé mais PLUS affiché
+        { "label": "Dernier", "date": "26 – 31 mai", "tournament": "Singapore Open",
+          "stage": "Vainqueur", "medal": "🥇", "tone": "win",
+          "value": "Singapore Open · Vainqueur" }   // value = repli
+      ]     // date issue du calendrier BWF (nullable) ; label conservé mais PLUS affiché
     }
   ],
   "upcoming": [
@@ -198,10 +198,12 @@ Le code a été audité et durci (détail : historique git, commits « Audit lot
       (runners jetables). Échec gracieux TOTAL : sans `ANTHROPIC_API_KEY` (GitHub
       Actions secret), sur page absente ou erreur, on garde la dernière bonne valeur
       du cache (et le `rank` déterministe reste servi). On NE fige pas une révision
-      dont l'extraction a échoué (retentée au run suivant). Fonctions pures testées
-      (`parseCurrentRanking`, `cleanWikitext`, `seasonText`, `declaredYear`,
-      `cacheTo|FromJson`, `parseSeasonLines`, `medalFor`, `sortKey`) ; seuls
-      `Wiki.*`, `WikiPlayer.resolve` et `LlmNet.ask` font du réseau.
+      dont l'extraction a échoué (retentée au run suivant). Les DATES viennent du
+      calendrier BWF (`matchDates`), jamais de Haiku (règle « pas de fait absent de
+      la source »). Fonctions pures testées (`parseCurrentRanking`, `cleanWikitext`,
+      `seasonText`, `declaredYear`, `cacheTo|FromJson`, `parseSeasonLines`,
+      `matchDates`, `medalFor`) ; seuls `Wiki.*`, `WikiPlayer.resolve` et
+      `LlmNet.ask` font du réseau.
 - [ ] **Étape B — Agent « La Dépêche des Français ».** Produit un résumé hebdo/mensuel
       des Bleus à partir des faits DÉJÀ collectés, ton pince-sans-rire. Variante agent :
       peut aller chercher l'ambiance côté presse (s'inspirer du registre, **sans
@@ -252,8 +254,23 @@ Le code a été audité et durci (détail : historique git, commits « Audit lot
   blocs de l'année visée ; une année citée en passant ne déclare rien.
 - **Double filet côté extraction** : (1) le prompt Haiku somme « n'extrais QUE la
   saison <année> » et demande un champ `year` par ligne ; (2) `parseSeasonLines`
-  REJETTE toute ligne dont `year` ≠ année visée et **trie** les lignes par date
-  décroissante (octobre jamais avant mai — on ne se fie pas à l'ordre de Haiku).
+  REJETTE toute ligne dont `year` ≠ année visée.
+- **DATES : jamais par Haiku — règle « ne jamais demander au LLM un fait absent de
+  sa source ».** La prose Wikipédia ne contient PAS les dates ; comme le schéma en
+  exigeait une, Haiku fabriquait une valeur plausible et INSTABLE (Singapour est
+  passé de « octobre » à « août » entre deux runs sur la même révision). Correctif :
+  le prompt n'exige plus `date` (schéma = `year`, `tournament`, `stage`, `tone` ;
+  consigne « n'invente jamais de date, omets tout fait absent »), et le nom de
+  tournoi est gardé en langue SOURCE (anglais) — pas traduit — pour l'apparier au
+  calendrier BWF. `LlmNet.matchDates` apparie ce nom au calendrier (jetons, hors
+  jetons faibles) et prend SES dates ; hors calendrier World Tour (Coupe Thomas,
+  Europe par équipes) ou appariement impossible -> `date: null` (le front n'affiche
+  rien plutôt qu'une date fausse). NB : le calendrier BWF ne sert que les mois à
+  venir — beaucoup de tournois passés de la saison en sont absents, donc `date: null`
+  est un cas NORMAL, pas un bug.
+- **Tri par ces dates déterministes** : `parseSeasonLines` ordonne les lignes du
+  plus récent au plus ancien sur les dates du calendrier ; les lignes sans date
+  passent après, sans casser l'ordre. On ne se fie jamais à l'ordre rendu par Haiku.
 - **Cache versionné** (`WikiPlayer.EXTRACTION_VERSION`) : une évolution de la logique
   d'extraction périme les entrées de `collector/cache/` MÊME à révision Wikipédia
   identique. Le cache stocke `formatVersion` ; s'il diffère, on ré-extrait (sinon on
@@ -284,10 +301,16 @@ L'IA n'a sa place qu'où il n'y a pas de bonne réponse unique calculable :
 - produire un résumé avec un ton (étape B, à venir).
 
 **Tout le reste reste déterministe** : fetch, filtrage par date/niveau, appariement
-d'article *quand l'infobox suffit*, lecture des tableaux (Source A) et du `rank`
-d'infobox. Ne mets pas d'appel LLM là où une règle suffit — les tableaux Wikipédia
-sont déjà structurés, ne les fais PAS lire par Haiku. Le LLM est un invité, jamais
-le moteur : si l'IA échoue, l'appli fonctionne sans elle (rank + frenchStatus restent).
+d'article *quand l'infobox suffit*, lecture des tableaux (Source A), `rank` d'infobox,
+et les DATES des lignes (calendrier BWF). Ne mets pas d'appel LLM là où une règle
+suffit — les tableaux Wikipédia sont déjà structurés, ne les fais PAS lire par Haiku.
+
+**Règle d'or : ne JAMAIS demander au LLM un fait absent de sa source.** La prose
+Wikipédia n'a pas les dates → on ne les demande pas à Haiku (il en inventerait, et
+sa réponse serait instable d'un run à l'autre) ; on les prend au calendrier BWF, ou
+on met `null`. Un champ imposé au schéma que la source ne porte pas = une invitation
+à halluciner. Le LLM est un invité, jamais le moteur : si l'IA échoue, l'appli
+fonctionne sans elle (rank + frenchStatus restent).
 
 ## Commandes
 

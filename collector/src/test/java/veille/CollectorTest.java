@@ -3,6 +3,7 @@ package veille;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 
@@ -282,45 +283,92 @@ class CollectorTest {
     @Nested
     class ExtractionProse {
 
-        @Test
-        void parseSeasonLinesLitLeTableau() {
-            List<DataJson.LineJson> l = LlmNet.parseSeasonLines(
-                    "[{\"year\":2026,\"date\":\"juillet\",\"tournament\":\"Open du Japon\","
-                            + "\"stage\":\"Vainqueur\",\"tone\":\"win\"},"
-                            + "{\"year\":2026,\"date\":\"mars\",\"tournament\":\"Orléans Masters\","
-                            + "\"stage\":\"Vainqueur\",\"tone\":\"win\"}]", 2026);
-            assertEquals(2, l.size());
-            assertEquals("Dernier", l.get(0).label());
-            assertEquals("Open du Japon", l.get(0).tournament());
-            assertEquals("win", l.get(0).tone());
-            assertEquals("🥇", l.get(0).medal());
-            assertEquals("Open du Japon · Vainqueur", l.get(0).value());
-            assertEquals("Puis", l.get(1).label());
+        /** Calendrier BWF de test (nom + lieu anglais, comme la vraie source). */
+        private List<Tournament> cal() {
+            return List.of(
+                    new Tournament("DAIHATSU Japan Open 2026", "750", "Tokyo, JPN", "—",
+                            LocalDate.of(2026, 7, 14), LocalDate.of(2026, 7, 19)),
+                    new Tournament("Orléans Masters 2026", "300", "Orléans, FRA", "—",
+                            LocalDate.of(2026, 3, 17), LocalDate.of(2026, 3, 22)),
+                    new Tournament("KFF Singapore Open 2026", "750", "Singapore, SGP", "—",
+                            LocalDate.of(2026, 5, 26), LocalDate.of(2026, 5, 31)));
         }
 
-        /** Filet DÉTERMINISTE : toute ligne d'une AUTRE saison (year ≠ visé) est
-         *  rejetée, même si Haiku la remonte. */
+        /** La DATE vient du calendrier BWF (apparié sur le nom source), jamais de Haiku. */
+        @Test
+        void parseSeasonLinesDateVientDuCalendrier() {
+            List<DataJson.LineJson> l = LlmNet.parseSeasonLines(
+                    "[{\"year\":2026,\"tournament\":\"Japan Open\",\"stage\":\"Vainqueur\","
+                            + "\"tone\":\"win\"}]", 2026, cal());
+            assertEquals(1, l.size());
+            assertEquals("Japan Open", l.get(0).tournament());
+            assertEquals("14 – 19 juillet", l.get(0).date());   // dates du calendrier
+            assertEquals("🥇", l.get(0).medal());
+        }
+
+        /** Un champ « date » rendu par Haiku est IGNORÉ (source de l'instabilité) :
+         *  seule la date du calendrier compte, sinon null. */
+        @Test
+        void parseSeasonLinesIgnoreLaDateDeHaiku() {
+            List<DataJson.LineJson> l = LlmNet.parseSeasonLines(
+                    "[{\"year\":2026,\"date\":\"octobre\",\"tournament\":\"Singapore Open\","
+                            + "\"stage\":\"Vainqueur\",\"tone\":\"win\"}]", 2026, cal());
+            assertEquals("26 – 31 mai", l.get(0).date());       // calendrier (mai), pas « octobre »
+            assertFalse(String.valueOf(l.get(0).date()).contains("octobre"));
+        }
+
+        /** Tournoi hors calendrier World Tour (Coupe Thomas…) → date null, sans exception. */
+        @Test
+        void parseSeasonLinesHorsCalendrierDonneDateNull() {
+            assertNull(LlmNet.matchDates("Thomas Cup", cal()));
+            List<DataJson.LineJson> l = LlmNet.parseSeasonLines(
+                    "[{\"year\":2026,\"tournament\":\"Thomas Cup\",\"stage\":\"Finaliste\","
+                            + "\"tone\":\"out\"}]", 2026, cal());
+            assertEquals(1, l.size());
+            assertNull(l.get(0).date());
+        }
+
+        /** Appariement calendrier réutilise la normalisation de noms existante. */
+        @Test
+        void matchDatesApparieAuCalendrier() {
+            assertArrayEquals(new LocalDate[]{LocalDate.of(2026, 5, 26), LocalDate.of(2026, 5, 31)},
+                    LlmNet.matchDates("Singapore Open", cal()));
+            assertNull(LlmNet.matchDates("Japan Open", List.of()));   // calendrier vide → null
+        }
+
+        /** Filet DÉTERMINISTE : toute ligne d'une AUTRE saison (year ≠ visé) est rejetée. */
         @Test
         void parseSeasonLinesRejetteLesAutresSaisons() {
             List<DataJson.LineJson> l = LlmNet.parseSeasonLines(
-                    "[{\"year\":2026,\"date\":\"mai\",\"tournament\":\"Open de Singapour\","
-                            + "\"stage\":\"Vainqueur\",\"tone\":\"win\"},"
-                            + "{\"year\":2025,\"date\":\"octobre\",\"tournament\":\"Open de France\","
-                            + "\"stage\":\"Vainqueur\",\"tone\":\"win\"}]", 2026);
+                    "[{\"year\":2026,\"tournament\":\"Singapore Open\",\"stage\":\"Vainqueur\","
+                            + "\"tone\":\"win\"},"
+                            + "{\"year\":2025,\"tournament\":\"French Open\",\"stage\":\"Vainqueur\","
+                            + "\"tone\":\"win\"}]", 2026, cal());
             assertEquals(1, l.size());
-            assertEquals("Open de Singapour", l.get(0).tournament());
+            assertEquals("Singapore Open", l.get(0).tournament());
         }
 
-        /** Tri chronologique décroissant imposé côté collecteur : « octobre » ne
-         *  passe jamais avant « mai », quel que soit l'ordre rendu par Haiku. */
+        /** Tri chronologique décroissant sur les dates du CALENDRIER, quel que soit
+         *  l'ordre rendu par Haiku (juillet avant mars). */
         @Test
-        void parseSeasonLinesTrieParDateDecroissante() {
+        void parseSeasonLinesTrieParDatesDuCalendrier() {
+            List<DataJson.LineJson> l = LlmNet.parseSeasonLines(   // Haiku : Orléans (mars) d'abord
+                    "[{\"year\":2026,\"tournament\":\"Orléans Masters\",\"stage\":\"Vainqueur\"},"
+                            + "{\"year\":2026,\"tournament\":\"Japan Open\",\"stage\":\"Vainqueur\"}]",
+                    2026, cal());
+            assertEquals("Japan Open", l.get(0).tournament());     // juillet remonte en tête
+            assertEquals("Orléans Masters", l.get(1).tournament());
+        }
+
+        /** Les lignes SANS date (hors calendrier) passent après celles qui en ont. */
+        @Test
+        void parseSeasonLinesLignesSansDateEnFin() {
             List<DataJson.LineJson> l = LlmNet.parseSeasonLines(
-                    "[{\"year\":2026,\"date\":\"mai\",\"tournament\":\"A\",\"stage\":\"Finaliste\"},"
-                            + "{\"year\":2026,\"date\":\"octobre\",\"tournament\":\"B\",\"stage\":\"Finaliste\"}]",
-                    2026);
-            assertEquals("B", l.get(0).tournament());   // octobre d'abord
-            assertEquals("A", l.get(1).tournament());   // puis mai
+                    "[{\"year\":2026,\"tournament\":\"Thomas Cup\",\"stage\":\"Finaliste\"},"
+                            + "{\"year\":2026,\"tournament\":\"Japan Open\",\"stage\":\"Vainqueur\"}]",
+                    2026, cal());
+            assertEquals("Japan Open", l.get(0).tournament());     // daté d'abord
+            assertNull(l.get(1).date());                           // non daté ensuite
         }
 
         /** On tolère prose/clôtures Markdown ; un tone hors contrat → null ; une
@@ -328,20 +376,20 @@ class CollectorTest {
         @Test
         void parseSeasonLinesToleranteEtDansLeContrat() {
             List<DataJson.LineJson> l = LlmNet.parseSeasonLines(
-                    "```json\n[{\"year\":2026,\"tournament\":\"Open d'Indonésie\","
+                    "```json\n[{\"year\":2026,\"tournament\":\"Indonesia Open\","
                             + "\"stage\":\"Éliminé au 1er tour\",\"tone\":\"sorti\"},"
-                            + "{\"date\":\"mai\"}]\n```", 2026);
+                            + "{\"year\":2026}]\n```", 2026, cal());
             assertEquals(1, l.size());                 // la 2e entrée (vide) est écartée
             assertNull(l.get(0).tone());               // « sorti » hors contrat → null
             assertEquals("⚫", l.get(0).medal());       // 1er tour → éliminé avant les demies
-            assertEquals("Open d'Indonésie", l.get(0).tournament());
+            assertEquals("Indonesia Open", l.get(0).tournament());
         }
 
         @Test
         void parseSeasonLinesVideSurJsonInvalide() {
-            assertTrue(LlmNet.parseSeasonLines("pas du json", 2026).isEmpty());
-            assertTrue(LlmNet.parseSeasonLines(null, 2026).isEmpty());
-            assertTrue(LlmNet.parseSeasonLines("{\"tournament\":\"X\"}", 2026).isEmpty());
+            assertTrue(LlmNet.parseSeasonLines("pas du json", 2026, cal()).isEmpty());
+            assertTrue(LlmNet.parseSeasonLines(null, 2026, cal()).isEmpty());
+            assertTrue(LlmNet.parseSeasonLines("{\"tournament\":\"X\"}", 2026, cal()).isEmpty());
         }
 
         /** Médaille DÉTERMINISTE selon le stade (échelle badminton : deux demies = 🥉). */

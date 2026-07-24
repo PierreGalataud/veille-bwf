@@ -120,7 +120,7 @@ public class Collector {
                 Instant.now().toString(),
                 weekLabel(today),
                 currentJson,
-                PlayerResults.buildPlayers(today.getYear()),
+                PlayerResults.buildPlayers(today.getYear(), all),
                 upcomingJson);
 
         return new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(root);
