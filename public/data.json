@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-07-24T10:59:50.994453101Z",
+  "generatedAt" : "2026-07-24T11:47:33.923721854Z",
   "weekLabel" : "Semaine du 20 – 26 juillet 2026",
   "current" : [ {
     "name" : "VICTOR China Open 2026",
@@ -22,30 +22,34 @@
     "rank" : "#7 mondial",
     "lines" : [ {
       "label" : "Dernier",
-      "date" : "octobre",
+      "date" : "août",
       "tournament" : "Open de Singapour",
       "stage" : "Vainqueur",
+      "medal" : "🥇",
       "tone" : "win",
       "value" : "Open de Singapour · Vainqueur"
     }, {
       "label" : "Puis",
-      "date" : "juin",
+      "date" : "juillet",
       "tournament" : "Coupe Thomas",
       "stage" : "Finaliste",
+      "medal" : "🥈",
       "tone" : "out",
       "value" : "Coupe Thomas · Finaliste"
     }, {
       "label" : "Puis",
-      "date" : "avril",
+      "date" : "juin",
       "tournament" : "Masters d'Orléans",
       "stage" : "Vainqueur",
+      "medal" : "🥇",
       "tone" : "win",
       "value" : "Masters d'Orléans · Vainqueur"
     }, {
       "label" : "Puis",
-      "date" : "mars",
+      "date" : "avril",
       "tournament" : "Championnats d'Europe par équipes hommes",
       "stage" : "Vainqueur",
+      "medal" : "🥇",
       "tone" : "win",
       "value" : "Championnats d'Europe par équipes hommes · Vainqueur"
     } ]
@@ -57,6 +61,7 @@
       "date" : "juillet",
       "tournament" : "Open du Japon",
       "stage" : "Vainqueur",
+      "medal" : "🥇",
       "tone" : "win",
       "value" : "Open du Japon · Vainqueur"
     }, {
@@ -64,34 +69,31 @@
       "date" : "avril",
       "tournament" : "Championnats d'Europe",
       "stage" : "Vainqueur",
+      "medal" : "🥇",
       "tone" : "win",
       "value" : "Championnats d'Europe · Vainqueur"
-    }, {
-      "label" : "Puis",
-      "date" : "avril",
-      "tournament" : "Coupe Thomas",
-      "stage" : "Finaliste",
-      "tone" : "out",
-      "value" : "Coupe Thomas · Finaliste"
     }, {
       "label" : "Puis",
       "date" : "mars",
       "tournament" : "Open d'Allemagne",
       "stage" : "Vainqueur",
+      "medal" : "🥇",
       "tone" : "win",
       "value" : "Open d'Allemagne · Vainqueur"
     }, {
       "label" : "Puis",
       "date" : "février",
-      "tournament" : "Championnat d'Europe par équipes hommes",
+      "tournament" : "Championnats d'Europe par équipes hommes",
       "stage" : "Vainqueur",
+      "medal" : "🥇",
       "tone" : "win",
-      "value" : "Championnat d'Europe par équipes hommes · Vainqueur"
+      "value" : "Championnats d'Europe par équipes hommes · Vainqueur"
     }, {
       "label" : "Puis",
       "date" : "janvier",
       "tournament" : "Open de l'Inde",
       "stage" : "1/4 de finale",
+      "medal" : "⚫",
       "tone" : "out",
       "value" : "Open de l'Inde · 1/4 de finale"
     } ]

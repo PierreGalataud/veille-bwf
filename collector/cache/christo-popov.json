@@ -1,12 +1,14 @@
 {
+  "formatVersion" : 2,
   "wikiRevisionId" : 1364975677,
-  "extractedAt" : "2026-07-24T10:59:55.973215502Z",
+  "extractedAt" : "2026-07-24T11:47:43.556826150Z",
   "rank" : "#5 mondial",
   "lines" : [ {
     "label" : "Dernier",
     "date" : "juillet",
     "tournament" : "Open du Japon",
     "stage" : "Vainqueur",
+    "medal" : "🥇",
     "tone" : "win",
     "value" : "Open du Japon · Vainqueur"
   }, {
@@ -14,34 +16,31 @@
     "date" : "avril",
     "tournament" : "Championnats d'Europe",
     "stage" : "Vainqueur",
+    "medal" : "🥇",
     "tone" : "win",
     "value" : "Championnats d'Europe · Vainqueur"
-  }, {
-    "label" : "Puis",
-    "date" : "avril",
-    "tournament" : "Coupe Thomas",
-    "stage" : "Finaliste",
-    "tone" : "out",
-    "value" : "Coupe Thomas · Finaliste"
   }, {
     "label" : "Puis",
     "date" : "mars",
     "tournament" : "Open d'Allemagne",
     "stage" : "Vainqueur",
+    "medal" : "🥇",
     "tone" : "win",
     "value" : "Open d'Allemagne · Vainqueur"
   }, {
     "label" : "Puis",
     "date" : "février",
-    "tournament" : "Championnat d'Europe par équipes hommes",
+    "tournament" : "Championnats d'Europe par équipes hommes",
     "stage" : "Vainqueur",
+    "medal" : "🥇",
     "tone" : "win",
-    "value" : "Championnat d'Europe par équipes hommes · Vainqueur"
+    "value" : "Championnats d'Europe par équipes hommes · Vainqueur"
   }, {
     "label" : "Puis",
     "date" : "janvier",
     "tournament" : "Open de l'Inde",
     "stage" : "1/4 de finale",
+    "medal" : "⚫",
     "tone" : "out",
     "value" : "Open de l'Inde · 1/4 de finale"
   } ]

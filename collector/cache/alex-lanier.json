@@ -1,33 +1,38 @@
 {
+  "formatVersion" : 2,
   "wikiRevisionId" : 1362273323,
-  "extractedAt" : "2026-07-24T10:59:53.214923754Z",
+  "extractedAt" : "2026-07-24T11:47:36.228298147Z",
   "rank" : "#7 mondial",
   "lines" : [ {
     "label" : "Dernier",
-    "date" : "octobre",
+    "date" : "août",
     "tournament" : "Open de Singapour",
     "stage" : "Vainqueur",
+    "medal" : "🥇",
     "tone" : "win",
     "value" : "Open de Singapour · Vainqueur"
   }, {
     "label" : "Puis",
-    "date" : "juin",
+    "date" : "juillet",
     "tournament" : "Coupe Thomas",
     "stage" : "Finaliste",
+    "medal" : "🥈",
     "tone" : "out",
     "value" : "Coupe Thomas · Finaliste"
   }, {
     "label" : "Puis",
-    "date" : "avril",
+    "date" : "juin",
     "tournament" : "Masters d'Orléans",
     "stage" : "Vainqueur",
+    "medal" : "🥇",
     "tone" : "win",
     "value" : "Masters d'Orléans · Vainqueur"
   }, {
     "label" : "Puis",
-    "date" : "mars",
+    "date" : "avril",
     "tournament" : "Championnats d'Europe par équipes hommes",
     "stage" : "Vainqueur",
+    "medal" : "🥇",
     "tone" : "win",
     "value" : "Championnats d'Europe par équipes hommes · Vainqueur"
   } ]
