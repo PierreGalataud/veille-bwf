@@ -1,22 +1,7 @@
 {
-  "generatedAt" : "2026-07-25T19:14:20.944259966Z",
+  "generatedAt" : "2026-07-26T03:25:34.115446569Z",
   "weekLabel" : "Semaine du 20 – 26 juillet 2026",
-  "current" : [ {
-    "name" : "VICTOR China Open 2026",
-    "tier" : "1000",
-    "location" : "Changzhou, CHN",
-    "dates" : "21 – 26 juillet 2026",
-    "prize" : "2 000 000 $",
-    "timezone" : "—",
-    "dayLabel" : "Jour 5 / 6 · 25 juillet",
-    "seeds" : [ ],
-    "frenchStatus" : {
-      "present" : true,
-      "title" : "Français au tableau",
-      "note" : "Christo Popov — 2e tour · Toma Junior Popov — En lice",
-      "confirm" : false
-    }
-  } ],
+  "current" : [ ],
   "players" : [ {
     "name" : "Alex Lanier",
     "rank" : "#7 mondial",
