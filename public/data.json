@@ -1,7 +1,22 @@
 {
-  "generatedAt" : "2026-07-27T19:40:59.166455570Z",
+  "generatedAt" : "2026-07-28T02:50:44.263501381Z",
   "weekLabel" : "Semaine du 27 juillet – 2 août 2026",
-  "current" : [ ],
+  "current" : [ {
+    "name" : "YONEX Taipei Open 2026",
+    "tier" : "300",
+    "location" : "Taipei, TPE",
+    "dates" : "28 juillet – 2 août 2026",
+    "prize" : "250 000 $",
+    "timezone" : "—",
+    "dayLabel" : "Jour 1 / 6 · 28 juillet",
+    "seeds" : [ ],
+    "frenchStatus" : {
+      "present" : false,
+      "title" : "Aucun Français engagé",
+      "note" : "Aucun Français au tableau (Wikipédia).",
+      "confirm" : false
+    }
+  } ],
   "players" : [ {
     "name" : "Alex Lanier",
     "rank" : "#7 mondial",
@@ -92,11 +107,6 @@
     } ]
   } ],
   "upcoming" : [ {
-    "dates" : "28 juillet – 2 août",
-    "name" : "YONEX Taipei Open 2026",
-    "tier" : "300",
-    "french" : "FR : à confirmer"
-  }, {
     "dates" : "4 – 9 août",
     "name" : "VICTOR Korea Masters 2026",
     "tier" : "300",
