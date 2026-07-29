@@ -71,27 +71,48 @@ final class WikiTournament {
         }
     }
 
+    /** Vainqueur d'une discipline : nom (paire jointe par « / ») + code pays BWF. */
+    record Champion(String name, String country) {}
+
+    /** Les 5 champions d'un tournoi terminé — TOUT OU RIEN (cf. {@link #parseChampions}). */
+    record Champions(Champion ms, Champion ws, Champion md, Champion wd, Champion xd) {}
+
+    /**
+     * Ce qu'on tire d'un article de tournoi, en UNE lecture : le statut français
+     * (draw) et les champions (infobox). {@code champions} reste {@code null} tant
+     * que les 5 disciplines ne sont pas publiées.
+     */
+    record Article(FrenchStatus french, Champions champions) {
+        static Article unknown(String note) {
+            return new Article(FrenchStatus.unknown(note), null);
+        }
+    }
+
+    /** Disciplines du contrat, dans l'ordre d'affichage : champ(s) d'infobox. */
+    private static final String[][] EVENTS = {
+            {"MS"}, {"WS"}, {"MD1", "MD2"}, {"WD1", "WD2"}, {"XD1", "XD2"}};
+
     // ------------------------------------------------------------
     //  Orchestration (réseau)
     // ------------------------------------------------------------
 
     /**
-     * Résout le statut français d'un tournoi : trouve et VÉRIFIE l'article, lit son
-     * wikitexte, en extrait la présence française. Échec gracieux : toute
-     * indisponibilité ou aucun article vérifié → statut {@code null} (inconnu),
-     * jamais un « aucun » inventé.
+     * Résout un tournoi : trouve et VÉRIFIE l'article, lit son wikitexte UNE fois,
+     * en extrait la présence française (draw) et les champions (infobox). Échec
+     * gracieux : toute indisponibilité ou aucun article vérifié → statut
+     * {@code null} (inconnu) et pas de champions, jamais un « aucun » inventé.
      */
-    static FrenchStatus resolve(Tournament t) {
+    static Article resolve(Tournament t) {
         try {
             String wikitext = articleWikitext(t);
             if (wikitext == null) {
-                return FrenchStatus.unknown(
+                return Article.unknown(
                         "Aucun article Wikipédia vérifié (dates + niveau) pour « " + t.name() + " ».");
             }
-            return parseFrenchStatus(wikitext);
+            return new Article(parseFrenchStatus(wikitext), parseChampions(wikitext));
         } catch (Exception e) {
             System.err.println("Wikipédia (statut « " + t.name() + " ») KO : " + e);
-            return FrenchStatus.unknown("Wikipédia momentanément indisponible — statut inconnu.");
+            return Article.unknown("Wikipédia momentanément indisponible — statut inconnu.");
         }
     }
 
@@ -259,6 +280,91 @@ final class WikiTournament {
         } catch (Exception e) {
             return null;                                              // jour/mois invalide
         }
+    }
+
+    // ------------------------------------------------------------
+    //  Fonctions pures — champions (bloc « Champions » de l'infobox)
+    // ------------------------------------------------------------
+
+    /**
+     * Vainqueurs des 5 disciplines, lus DÉTERMINISTIQUEMENT dans le bloc
+     * « Champions » de l'infobox ({@code | MS = [[…]] | country_MS = TPE},
+     * {@code MD1}/{@code MD2} pour une paire…). Zéro LLM : c'est du champ nommé,
+     * comme le niveau et les dates.
+     *
+     * <p><b>TOUT OU RIEN.</b> Wikipédia remplit ces champs APRÈS les finales : le
+     * jour de la finale ils existent mais sont VIDES, et ils se remplissent
+     * discipline par discipline. Tant que les 5 ne sont pas là (paire incomplète
+     * comprise), on renvoie {@code null} — le front affichera « résultats en
+     * attente » plutôt qu'un palmarès partiel présenté comme définitif. Le passage
+     * suivant du collecteur les récupérera.
+     *
+     * <p>Le pays peut manquer sans invalider le champion (on affiche le nom seul) ;
+     * pour une paire de deux nationalités, les codes sont joints (« INA / JPN »).
+     */
+    /** Lien Wikipédia d'un champ de champion : {@code [[cible]]} ou {@code [[cible|affichage]]}. */
+    private static final Pattern NAME_LINK = Pattern.compile("\\[\\[([^\\]|]+)(?:\\|([^\\]]*))?\\]\\]");
+
+    static Champions parseChampions(String wikitext) {
+        if (wikitext == null) return null;
+        Champion[] won = new Champion[EVENTS.length];
+        for (int i = 0; i < EVENTS.length; i++) {
+            won[i] = champion(wikitext, EVENTS[i]);
+            if (won[i] == null) return null;      // discipline manquante → rien du tout
+        }
+        return new Champions(won[0], won[1], won[2], won[3], won[4]);
+    }
+
+    /** Champion d'une discipline : 1 champ (simple) ou 2 (paire, les DEUX exigés). */
+    private static Champion champion(String wikitext, String[] fields) {
+        StringBuilder names = new StringBuilder();
+        List<String> countries = new ArrayList<>();
+        for (String f : fields) {
+            String name = plainName(infoboxField(wikitext, f));
+            if (name == null) return null;        // paire à moitié saisie = pas publiée
+            if (names.length() > 0) names.append(" / ");
+            names.append(name);
+            String c = infoboxField(wikitext, "country_" + f);
+            if (c != null && !c.isBlank() && !countries.contains(c.trim())) countries.add(c.trim());
+        }
+        return new Champion(names.toString(),
+                countries.isEmpty() ? null : String.join(" / ", countries));
+    }
+
+    /**
+     * Valeur brute d'un champ d'infobox ({@code | <nom> = …}), ou {@code null}.
+     * Espaces HORIZONTAUX seulement ({@code [ \t]}) autour du {@code =} : dans le
+     * bloc Champions, un champ VIDE est le cas normal (tournoi en cours) et un
+     * {@code \s*} gourmand sauterait la fin de ligne pour lire le champ SUIVANT
+     * (« country_MS » deviendrait le vainqueur du simple messieurs).
+     */
+    private static String infoboxField(String wikitext, String name) {
+        Matcher m = Pattern.compile(
+                "(?im)^[ \\t]*\\|[ \\t]*" + Pattern.quote(name) + "[ \\t]*=[ \\t]*([^\\n]*)")
+                .matcher(wikitext);
+        return m.find() ? m.group(1) : null;
+    }
+
+    /**
+     * Nom affichable d'un champ de champion : on garde le libellé du lien
+     * ({@code [[Tan Ning (badminton)|Tan Ning]]} → « Tan Ning »), sinon la cible
+     * sans son homonymie ({@code [[X (badminton)]]} → « X »), et on retire
+     * templates et gras. Champ vide (tournoi en cours) → {@code null}.
+     */
+    static String plainName(String raw) {
+        if (raw == null) return null;
+        String s = raw.replaceAll("\\{\\{[^}]*\\}\\}", " ")       // {{flagicon|TPE}}, {{nowrap|…}}
+                      .replace("'''", "").replace("''", "");
+        Matcher m = NAME_LINK.matcher(s);
+        if (m.find()) {
+            s = m.group(2) != null && !m.group(2).isBlank()
+                    ? m.group(2)                                   // [[cible|AFFICHAGE]]
+                    : m.group(1).replaceAll("\\s*\\([^)]*\\)\\s*$", "");  // [[X (badminton)]] → X
+        } else {
+            s = s.replaceAll("[\\[\\]]", "");                      // nom sans lien
+        }
+        s = s.replaceAll("<[^>]*>", " ").replaceAll("\\s+", " ").trim();
+        return s.isEmpty() ? null : s;
     }
 
     // ------------------------------------------------------------

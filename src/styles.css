@@ -74,6 +74,18 @@ html, body, #root { margin: 0; min-height: 100%; background: var(--bg); }
 .seeds li { font-size: 14px; color: var(--ink); display: flex; gap: 9px; align-items: baseline; }
 .seeds .s { color: var(--muted-2); font-variant-numeric: tabular-nums; font-family: 'Oswald', sans-serif; min-width: 18px; }
 
+/* Tournoi terminé, encore en tête d'affiche (current[].status = "termine") :
+   le compteur de jour passe en gris, et le palmarès prend la place des seeds. */
+.tourn__day.is-done { color: var(--muted-2); }
+.done { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 16px; }
+.done h4 { margin: 0 0 10px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-2); font-family: 'Oswald', sans-serif; }
+.done ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+.done li { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; font-size: 14px; }
+.done__ev { font-family: 'Oswald', sans-serif; font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted-2); min-width: 148px; }
+.done__who { color: var(--ink); font-weight: 600; }
+.done__cc { font-family: 'Oswald', sans-serif; font-size: 11px; letter-spacing: .06em; color: var(--live); border: 1px solid var(--live-dim); padding: 1px 6px; border-radius: 5px; }
+.done__wait { margin: 0; font-size: 13px; color: var(--muted); }
+
 .fr-banner { margin-top: 18px; border-radius: 10px; padding: 14px 16px 14px 18px; position: relative; background: var(--surface-2); border: 1px solid var(--line); }
 .fr-banner::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; border-radius: 5px 0 0 5px; background: linear-gradient(var(--fr-blue) 0 33%, #f2f4f8 33% 66%, var(--fr-red) 66% 100%); }
 .fr-banner.none::before { background: var(--muted-2); }

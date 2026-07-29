@@ -44,14 +44,20 @@ collector/cache/<slug>.json                -> cache Haiku PAR JOUEUR, clé = ré
 collector/aliases.json                     -> mémoire d'appariement tournoi BWF ->
                                               article Wikipédia VÉRIFIÉ (committé ;
                                               entrée présente = zéro recherche, zéro Haiku)
+collector/calendar.json                    -> mémoire du calendrier de la saison
+                                              (committé) : la source BWF OUBLIE un
+                                              tournoi dès sa finale jouée
 collector/src/main/java/veille/           -> le collecteur, découpé par rôle :
   Collector.java       orchestration + écriture atomique de data.json
   BwfCalendar.java     calendrier BWF (tiers, dates, dotation)
   Wiki.java            couche réseau API MediaWiki (search / revision / wikitext)
-  WikiTournament.java  Source A : frenchStatus depuis les tableaux (draws), déterministe ;
-                       appariement d'article VÉRIFIÉ (dates + niveau) + mémoire Aliases
+  WikiTournament.java  Source A : frenchStatus depuis les tableaux (draws) + champions
+                       depuis l'infobox, déterministe ; appariement d'article VÉRIFIÉ
+                       (dates + niveau) + mémoire Aliases
   WikiPlayer.java      Source B : rank (infobox) + historique de saison (prose→Haiku), caché
   Aliases.java         mémoire d'appariement (collector/aliases.json), lecture/écriture atomique
+  CalendarMemory.java  mémoire du calendrier de la saison (collector/calendar.json) :
+                       fusionne la source et ce qu'elle a oublié, écriture atomique
   LlmNet.java          appels Haiku : prose de saison -> lines[] ; appariement de dernier recours
   PlayerResults.java   orchestrateur players[] (roster Lanier + Christo Popov)
   DataJson.java        LE CONTRAT data.json en records typés (cf. ci-dessous)
@@ -70,7 +76,8 @@ Jackson, ordre des composants = ordre des clés). Toute modif du schéma passe p
 fichier ET `src/App.jsx`, même commit. Le workflow VALIDE le contrat (step jq) avant
 tout commit de data.json.
 
-`tier` ∈ `"wtf" | "1000" | "750" | "500" | "300"`. `tone` ∈ `"win" | "out" | null`.
+`tier` ∈ `"wtf" | "1000" | "750" | "500" | "300"`. `status` ∈ `"en_cours" | "termine"`.
+`tone` ∈ `"win" | "out" | null`.
 `medal` (échelle badminton — deux demi-finalistes ont le bronze, pas de petite
 finale) : `🥇` vainqueur · `🥈` finaliste · `🥉` demi-finaliste · `⚫` éliminé avant
 les demies (1/4, 1/8, tours, stade non précisé) · `🎯` encore en lice. Calculée
@@ -81,12 +88,24 @@ Haiku ni deviné par le front.
 {
   "generatedAt": "ISO-8601 UTC",
   "weekLabel": "Semaine du …",
-  "current": [
+  "current": [                        // la TÊTE D'AFFICHE, pas « la semaine »
     {
       "name": "…", "tier": "500", "location": "…", "dates": "…",
       "prize": "…", "timezone": "…", "dayLabel": "…",
+      "status": "en_cours",           // ou "termine" (cf. Window.featured)
+      "champions": null,              // état termine ET 5 disciplines publiées, sinon null
       "seeds": [ { "rank": "TS1", "name": "…" } ],
       "frenchStatus": { "present": true, "title": "…", "note": "…", "confirm": false }
+    },
+    {
+      "…": "…", "status": "termine",
+      "champions": {                  // TOUT OU RIEN : les 5, ou null
+        "ms": { "name": "Chou Tien-chen",  "country": "TPE" },
+        "ws": { "name": "Akane Yamaguchi", "country": "JPN" },
+        "md": { "name": "Fajar Alfian / Muhammad Shohibul Fikri", "country": "INA" },
+        "wd": { "name": "Liu Shengshu / Tan Ning", "country": "CHN" },
+        "xd": { "name": "Guo Xinwa / Chen Fanghui", "country": "CHN" }
+      }
     }
   ],
   "players": [
@@ -148,12 +167,46 @@ Un seul endroit décide de « aujourd'hui » et de current / upcoming / passé :
   de sa finale — le bug d'origine, verrouillé par les tests `FenetreTemporelle`
   (dates figées, instants UTC figés, aucun accès à l'horloge ni au réseau).
 
+### Tête d'affiche (`Window.featured`) — `current[]` n'est pas « la semaine »
+
+Le tableau de bord ne dit JAMAIS « aucun tournoi » tant qu'un tournoi récent peut
+être montré. `current[]` = la tête d'affiche, choisie ainsi :
+
+1. des tournois sont en cours (`start <= today <= end`) → tous, `status = "en_cours"`
+   (deux niveaux peuvent se chevaucher la même semaine) ;
+2. sinon, le tournoi le plus **récemment démarré** parmi les terminés, SEUL, avec
+   `status = "termine"` et ses `champions`. « Le plus récemment démarré » EST la
+   règle « aucun tournoi n'a commencé après lui » ;
+3. aucun tournoi encore commencé → liste vide (seul cas d'état vide côté front).
+
+**Un tournoi ne quitte donc pas l'affiche à sa date de fin, mais au démarrage du
+suivant.** Une fois sorti, il pourra alimenter la Dépêche « semaine dernière »
+(`isPast`). `dayLabel` suit l'état : « Jour 4 / 6 · 24 juillet » en cours,
+« Terminé · 26 juillet » ensuite (jamais un « Jour 6 / 6 » trompeur).
+
+### La source oublie les tournois terminés (`CalendarMemory`)
+
+**VÉRIFIÉ** : la page calendrier BWF ne publie que les tournois À VENIR — une
+édition en disparaît dès sa finale jouée (le 29 juillet 2026, le China Open du
+21–26 juillet n'y était déjà plus). Sans mémoire, le lendemain d'une finale il n'y
+a donc RIEN à mettre en tête d'affiche — c'est la cause réelle du « aucun tournoi
+en cours » du lundi, et aussi des dates manquantes dans `players[].lines`.
+
+`CalendarMemory` (fichier `collector/calendar.json`, committé par le workflow comme
+`aliases.json` et le cache joueur) garde les tournois DÉJÀ VUS et les fusionne avec
+la source à chaque run : clé `nom@début`, la version fraîche gagne toujours (la
+source reste l'autorité), et on n'y garde que la **saison courante** — une édition
+N-1 daterait à tort une ligne de la saison N (`LlmNet.matchTournament` retient
+l'édition passée la plus récente). Le collecteur travaille ensuite sur ce
+calendrier fusionné, jamais sur le seul fetch.
+
 ## Carte des sources (VÉRIFIÉ — ne pas dévier)
 
 | Donnée | Source | Accès |
 |---|---|---|
 | Calendrier + niveaux + prize | corporate.bwfbadminton.com/events/calendar/ | **Jsoup OK** (WordPress rendu serveur) |
 | Statut français d'un tournoi (`frenchStatus`) | Wikipédia EN — **page du tournoi** (tableau/draws) | **API MediaWiki** (`Wiki.java`) |
+| Vainqueurs des 5 disciplines (`champions`) | Wikipédia EN — **page du tournoi** (bloc Champions de l'infobox) | **API MediaWiki** (même lecture que `frenchStatus`) |
 | Rank + historique de saison (`players[]`) | Wikipédia EN — **page du joueur** (infobox + prose) | **API MediaWiki** (`Wiki.java`) |
 | Tableaux / scores live | TournamentSoftware, Flashscore | **INTERDIT** — robots.txt bloque, ne pas scraper |
 
@@ -168,7 +221,8 @@ Un seul endroit décide de « aujourd'hui » et de current / upcoming / passé :
   (`list=search`), on retient le titre commençant par l'année visée + partageant un
   jeton, puis on lit son wikitexte. Les **Seeds** annotent chaque tête de série entre
   parenthèses (« ''(champion)'' », « ''(second round)'' »… -> `stageFr`) ; le bracket
-  (`RDx-teamY`) atteste que le tableau est publié. Déterministe, **zéro LLM**.
+  (`RDx-teamY`) atteste que le tableau est publié. Déterministe, **zéro LLM**. La
+  MÊME lecture rend aussi les **champions** (infobox), en un seul appel réseau.
 - **Wikipédia — page joueur** (`WikiPlayer`, Source B) : `current_ranking` de
   l'infobox -> `rank` (déterministe, 1er entier = simple). La section « Career »
   est en prose -> nettoyée, filtrée sur l'année, passée à **Haiku** (`LlmNet`) qui
@@ -183,6 +237,9 @@ Un seul endroit décide de « aujourd'hui » et de current / upcoming / passé :
 - [x] Calendrier réel (Jsoup) : `current` / `upcoming`, niveaux, dates, prize.
 - [x] `frenchStatus` à trois états via le tableau Wikipédia du tournoi (Source A).
 - [x] `players[]` : rank d'infobox + historique de saison (Source B, Wikipédia).
+- [x] Tête d'affiche à deux états (`en_cours` / `termine`) + champions des 5
+      disciplines : un tournoi reste affiché jusqu'au démarrage du suivant, et la
+      mémoire du calendrier (`CalendarMemory`) compense l'oubli de la source BWF.
 
 La logique de fond est complète et fiable. Ce qui reste côté déterministe n'est plus
 de la logique mais de la **finition** : affichage, cas vides, fuseau/têtes de série
@@ -263,6 +320,22 @@ Le code a été audité et durci (détail : historique git, commits « Audit lot
   Aucun candidat vérifié -> `frenchStatus` null (jamais un faux match). Tout
   appariement accepté est **mémorisé** dans `collector/aliases.json` : au run
   suivant, entrée présente -> wikitexte direct, **zéro recherche `list=search`**.
+- **Champions = bloc de l'infobox, TOUT OU RIEN** (`WikiTournament.parseChampions`).
+  Les vainqueurs sont des champs nommés de `{{Infobox badminton event}}` : `MS`,
+  `WS`, puis `MD1`/`MD2`, `WD1`/`WD2`, `XD1`/`XD2` pour les paires, chacun doublé
+  d'un `country_<champ>`. C'est du champ nommé, comme le niveau et les dates :
+  **zéro LLM**. Deux pièges, tous deux testés :
+  1. **Délai Wikipédia** : pendant le tournoi les champs EXISTENT mais sont VIDES,
+     puis se remplissent discipline par discipline après les finales. Moins de 5
+     disciplines (ou une paire à moitié saisie) -> on renvoie `null`, le front dit
+     « résultats en attente ». **Jamais un palmarès partiel donné pour définitif** ;
+     le passage suivant du collecteur le complètera.
+  2. **Champ vide et regex gourmande** : `\s*` autour du `=` saute la fin de ligne
+     et lit le champ SUIVANT (`country_MS` deviendrait le vainqueur du simple).
+     D'où `[ \t]*` dans `infoboxField` — ne pas « simplifier » en `\s*`.
+  Le pays peut manquer (nom affiché seul) ; une paire de deux nationalités donne
+  « INA / JPN ». Les champions sont affichés **quel que soit le pays du vainqueur**
+  (il est rarement français — c'est voulu).
 - **Noms de joueurs en MOTS ENTIERS** (`TextUtil.hasWord`), jamais en sous-chaîne :
   « popov » matche « Toma Junior Popov » mais « christo » ⊄ « Christophe ».
 - **Stade depuis l'annotation** (`stageFr`) : les Seeds Wikipédia annotent le
@@ -309,9 +382,11 @@ Le code a été audité et durci (détail : historique git, commits « Audit lot
   (Coupe Thomas, Championnats d'Europe, … par équipes) -> petite table de traduction
   en dur (`LlmNet.frenchName`, appariée par jetons, robuste aux variantes). Aucun
   équivalent connu -> nom d'origine (on n'invente pas de traduction).
-- **Calendrier BWF = mois À VENIR seulement** : beaucoup de tournois passés de la
-  saison en sont absents, donc `date: null` (et nom d'origine) est un cas NORMAL,
-  pas un bug — mieux vaut pas de date qu'une fausse.
+- **Calendrier BWF = tournois À VENIR seulement** : la source oublie une édition
+  dès sa finale jouée. `CalendarMemory` rattrape ce qu'on a DÉJÀ VU (cf. plus haut),
+  mais rien avant la mise en place de la mémoire : `date: null` (et nom d'origine)
+  reste un cas NORMAL pour les tournois du début de saison, pas un bug — mieux vaut
+  pas de date qu'une fausse.
 - **Tri par ces dates déterministes** : `parseSeasonLines` ordonne les lignes du
   plus récent au plus ancien sur les dates du calendrier ; les lignes sans date
   passent après, sans casser l'ordre. On ne se fie jamais à l'ordre rendu par Haiku.
@@ -345,8 +420,9 @@ L'IA n'a sa place qu'où il n'y a pas de bonne réponse unique calculable :
 - produire un résumé avec un ton (étape B, à venir).
 
 **Tout le reste reste déterministe** : fetch, filtrage par date/niveau, appariement
-d'article *quand l'infobox suffit*, lecture des tableaux (Source A), `rank` d'infobox,
-et les DATES des lignes (calendrier BWF). Ne mets pas d'appel LLM là où une règle
+d'article *quand l'infobox suffit*, lecture des tableaux (Source A), les CHAMPIONS
+(bloc de l'infobox), le choix de la tête d'affiche (`Window.featured`), `rank`
+d'infobox, et les DATES des lignes (calendrier BWF). Ne mets pas d'appel LLM là où une règle
 suffit — les tableaux Wikipédia sont déjà structurés, ne les fais PAS lire par Haiku.
 
 **Règle d'or : ne JAMAIS demander au LLM un fait absent de sa source.** La prose
@@ -423,6 +499,11 @@ cron / clic  ->  GitHub Actions  ->  collecteur  ->  commit data.json
   du 21–26 juillet reste `current` le 26 (jour de la finale) à TOUTE heure UTC du
   run, et ne bascule « passé » qu'au 27. Ne pas rendre une borne stricte ni
   recalculer « aujourd'hui » ailleurs que dans `Window`.
+- **Tests anti-régression à conserver** : classes `TeteDaffiche` et
+  `MemoireCalendrier` — le 27 juillet, le tournoi fini la veille tient encore
+  l'affiche en `termine` (jamais « aucun tournoi »), il sort dès le démarrage du
+  suivant le 28, et la mémoire du calendrier le rend même quand la source BWF l'a
+  oublié. Plus `parseChampionsToutOuRienSiPartiel` : moins de 5 disciplines → `null`.
 - **Une date, un fuseau** : toute logique de date passe par `Window.today()`
   (Europe/Paris) et prend son instant en paramètre pour rester testable. Pas de
   `LocalDate.now()` disséminé dans le code.

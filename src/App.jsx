@@ -19,6 +19,27 @@ const TIER_LABEL = {
 const TIER_SHORT = { wtf: "WTF", "1000": "S1000", "750": "S750", "500": "S500", "300": "S300" };
 const ALL_TIERS = ["wtf", "1000", "750", "500", "300"];
 
+// Disciplines du bloc « Champions » (contrat current[].champions), dans l'ordre
+// d'affichage. Vocabulaire d'interface, pas des données badminton : les noms des
+// vainqueurs, eux, viennent tous du JSON.
+const EVENT_LABEL = {
+  ms: "Simple messieurs",
+  ws: "Simple dames",
+  md: "Double messieurs",
+  wd: "Double dames",
+  xd: "Double mixte",
+};
+const EVENT_ORDER = ["ms", "ws", "md", "wd", "xd"];
+
+// Palmarès affichable seulement si les 5 disciplines sont là : le collecteur est
+// déjà en tout-ou-rien, le front ne rattrape pas un bloc partiel (Wikipédia
+// remplit les champions discipline par discipline après les finales).
+function championRows(champions) {
+  if (!champions) return [];
+  const rows = EVENT_ORDER.map((k) => ({ key: k, ...(champions[k] || {}) })).filter((c) => c.name);
+  return rows.length === EVENT_ORDER.length ? rows : [];
+}
+
 function toneClass(tone) {
   if (tone === "win") return "res-win";
   if (tone === "out") return "res-out";
@@ -100,6 +121,10 @@ export default function App() {
   const players = data.players ?? [];
 
   const visibleCurrent = current.filter((t) => active.has(t.tier));
+  // Tête d'affiche entièrement terminée (aucun tournoi en cours) : le libellé de
+  // section le dit, plutôt que d'annoncer « en cours » un tournoi fini.
+  const headlineDone =
+    visibleCurrent.length > 0 && visibleCurrent.every((t) => t.status === "termine");
   const visibleUpcoming = upcoming.filter((t) => active.has(t.tier));
   const stamp = new Date(data.generatedAt).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
   // Badge honnête : les données viennent d'un cron (pas du direct). Au-delà de
@@ -144,7 +169,9 @@ export default function App() {
       <div className="vbwf__grid">
         <div className="vbwf__main">
         <section>
-          <h2 className="sec-label">En cours cette semaine</h2>
+          {/* Un tournoi terminé reste en tête d'affiche jusqu'au démarrage du
+              suivant (collecteur : current[].status) — le titre de section suit. */}
+          <h2 className="sec-label">{headlineDone ? "Dernier tournoi" : "En cours cette semaine"}</h2>
 
           {visibleCurrent.length === 0 && (
             <div className="card empty">Aucun tournoi de ce niveau en cours cette semaine.</div>
@@ -154,7 +181,9 @@ export default function App() {
             <div className="card tourn" key={t.name}>
               <div className="tourn__top">
                 <span className="tier" style={{ background: TIER_COLOR[t.tier] }}>{TIER_LABEL[t.tier]}</span>
-                <span className="tourn__day">{t.dayLabel}</span>
+                <span className={"tourn__day" + (t.status === "termine" ? " is-done" : "")}>
+                  {t.dayLabel}
+                </span>
               </div>
               <div className="tourn__name">{t.name}</div>
               <div className="tourn__meta">
@@ -163,6 +192,31 @@ export default function App() {
                 <span>Dotation <b>{t.prize}</b></span>
                 <span>Fuseau <b>{t.timezone}</b></span>
               </div>
+
+              {/* État « termine » : bandeau + palmarès des 5 disciplines (toutes
+                  nationalités). Bloc Champions Wikipédia pas encore rempli (le
+                  jour de la finale) → « résultats en attente », jamais un
+                  palmarès partiel donné pour définitif. */}
+              {t.status === "termine" && (
+                <div className="done">
+                  <h4>🏆 Tournoi terminé — vainqueurs</h4>
+                  {championRows(t.champions).length > 0 ? (
+                    <ul>
+                      {championRows(t.champions).map((c) => (
+                        <li key={c.key}>
+                          <span className="done__ev">{EVENT_LABEL[c.key]}</span>
+                          <span className="done__who">{c.name}</span>
+                          {c.country && <span className="done__cc">{c.country}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="done__wait">
+                      Résultats en attente — Wikipédia n'a pas encore publié les vainqueurs.
+                    </p>
+                  )}
+                </div>
+              )}
 
               {t.seeds?.length > 0 && (
                 <div className="seeds">

@@ -1,0 +1,92 @@
+[ {
+  "name" : "VICTOR China Open 2026",
+  "tier" : "1000",
+  "location" : "Changzhou, CHN",
+  "prize" : "2 000 000 $",
+  "start" : "2026-07-21",
+  "end" : "2026-07-26"
+}, {
+  "name" : "YONEX Taipei Open 2026",
+  "tier" : "300",
+  "location" : "Taipei, TPE",
+  "prize" : "250 000 $",
+  "start" : "2026-07-28",
+  "end" : "2026-08-02"
+}, {
+  "name" : "VICTOR Korea Masters 2026",
+  "tier" : "300",
+  "location" : "Asan, KOR",
+  "prize" : "250 000 $",
+  "start" : "2026-08-04",
+  "end" : "2026-08-09"
+}, {
+  "name" : "LI-NING China Masters 2026",
+  "tier" : "750",
+  "location" : "Shenzhen, CHN",
+  "prize" : "1 250 000 $",
+  "start" : "2026-09-01",
+  "end" : "2026-09-06"
+}, {
+  "name" : "CLASH OF CLANS Arctic Open 2026 powered by YONEX",
+  "tier" : "500",
+  "location" : "Vantaa, FIN",
+  "prize" : "500 000 $",
+  "start" : "2026-10-06",
+  "end" : "2026-10-11"
+}, {
+  "name" : "VICTOR Denmark Open 2026",
+  "tier" : "750",
+  "location" : "Odense, DEN",
+  "prize" : "950 000 $",
+  "start" : "2026-10-13",
+  "end" : "2026-10-18"
+}, {
+  "name" : "YONEX French Open 2026",
+  "tier" : "750",
+  "location" : "Paris, FRA",
+  "prize" : "950 000 $",
+  "start" : "2026-10-20",
+  "end" : "2026-10-25"
+}, {
+  "name" : "HYLO Open 2026",
+  "tier" : "500",
+  "location" : "Saarbrücken, GER",
+  "prize" : "500 000 $",
+  "start" : "2026-10-27",
+  "end" : "2026-11-01"
+}, {
+  "name" : "Korea Open 2026",
+  "tier" : "500",
+  "location" : "Yeosu city, KOR",
+  "prize" : "500 000 $",
+  "start" : "2026-11-03",
+  "end" : "2026-11-08"
+}, {
+  "name" : "Kumamoto Masters Japan 2026",
+  "tier" : "500",
+  "location" : "Kumamoto, JPN",
+  "prize" : "500 000 $",
+  "start" : "2026-11-10",
+  "end" : "2026-11-15"
+}, {
+  "name" : "Hong Kong Open 2026",
+  "tier" : "500",
+  "location" : "Hong Kong, China, HKG",
+  "prize" : "500 000 $",
+  "start" : "2026-11-17",
+  "end" : "2026-11-22"
+}, {
+  "name" : "Syed Modi India International 2026",
+  "tier" : "300",
+  "location" : "Lucknow, IND",
+  "prize" : "250 000 $",
+  "start" : "2026-11-24",
+  "end" : "2026-11-29"
+}, {
+  "name" : "HSBC BWF World Tour Finals 2026",
+  "tier" : "wtf",
+  "location" : "Hangzhou, CHN",
+  "prize" : "3 500 000 $",
+  "start" : "2026-12-09",
+  "end" : "2026-12-13"
+} ]

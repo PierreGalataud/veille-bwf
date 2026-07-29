@@ -55,63 +55,81 @@ public class Collector {
     }
 
     private static String buildData() throws Exception {
-        List<Tournament> all = BwfCalendar.fetchTournaments();
+        // « Aujourd'hui » = la journée du lecteur français (Europe/Paris), pas
+        // celle du runner CI (UTC) ; bornes INCLUSIVES des deux côtés — cf. Window.
+        return buildData(Window.today());
+    }
 
-        if (all.isEmpty()) {
+    /** Même chose à date IMPOSÉE : rejoue un run d'un jour donné (vérifications). */
+    static String buildData(LocalDate today) throws Exception {
+        List<Tournament> fetched = BwfCalendar.fetchTournaments();
+
+        if (fetched.isEmpty()) {
             // Soit la page a changé de structure, soit le fetch a renvoyé une
             // page vide/erreur : on refuse d'écrire un data.json vide.
             throw new IllegalStateException(
                     "aucun tournoi World Tour extrait — structure de page changée ou réponse invalide");
         }
 
-        // « Aujourd'hui » = la journée du lecteur français (Europe/Paris), pas
-        // celle du runner CI (UTC) ; bornes INCLUSIVES des deux côtés — cf. Window.
-        LocalDate today = Window.today();
+        // La source ne publie que les tournois À VENIR : une édition disparaît du
+        // calendrier dès sa finale jouée. On la garde en mémoire (cf.
+        // CalendarMemory) — sans quoi la tête d'affiche « termine » et les dates
+        // des lignes joueurs perdraient le tournoi qui vient de se terminer.
+        List<Tournament> all = CalendarMemory.remember(fetched, today);
 
-        List<Tournament> current = new ArrayList<>();
+        // Tête d'affiche : les tournois en cours, ou à défaut le dernier terminé
+        // tant qu'aucun autre n'a démarré (cf. Window.featured) — le tableau de
+        // bord ne dit jamais « aucun tournoi » s'il reste un tournoi à montrer.
+        List<Window.Featured> featured = Window.featured(all, today);
+
         List<Tournament> upcoming = new ArrayList<>();
         for (Tournament t : all) {
-            if (Window.isCurrent(t, today)) {
-                current.add(t);              // start <= today <= end (finale comprise)
-            } else if (Window.isUpcoming(t, today)) {
-                upcoming.add(t);             // à venir
-            }
-            // sinon : tournoi passé (fini avant aujourd'hui, donc dès J+1) → ignoré
+            if (Window.isUpcoming(t, today)) upcoming.add(t);
         }
-        current.sort((a, b) -> a.start().compareTo(b.start()));
         upcoming.sort((a, b) -> a.start().compareTo(b.start()));
 
-        // Statut français lu dans les tableaux Wikipédia (Source A, déterministe).
-        // On résout les tournois en cours ET les à-venir PROCHES (départ ≤ 14 jours) :
-        // leur page Wikipédia existe déjà et alimente upcoming[].french. Au-delà,
-        // l'article de l'édition n'est en général pas encore créé — inutile de sonder.
-        Map<String, WikiTournament.FrenchStatus> frByName = new HashMap<>();
-        for (Tournament t : current) frByName.put(t.name(), WikiTournament.resolve(t));
+        // Article Wikipédia du tournoi (Source A, déterministe) : statut français
+        // (draw) + champions (infobox), en une lecture. On résout la tête d'affiche
+        // ET les à-venir PROCHES (départ ≤ 14 jours) : leur page existe déjà et
+        // alimente upcoming[].french. Au-delà, l'article de l'édition n'est en
+        // général pas encore créé — inutile de sonder.
+        Map<String, WikiTournament.Article> wikiByName = new HashMap<>();
+        for (Window.Featured f : featured) {
+            wikiByName.put(f.tournament().name(), WikiTournament.resolve(f.tournament()));
+        }
         for (Tournament t : upcoming) {
             if (Window.startsWithin(t, today, UPCOMING_FR_DAYS)) {
-                frByName.put(t.name(), WikiTournament.resolve(t));
+                wikiByName.put(t.name(), WikiTournament.resolve(t));
             }
         }
 
         List<DataJson.CurrentJson> currentJson = new ArrayList<>();
-        for (Tournament t : current) {
-            WikiTournament.FrenchStatus fs = frByName.getOrDefault(t.name(),
-                    WikiTournament.FrenchStatus.unknown("Statut inconnu."));
+        for (Window.Featured f : featured) {
+            Tournament t = f.tournament();
+            WikiTournament.Article a = wikiByName.getOrDefault(t.name(),
+                    WikiTournament.Article.unknown("Statut inconnu."));
+            WikiTournament.FrenchStatus fs = a.french();
+            boolean done = Window.TERMINE.equals(f.status());
             currentJson.add(new DataJson.CurrentJson(
                     t.name(), t.tier(), t.location(),
                     FrDates.dateRange(t.start(), t.end(), true),
                     t.prize(),
                     "—", // fuseau absent du calendrier BWF (cf. BwfCalendar)
-                    dayLabel(t.start(), t.end(), today),
+                    dayLabel(t.start(), t.end(), today, done),
+                    f.status(),
+                    // Champions seulement pour un tournoi TERMINÉ, et seulement si
+                    // les 5 disciplines sont publiées (parseChampions est tout ou rien).
+                    done ? championsJson(a.champions()) : null,
                     new ArrayList<>(),
                     new DataJson.FrenchStatusJson(fs.present(), fs.title(), fs.note(), fs.confirm())));
         }
 
         List<DataJson.UpcomingJson> upcomingJson = new ArrayList<>();
         for (Tournament t : upcoming) {
+            WikiTournament.Article a = wikiByName.get(t.name());
             upcomingJson.add(new DataJson.UpcomingJson(
                     FrDates.dateRange(t.start(), t.end(), false),
-                    t.name(), t.tier(), frenchLabel(frByName.get(t.name()))));
+                    t.name(), t.tier(), frenchLabel(a == null ? null : a.french())));
         }
 
         // players : suivi individuel des Français (Lanier, Christo Popov) via
@@ -147,8 +165,27 @@ public class Collector {
         return "Semaine du " + FrDates.dateRange(monday, sunday, true);
     }
 
-    /** « Jour 2 / 6 · 10 juin » pour un tournoi en cours. */
-    private static String dayLabel(LocalDate start, LocalDate end, LocalDate today) {
+    /** Mappe les champions de Wikipédia vers le contrat ({@code null} si non publiés). */
+    private static DataJson.ChampionsJson championsJson(WikiTournament.Champions c) {
+        if (c == null) return null;
+        return new DataJson.ChampionsJson(
+                champion(c.ms()), champion(c.ws()), champion(c.md()),
+                champion(c.wd()), champion(c.xd()));
+    }
+
+    private static DataJson.ChampionJson champion(WikiTournament.Champion c) {
+        return c == null ? null : new DataJson.ChampionJson(c.name(), c.country());
+    }
+
+    /**
+     * « Jour 2 / 6 · 10 juin » pour un tournoi en cours ; « Terminé · 26 juillet »
+     * (jour de la finale) pour un tournoi encore en tête d'affiche mais fini — on
+     * n'affiche pas un « Jour 6 / 6 » qui laisserait croire qu'il joue encore.
+     */
+    private static String dayLabel(LocalDate start, LocalDate end, LocalDate today, boolean done) {
+        if (done) {
+            return "Terminé · " + end.getDayOfMonth() + " " + FrDates.monthName(end.getMonthValue());
+        }
         long total = end.toEpochDay() - start.toEpochDay() + 1;
         long day = today.toEpochDay() - start.toEpochDay() + 1;
         if (day < 1) day = 1;

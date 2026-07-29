@@ -15,11 +15,30 @@ record DataJson(
         List<PlayerJson> players,
         List<UpcomingJson> upcoming) {
 
-    /** Tournoi de la semaine courante. {@code tier} ∈ wtf|1000|750|500|300. */
+    /**
+     * Tournoi en tête d'affiche. {@code tier} ∈ wtf|1000|750|500|300.
+     *
+     * <p>{@code status} ∈ {@code "en_cours"} | {@code "termine"} (cf.
+     * {@link Window#featured}) : un tournoi reste en tête d'affiche APRÈS sa
+     * finale, jusqu'à ce qu'un autre tournoi World Tour démarre.
+     *
+     * <p>{@code champions} n'est renseigné qu'à l'état {@code termine}, et
+     * seulement si les 5 disciplines sont publiées sur Wikipédia (tout ou rien) ;
+     * {@code null} sinon → le front affiche « résultats en attente », jamais un
+     * palmarès partiel.
+     */
     record CurrentJson(
             String name, String tier, String location, String dates,
-            String prize, String timezone, String dayLabel,
+            String prize, String timezone, String dayLabel, String status,
+            ChampionsJson champions,
             List<SeedJson> seeds, FrenchStatusJson frenchStatus) {}
+
+    /** Les 5 vainqueurs d'un tournoi terminé (toutes nationalités, pas que les Bleus). */
+    record ChampionsJson(ChampionJson ms, ChampionJson ws, ChampionJson md,
+                         ChampionJson wd, ChampionJson xd) {}
+
+    /** Vainqueur d'une discipline : nom (paire jointe par « / »), pays nullable. */
+    record ChampionJson(String name, String country) {}
 
     /** Tête de série (hors périmètre du collecteur actuel : liste vide). */
     record SeedJson(String rank, String name) {}

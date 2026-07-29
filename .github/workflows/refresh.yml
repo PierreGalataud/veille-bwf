@@ -51,6 +51,9 @@ jobs:
             (.upcoming    | type == "array") and
             ([.current[].tier]  | all(IN("wtf","1000","750","500","300"))) and
             ([.upcoming[].tier] | all(IN("wtf","1000","750","500","300"))) and
+            ([.current[].status] | all(IN("en_cours","termine"))) and
+            ([.current[] | select(.champions != null) | .champions]
+              | all([.ms,.ws,.md,.wd,.xd] | all(.name | type == "string"))) and
             ([.current[].frenchStatus.present] | all(. == true or . == false or . == null))
           ' public/data.json > /dev/null
 
@@ -62,11 +65,15 @@ jobs:
           #  - collector/cache/     : cache Haiku par joueur, clé = révision Wikipédia
           #    (révision déjà vue -> zéro appel Haiku, data.json stable) ;
           #  - collector/aliases.json : appariement tournoi BWF -> article Wikipédia
-          #    vérifié (entrée présente -> zéro recherche MediaWiki, zéro Haiku).
+          #    vérifié (entrée présente -> zéro recherche MediaWiki, zéro Haiku) ;
+          #  - collector/calendar.json : calendrier de la saison. La source BWF ne
+          #    publie que les tournois À VENIR : sans cette mémoire, le tournoi qui
+          #    vient de finir disparaît (plus de tête d'affiche « termine »).
           # Ces chemins n'existent qu'après un premier succès, d'où les tests.
           git add public/data.json
           if [ -d collector/cache ]; then git add collector/cache; fi
           if [ -f collector/aliases.json ]; then git add collector/aliases.json; fi
+          if [ -f collector/calendar.json ]; then git add collector/calendar.json; fi
           git diff --staged --quiet || git commit -m "data: refresh $(date -u +%FT%TZ)"
           # Un commit a pu arriver sur main entre le checkout et ce push (modif
           # manuelle, autre run) : on rebase notre éventuel commit data avant de pousser.

@@ -163,6 +163,179 @@ class CollectorTest {
     }
 
     // ------------------------------------------------------------
+    // Tête d'affiche — jamais de « aucun tournoi » s'il y a un tournoi à montrer
+    // ------------------------------------------------------------
+    @Nested
+    class TeteDaffiche {
+
+        /** Le tournoi qui a démarré la semaine du bug (finale le dimanche 26). */
+        private final Tournament chine = new Tournament(
+                "VICTOR China Open 2026", "1000", "Changzhou, CHN", "2 000 000 $",
+                LocalDate.of(2026, 7, 21), LocalDate.of(2026, 7, 26));
+        /** Le suivant au calendrier : démarre le 28 (donc rien entre les deux). */
+        private final Tournament taipei = new Tournament(
+                "YONEX Taipei Open 2026", "300", "Taipei, TPE", "240 000 $",
+                LocalDate.of(2026, 7, 28), LocalDate.of(2026, 8, 2));
+
+        /** Le lundi 27 : la Chine est finie, rien n'a démarré depuis → elle RESTE
+         *  en tête d'affiche, à l'état « termine ». Jamais « aucun tournoi ». */
+        @Test
+        void tournoiTermineResteEnTeteDaffiche() {
+            List<Window.Featured> f = Window.featured(
+                    List.of(chine, taipei), LocalDate.of(2026, 7, 27));
+            assertEquals(1, f.size());
+            assertEquals("VICTOR China Open 2026", f.get(0).tournament().name());
+            assertEquals("termine", f.get(0).status());
+        }
+
+        /** Dès qu'un tournoi démarre (le 28), l'ancien SORT et le nouveau est en cours. */
+        @Test
+        void leNouveauTournoiChasseLancien() {
+            List<Window.Featured> f = Window.featured(
+                    List.of(chine, taipei), LocalDate.of(2026, 7, 28));
+            assertEquals(1, f.size());
+            assertEquals("YONEX Taipei Open 2026", f.get(0).tournament().name());
+            assertEquals("en_cours", f.get(0).status());
+        }
+
+        /** Pendant le tournoi (jour de la finale compris) : « en_cours », pas de bascule. */
+        @Test
+        void pendantLeTournoiEnCoursBornesInclusives() {
+            for (int jour = 21; jour <= 26; jour++) {
+                List<Window.Featured> f = Window.featured(
+                        List.of(chine, taipei), LocalDate.of(2026, 7, jour));
+                assertEquals(1, f.size(), "le " + jour);
+                assertEquals("VICTOR China Open 2026", f.get(0).tournament().name(), "le " + jour);
+                assertEquals("en_cours", f.get(0).status(), "le " + jour);
+            }
+        }
+
+        /** FUSEAU + BORNES : le 26 à 6 h UTC (8 h à Paris), le tournoi qui finit le
+         *  26 est encore « en_cours » — et il l'est encore à 21 h UTC (23 h à Paris). */
+        @Test
+        void leJourDeLaFinaleResteEnCoursEnHeureParis() {
+            for (String run : new String[]{
+                    "2026-07-25T22:30:00Z",   // 00 h 30 à Paris le 26 (UTC dit encore « 25 »)
+                    "2026-07-26T06:00:00Z",   // 8 h à Paris
+                    "2026-07-26T21:00:00Z"}) { // 23 h à Paris
+                List<Window.Featured> f = Window.featured(
+                        List.of(chine, taipei), Window.today(java.time.Instant.parse(run)));
+                assertEquals("VICTOR China Open 2026", f.get(0).tournament().name(), run);
+                assertEquals("en_cours", f.get(0).status(), run);
+            }
+        }
+
+        /** Deux tournois la même semaine (niveaux différents) : les DEUX en cours,
+         *  triés par date de début — la règle « termine » ne s'applique qu'à défaut. */
+        @Test
+        void deuxTournoisSimultanesRestentTousDeuxEnCours() {
+            Tournament autre = new Tournament("Kaohsiung Masters 2026", "300", "Kaohsiung, TPE",
+                    "—", LocalDate.of(2026, 7, 22), LocalDate.of(2026, 7, 26));
+            List<Window.Featured> f = Window.featured(
+                    List.of(autre, chine), LocalDate.of(2026, 7, 24));
+            assertEquals(2, f.size());
+            assertEquals("VICTOR China Open 2026", f.get(0).tournament().name());   // 21 avant 22
+            assertTrue(f.stream().allMatch(x -> "en_cours".equals(x.status())));
+        }
+
+        /** Entre deux tournois terminés, c'est le plus RÉCEMMENT DÉMARRÉ qui tient
+         *  l'affiche (« aucun tournoi n'a commencé après lui »). */
+        @Test
+        void leDernierDemarreTientLaffiche() {
+            Tournament vieux = new Tournament("Japan Open 2026", "750", "Tokyo, JPN", "—",
+                    LocalDate.of(2026, 7, 14), LocalDate.of(2026, 7, 19));
+            List<Window.Featured> f = Window.featured(
+                    List.of(vieux, chine), LocalDate.of(2026, 7, 27));
+            assertEquals("VICTOR China Open 2026", f.get(0).tournament().name());
+        }
+
+        /** Aucun tournoi encore commencé (début de saison) → liste vide, seul cas
+         *  où le front affiche un état vide. On n'invente pas une tête d'affiche. */
+        @Test
+        void videSiAucunTournoiNaEncoreCommence() {
+            assertTrue(Window.featured(List.of(taipei), LocalDate.of(2026, 7, 20)).isEmpty());
+            assertTrue(Window.featured(List.of(), LocalDate.of(2026, 7, 27)).isEmpty());
+            assertTrue(Window.featured(null, LocalDate.of(2026, 7, 27)).isEmpty());
+        }
+    }
+
+    // ------------------------------------------------------------
+    // Mémoire du calendrier — la source oublie les tournois terminés
+    // ------------------------------------------------------------
+    @Nested
+    class MemoireCalendrier {
+
+        private final Tournament chine = new Tournament(
+                "VICTOR China Open 2026", "1000", "Changzhou, CHN", "2 000 000 $",
+                LocalDate.of(2026, 7, 21), LocalDate.of(2026, 7, 26));
+        private final Tournament taipei = new Tournament(
+                "YONEX Taipei Open 2026", "300", "Taipei, TPE", "250 000 $",
+                LocalDate.of(2026, 7, 28), LocalDate.of(2026, 8, 2));
+
+        /** LE CAS RÉEL : le 29 juillet, la source ne publie plus que les tournois
+         *  à venir — le China Open terminé en a disparu. La mémoire le rend. */
+        @Test
+        void mergeRendLeTournoiDisparuDeLaSource() {
+            List<Tournament> merged = CalendarMemory.merge(
+                    List.of(chine, taipei),            // mémoire (vue au run précédent)
+                    List.of(taipei),                   // ce que la source publie aujourd'hui
+                    LocalDate.of(2026, 7, 29));
+            assertEquals(2, merged.size());
+            assertEquals("VICTOR China Open 2026", merged.get(0).name());   // trié par début
+            // …et la tête d'affiche du 27 redevient possible grâce à lui.
+            assertEquals("VICTOR China Open 2026",
+                    Window.featured(merged, LocalDate.of(2026, 7, 27)).get(0).tournament().name());
+        }
+
+        /** Sans mémoire, le 27 juillet n'a RIEN à montrer : c'est le bug d'origine
+         *  (« aucun tournoi en cours » le lendemain d'une finale). */
+        @Test
+        void sansMemoireLaTeteDaffficheEstVide() {
+            assertTrue(Window.featured(List.of(taipei), LocalDate.of(2026, 7, 27)).isEmpty());
+        }
+
+        /** La SOURCE fait autorité : une édition re-publiée écrase la mémorisée
+         *  (dates ou dotation corrigées), sans doublon. */
+        @Test
+        void laSourceEcraseLaMemoire() {
+            Tournament corrige = new Tournament(taipei.name(), taipei.tier(), taipei.location(),
+                    "300 000 $", taipei.start(), taipei.end());
+            List<Tournament> merged = CalendarMemory.merge(
+                    List.of(taipei), List.of(corrige), LocalDate.of(2026, 7, 29));
+            assertEquals(1, merged.size());
+            assertEquals("300 000 $", merged.get(0).prize());
+        }
+
+        /** Mémoire bornée à la saison : une édition N-1 est oubliée (sinon elle
+         *  daterait à tort une ligne de la saison en cours). */
+        @Test
+        void mergeOublieLesSaisonsPassees() {
+            Tournament an2025 = new Tournament("VICTOR China Open 2025", "1000", "Changzhou, CHN",
+                    "—", LocalDate.of(2025, 7, 22), LocalDate.of(2025, 7, 27));
+            List<Tournament> merged = CalendarMemory.merge(
+                    List.of(an2025, chine), List.of(), LocalDate.of(2026, 7, 29));
+            assertEquals(1, merged.size());
+            assertEquals("VICTOR China Open 2026", merged.get(0).name());
+        }
+
+        /** Aller-retour JSON sans perte (dates ISO, ordre conservé). */
+        @Test
+        void memoireAllerRetourJson() throws Exception {
+            List<Tournament> l = List.of(chine, taipei);
+            assertEquals(l, CalendarMemory.fromJson(CalendarMemory.toJson(l)));
+        }
+
+        /** Fichier corrompu ou ligne illisible → on repart sans, jamais d'exception. */
+        @Test
+        void memoireCorrompueRendListeVide() {
+            assertTrue(CalendarMemory.fromJson("pas du json").isEmpty());
+            assertTrue(CalendarMemory.fromJson("{\"a\":1}").isEmpty());
+            assertTrue(CalendarMemory.fromJson(
+                    "[{\"name\":\"X\",\"start\":\"pas une date\",\"end\":\"2026-07-26\"}]").isEmpty());
+        }
+    }
+
+    // ------------------------------------------------------------
     // Source A — statut français d'un tournoi (draws Wikipédia)
     // ------------------------------------------------------------
     @Nested
@@ -280,6 +453,87 @@ class CollectorTest {
             assertNull(WikiTournament.parseFrenchStatus("Un article sans aucun bracket.").present());
             assertNull(WikiTournament.parseFrenchStatus(null).present());
             assertTrue(WikiTournament.parseFrenchStatus(null).confirm());
+        }
+
+        /** Infobox du 2026 China Open une fois les finales jouées (extrait réel). */
+        private String infoboxComplete() {
+            return "{{Infobox badminton event\n|dates          = 21–26 July \n|level          = G2L2\n"
+                    + "| MS             = [[Chou Tien-chen]]\n| country_MS     = TPE\n"
+                    + "| WS             = [[Akane Yamaguchi]]\n| country_WS     = JPN\n"
+                    + "| MD1            = [[Fajar Alfian]]\n| country_MD1    = INA\n"
+                    + "| MD2            = [[Muhammad Shohibul Fikri]]\n| country_MD2    = INA\n"
+                    + "| WD1            = [[Liu Shengshu]]\n| country_WD1    = CHN\n"
+                    + "| WD2            = [[Tan Ning (badminton)|Tan Ning]]\n| country_WD2    = CHN\n"
+                    + "| XD1            = [[Guo Xinwa]]\n| country_XD1    = CHN\n"
+                    + "| XD2            = [[Chen Fanghui]]\n| country_XD2    = CHN\n}}\n";
+        }
+
+        /** Les 5 disciplines publiées → champions lus, paires jointes, pays gardé
+         *  quelle que soit la nationalité (le vainqueur est rarement français). */
+        @Test
+        void parseChampionsLitLesCinqDisciplines() {
+            WikiTournament.Champions c = WikiTournament.parseChampions(infoboxComplete());
+            assertEquals("Chou Tien-chen", c.ms().name());
+            assertEquals("TPE", c.ms().country());
+            assertEquals("Akane Yamaguchi", c.ws().name());
+            assertEquals("Fajar Alfian / Muhammad Shohibul Fikri", c.md().name());
+            assertEquals("INA", c.md().country());                    // paire d'un seul pays
+            assertEquals("Liu Shengshu / Tan Ning", c.wd().name());    // [[cible|affichage]]
+            assertEquals("Guo Xinwa / Chen Fanghui", c.xd().name());
+        }
+
+        /** TOURNOI EN COURS (cas réel du Taipei Open) : les champs existent mais
+         *  sont VIDES → aucun champion, jamais un palmarès inventé. */
+        @Test
+        void parseChampionsNullQuandLeBlocEstVide() {
+            String enCours = "{{Infobox badminton event\n|dates = 28 July–2 August\n|level = G2L5\n"
+                    + "| MS             = \n| country_MS     = \n| WS             = \n"
+                    + "| country_WS     = \n| MD1            = \n| MD2            = \n"
+                    + "| WD1            = \n| WD2            = \n| XD1            = \n"
+                    + "| XD2            = \n}}\n";
+            assertNull(WikiTournament.parseChampions(enCours));
+            assertNull(WikiTournament.parseChampions("Un article sans infobox."));
+            assertNull(WikiTournament.parseChampions(null));
+        }
+
+        /** DÉLAI WIKIPÉDIA : le bloc se remplit discipline par discipline. Moins de
+         *  5 disciplines (ou une paire à moitié saisie) → TOUT OU RIEN, on renvoie
+         *  null et le front dira « résultats en attente ». */
+        @Test
+        void parseChampionsToutOuRienSiPartiel() {
+            String sansMixte = infoboxComplete()
+                    .replace("| XD1            = [[Guo Xinwa]]\n", "| XD1            = \n");
+            assertNull(WikiTournament.parseChampions(sansMixte));      // 4 disciplines sur 5
+
+            String paireAmoitie = infoboxComplete()
+                    .replace("| MD2            = [[Muhammad Shohibul Fikri]]\n", "| MD2            = \n");
+            assertNull(WikiTournament.parseChampions(paireAmoitie));   // double à moitié saisi
+        }
+
+        /** Pays absent → le champion reste valable (nom seul) ; paire de deux
+         *  nationalités → les deux codes, sans doublon. */
+        @Test
+        void parseChampionsToleranteSurLePays() {
+            String c = infoboxComplete()
+                    .replace("| country_MS     = TPE\n", "| country_MS     = \n")
+                    .replace("| country_XD2    = CHN\n", "| country_XD2    = JPN\n");
+            WikiTournament.Champions ch = WikiTournament.parseChampions(c);
+            assertEquals("Chou Tien-chen", ch.ms().name());
+            assertNull(ch.ms().country());                             // pays manquant toléré
+            assertEquals("CHN / JPN", ch.xd().country());              // paire mixte
+        }
+
+        /** Nettoyage d'un champ de champion : lien, homonymie, template, gras. */
+        @Test
+        void plainNameNettoieLeChamp() {
+            assertEquals("Tan Ning", WikiTournament.plainName("[[Tan Ning (badminton)|Tan Ning]]"));
+            assertEquals("Tan Ning", WikiTournament.plainName("[[Tan Ning (badminton)]]"));
+            assertEquals("Chou Tien-chen", WikiTournament.plainName(" [[Chou Tien-chen]] "));
+            assertEquals("Chou Tien-chen",
+                    WikiTournament.plainName("{{flagicon|TPE}} '''[[Chou Tien-chen]]'''"));
+            assertEquals("Anders Antonsen", WikiTournament.plainName("Anders Antonsen"));
+            assertNull(WikiTournament.plainName("   "));
+            assertNull(WikiTournament.plainName(null));
         }
 
         @Test
