@@ -65,6 +65,104 @@ class CollectorTest {
     }
 
     // ------------------------------------------------------------
+    // Fenêtre temporelle (Window) — bornes inclusives + fuseau Europe/Paris
+    // ------------------------------------------------------------
+    @Nested
+    class FenetreTemporelle {
+
+        /** Le China Open réel de la semaine du bug : 21 – 26 juillet 2026 (finale le 26). */
+        private final Tournament chinaOpen = new Tournament(
+                "VICTOR China Open 2026", "1000", "Changzhou, CHN", "2 000 000 $",
+                LocalDate.of(2026, 7, 21), LocalDate.of(2026, 7, 26));
+
+        /** BORNES INCLUSIVES : en cours le jour d'ouverture ET le jour de la finale. */
+        @Test
+        void enCoursJusquAuDernierJourInclus() {
+            assertFalse(Window.isCurrent(chinaOpen, LocalDate.of(2026, 7, 20)));  // veille
+            assertTrue(Window.isCurrent(chinaOpen, LocalDate.of(2026, 7, 21)));   // 1er jour
+            assertTrue(Window.isCurrent(chinaOpen, LocalDate.of(2026, 7, 24)));
+            assertTrue(Window.isCurrent(chinaOpen, LocalDate.of(2026, 7, 26)));   // FINALE
+            assertFalse(Window.isCurrent(chinaOpen, LocalDate.of(2026, 7, 27)));  // J+1
+        }
+
+        /** Le jour de la finale, le tournoi n'est ni à venir ni passé : il est en cours. */
+        @Test
+        void leJourDeLaFinaleNestNiAvenirNiPasse() {
+            LocalDate finale = LocalDate.of(2026, 7, 26);
+            assertFalse(Window.isUpcoming(chinaOpen, finale));
+            assertFalse(Window.isPast(chinaOpen, finale));
+        }
+
+        /** BASCULE « semaine dernière » : seulement à J+1, jamais le jour même. */
+        @Test
+        void basculeVersSemaineDerniereSeulementAJplus1() {
+            assertFalse(Window.isPast(chinaOpen, LocalDate.of(2026, 7, 25)));
+            assertFalse(Window.isPast(chinaOpen, LocalDate.of(2026, 7, 26)));   // jour de la finale
+            assertTrue(Window.isPast(chinaOpen, LocalDate.of(2026, 7, 27)));    // J+1
+        }
+
+        /** Le jour d'ouverture est « en cours », pas « à venir » (borne de gauche incluse). */
+        @Test
+        void aVenirSeulementAvantLouverture() {
+            assertTrue(Window.isUpcoming(chinaOpen, LocalDate.of(2026, 7, 20)));
+            assertFalse(Window.isUpcoming(chinaOpen, LocalDate.of(2026, 7, 21)));
+        }
+
+        /** Horizon de résolution FR des à-venir : borne des 14 jours INCLUSE. */
+        @Test
+        void startsWithinInclutLaBorne() {
+            LocalDate today = LocalDate.of(2026, 7, 7);            // départ à J+14
+            assertTrue(Window.startsWithin(chinaOpen, today, 14));
+            assertFalse(Window.startsWithin(chinaOpen, LocalDate.of(2026, 7, 6), 14));
+        }
+
+        /** FUSEAU : « aujourd'hui » est la journée du lecteur français, pas celle
+         *  du runner CI. À 00 h 30 à Paris le 26, il est encore le 25 en UTC —
+         *  la journée de la finale doit quand même être commencée. */
+        @Test
+        void todayEstLaJourneeParisienneNonUtc() {
+            java.time.Instant matinDu26 = java.time.Instant.parse("2026-07-25T22:30:00Z");
+            assertEquals(LocalDate.of(2026, 7, 26), Window.today(matinDu26));
+            assertEquals(LocalDate.of(2026, 7, 25),                       // ce que dirait UTC brut
+                    LocalDate.ofInstant(matinDu26, java.time.ZoneOffset.UTC));
+        }
+
+        /** Le tournoi reste dans current à TOUTE heure UTC du jour de la finale
+         *  (dimanche 26 juillet à Paris), du premier au dernier instant. */
+        @Test
+        void resteEnCoursToutLeJourDeLaFinaleQuelleQueSoitLheureUtc() {
+            String[] runsUtc = {
+                    "2026-07-25T22:00:00Z",   // 00 h 00 à Paris, le 26 vient de commencer
+                    "2026-07-25T23:30:00Z",   // 01 h 30 à Paris — UTC dit encore « 25 »
+                    "2026-07-26T00:00:00Z",   // cron 0 h UTC
+                    "2026-07-26T06:00:00Z",
+                    "2026-07-26T12:00:00Z",
+                    "2026-07-26T18:00:00Z",   // 20 h à Paris, après la finale
+                    "2026-07-26T21:59:00Z"};  // 23 h 59 à Paris, dernière minute du 26
+            for (String run : runsUtc) {
+                LocalDate today = Window.today(java.time.Instant.parse(run));
+                assertEquals(LocalDate.of(2026, 7, 26), today, "run " + run);
+                assertTrue(Window.isCurrent(chinaOpen, today), "run " + run);
+                assertFalse(Window.isPast(chinaOpen, today), "run " + run);
+            }
+            // Et il ne sort de current qu'au premier instant du 27 à Paris (22 h UTC le 26).
+            LocalDate lendemain = Window.today(java.time.Instant.parse("2026-07-26T22:00:00Z"));
+            assertEquals(LocalDate.of(2026, 7, 27), lendemain);
+            assertFalse(Window.isCurrent(chinaOpen, lendemain));
+            assertTrue(Window.isPast(chinaOpen, lendemain));
+        }
+
+        /** Le fuseau suit l'heure d'hiver (UTC+1) — pas d'offset codé en dur. */
+        @Test
+        void todaySuitLheureDhiver() {
+            assertEquals(LocalDate.of(2026, 1, 12),
+                    Window.today(java.time.Instant.parse("2026-01-11T23:30:00Z")));   // 00 h 30 à Paris
+            assertEquals(LocalDate.of(2026, 1, 11),
+                    Window.today(java.time.Instant.parse("2026-01-11T22:30:00Z")));   // 23 h 30 à Paris
+        }
+    }
+
+    // ------------------------------------------------------------
     // Source A — statut français d'un tournoi (draws Wikipédia)
     // ------------------------------------------------------------
     @Nested

@@ -55,6 +55,8 @@ collector/src/main/java/veille/           -> le collecteur, découpé par rôle 
   LlmNet.java          appels Haiku : prose de saison -> lines[] ; appariement de dernier recours
   PlayerResults.java   orchestrateur players[] (roster Lanier + Christo Popov)
   DataJson.java        LE CONTRAT data.json en records typés (cf. ci-dessous)
+  Window.java          fenêtre temporelle : « aujourd'hui » en Europe/Paris + bornes
+                       INCLUSIVES current / upcoming / passé (cf. ci-dessous)
   TextUtil / FrDates / Http / Tournament (utilitaires, modèle)
 collector/src/test/java/veille/CollectorTest.java -> tests JUnit (fonctions pures, JAMAIS de réseau)
 .github/workflows/refresh.yml              -> automatisation (tests -> collecteur ->
@@ -119,6 +121,32 @@ d'édition souvent pas encore créé) : « à confirmer » sans sonder.
 « Pas trouvé » (`null`) et « trouvé, personne » (`false`) doivent rester distincts,
 dans le collecteur ET à l'affichage. `App.jsx` mappe `tier` via `TIER_COLOR` /
 `TIER_LABEL` / `TIER_SHORT`.
+
+## Fenêtre temporelle — bornes INCLUSIVES, fuseau Europe/Paris (`Window.java`)
+
+Un seul endroit décide de « aujourd'hui » et de current / upcoming / passé :
+**`Window`**. Le reste du collecteur ne recalcule JAMAIS ces bornes à la main.
+
+- **Référence de temps = `Europe/Paris`, jamais UTC.** Le collecteur tourne sous
+  GitHub Actions (horloge UTC) mais le lecteur est en France : la journée affichée
+  doit être SA journée. Un run à 22 h 30 UTC est déjà le lendemain à Paris (UTC+2
+  l'été) ; en UTC brut, la fenêtre, le « Jour 4 / 6 » et le libellé de semaine
+  étaient décalés d'un jour pendant ce créneau. `Window.ZONE` est un `ZoneId` (la
+  bascule heure d'été / hiver est gérée) — **ne jamais coder un offset en dur, ni
+  rappeler `LocalDate.now(ZoneOffset.UTC)`** : on passe par `Window.today()`.
+  `generatedAt`, lui, reste un instant ISO-8601 **UTC** (c'est le contrat).
+- **Bornes inclusives des deux côtés** : `isCurrent` = `start <= today <= end`. Le
+  jour de la finale (dernier jour, souvent le dimanche) le tournoi reste dans
+  `current` TOUTE la journée ; il n'en sort qu'à **J+1**. Même borne pour le passé
+  (`isPast` = `end < today`) : c'est le seuil de bascule vers « semaine dernière »
+  (à venir, la Dépêche DOIT l'utiliser, pas re-comparer les dates elle-même). Le
+  jour d'ouverture est déjà `current`, jamais `upcoming` (`isUpcoming` = `start >
+  today`). L'horizon FR des à-venir (`startsWithin`, `UPCOMING_FR_DAYS` = 14) inclut
+  lui aussi sa borne.
+- Aucune comparaison stricte sur une borne : dans `Window`, `isAfter` / `isBefore`
+  sont niés. Une comparaison stricte sur `end` fait disparaître le tournoi le jour
+  de sa finale — le bug d'origine, verrouillé par les tests `FenetreTemporelle`
+  (dates figées, instants UTC figés, aucun accès à l'horloge ni au réseau).
 
 ## Carte des sources (VÉRIFIÉ — ne pas dévier)
 
@@ -391,6 +419,13 @@ cron / clic  ->  GitHub Actions  ->  collecteur  ->  commit data.json
   (classe `StatutTournoi`) — l'article tennis « 2026 Australian Open » doit rester
   rejeté pour le tournoi BWF Super 500 du 9–14 juin. Ne pas assouplir
   `matchesTournament` au point de le laisser passer.
+- **Tests anti-régression à conserver** : classe `FenetreTemporelle` — le tournoi
+  du 21–26 juillet reste `current` le 26 (jour de la finale) à TOUTE heure UTC du
+  run, et ne bascule « passé » qu'au 27. Ne pas rendre une borne stricte ni
+  recalculer « aujourd'hui » ailleurs que dans `Window`.
+- **Une date, un fuseau** : toute logique de date passe par `Window.today()`
+  (Europe/Paris) et prend son instant en paramètre pour rester testable. Pas de
+  `LocalDate.now()` disséminé dans le code.
 
 ## Identités à ne pas confondre
 

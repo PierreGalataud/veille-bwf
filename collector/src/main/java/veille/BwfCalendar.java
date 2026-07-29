@@ -1,7 +1,6 @@
 package veille;
 
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -48,7 +47,7 @@ final class BwfCalendar {
         if (m.find()) {
             return Integer.parseInt(m.group(1));
         }
-        return LocalDate.now(ZoneOffset.UTC).getYear();
+        return Window.today().getYear();   // année de référence = Europe/Paris (cf. Window)
     }
 
     private static List<Tournament> parseTournaments(Document doc, int year) {

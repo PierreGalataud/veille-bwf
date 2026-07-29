@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-07-29T02:57:40.096364357Z",
+  "generatedAt" : "2026-07-29T07:42:20.147518Z",
   "weekLabel" : "Semaine du 27 juillet – 2 août 2026",
   "current" : [ {
     "name" : "YONEX Taipei Open 2026",
@@ -31,11 +31,11 @@
     }, {
       "label" : "Puis",
       "date" : null,
-      "tournament" : "Coupe Thomas",
+      "tournament" : "Thomas Cup",
       "stage" : "Finaliste",
       "medal" : "🥈",
       "tone" : "out",
-      "value" : "Coupe Thomas · Finaliste"
+      "value" : "Thomas Cup · Finaliste"
     }, {
       "label" : "Puis",
       "date" : null,
@@ -47,18 +47,26 @@
     }, {
       "label" : "Puis",
       "date" : null,
-      "tournament" : "Championnats d'Europe par équipes",
+      "tournament" : "European Men's Team Championships",
       "stage" : "Vainqueur",
       "medal" : "🥇",
       "tone" : "win",
-      "value" : "Championnats d'Europe par équipes · Vainqueur"
+      "value" : "European Men's Team Championships · Vainqueur"
     } ]
   }, {
     "name" : "Christo Popov",
     "rank" : "#5 mondial",
     "lines" : [ {
       "label" : "Dernier",
-      "date" : null,
+      "date" : "24 – 29 novembre",
+      "tournament" : "India Open",
+      "stage" : "1/4 de finale",
+      "medal" : "⚫",
+      "tone" : "out",
+      "value" : "India Open · 1/4 de finale"
+    }, {
+      "label" : "Puis",
+      "date" : "10 – 15 novembre",
       "tournament" : "Japan Open",
       "stage" : "Vainqueur",
       "medal" : "🥇",
@@ -67,19 +75,19 @@
     }, {
       "label" : "Puis",
       "date" : null,
-      "tournament" : "Coupe Thomas",
+      "tournament" : "Thomas Cup",
       "stage" : "Finaliste",
       "medal" : "🥈",
       "tone" : "out",
-      "value" : "Coupe Thomas · Finaliste"
+      "value" : "Thomas Cup · Finaliste"
     }, {
       "label" : "Puis",
       "date" : null,
-      "tournament" : "Championnats d'Europe",
+      "tournament" : "European Championships",
       "stage" : "Vainqueur",
       "medal" : "🥇",
       "tone" : "win",
-      "value" : "Championnats d'Europe · Vainqueur"
+      "value" : "European Championships · Vainqueur"
     }, {
       "label" : "Puis",
       "date" : null,
@@ -91,19 +99,11 @@
     }, {
       "label" : "Puis",
       "date" : null,
-      "tournament" : "Championnats d'Europe par équipes",
+      "tournament" : "European Men's Team Badminton Championship",
       "stage" : "Vainqueur",
       "medal" : "🥇",
       "tone" : "win",
-      "value" : "Championnats d'Europe par équipes · Vainqueur"
-    }, {
-      "label" : "Puis",
-      "date" : null,
-      "tournament" : "India Open",
-      "stage" : "1/4 de finale",
-      "medal" : "⚫",
-      "tone" : "out",
-      "value" : "India Open · 1/4 de finale"
+      "value" : "European Men's Team Badminton Championship · Vainqueur"
     } ]
   } ],
   "upcoming" : [ {

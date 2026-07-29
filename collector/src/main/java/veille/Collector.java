@@ -9,7 +9,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -65,17 +64,19 @@ public class Collector {
                     "aucun tournoi World Tour extrait — structure de page changée ou réponse invalide");
         }
 
-        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        // « Aujourd'hui » = la journée du lecteur français (Europe/Paris), pas
+        // celle du runner CI (UTC) ; bornes INCLUSIVES des deux côtés — cf. Window.
+        LocalDate today = Window.today();
 
         List<Tournament> current = new ArrayList<>();
         List<Tournament> upcoming = new ArrayList<>();
         for (Tournament t : all) {
-            if (!t.start().isAfter(today) && !t.end().isBefore(today)) {
-                current.add(t);              // start <= today <= end
-            } else if (t.start().isAfter(today)) {
+            if (Window.isCurrent(t, today)) {
+                current.add(t);              // start <= today <= end (finale comprise)
+            } else if (Window.isUpcoming(t, today)) {
                 upcoming.add(t);             // à venir
             }
-            // sinon : tournoi passé → ignoré
+            // sinon : tournoi passé (fini avant aujourd'hui, donc dès J+1) → ignoré
         }
         current.sort((a, b) -> a.start().compareTo(b.start()));
         upcoming.sort((a, b) -> a.start().compareTo(b.start()));
@@ -87,7 +88,7 @@ public class Collector {
         Map<String, WikiTournament.FrenchStatus> frByName = new HashMap<>();
         for (Tournament t : current) frByName.put(t.name(), WikiTournament.resolve(t));
         for (Tournament t : upcoming) {
-            if (!t.start().isAfter(today.plusDays(UPCOMING_FR_DAYS))) {
+            if (Window.startsWithin(t, today, UPCOMING_FR_DAYS)) {
                 frByName.put(t.name(), WikiTournament.resolve(t));
             }
         }
