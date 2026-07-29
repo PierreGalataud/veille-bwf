@@ -40,6 +40,16 @@ function championRows(champions) {
   return rows.length === EVENT_ORDER.length ? rows : [];
 }
 
+// dayLabel vient du collecteur en deux morceaux séparés par « · » :
+// « Jour 2 / 6 · 29 juillet » en cours, « Terminé · 26 juillet » une fois fini.
+// On les sépare pour la mise en page (progression centrée, date à droite) — pas
+// de séparateur = format inattendu : tout part dans la progression, affiché tel
+// quel plutôt que rien.
+function splitDayLabel(dayLabel) {
+  const parts = String(dayLabel ?? "").split("·");
+  return { progress: parts[0].trim(), date: parts.slice(1).join("·").trim() };
+}
+
 function toneClass(tone) {
   if (tone === "win") return "res-win";
   if (tone === "out") return "res-out";
@@ -177,13 +187,17 @@ export default function App() {
             <div className="card empty">Aucun tournoi de ce niveau en cours cette semaine.</div>
           )}
 
-          {visibleCurrent.map((t) => (
+          {visibleCurrent.map((t) => {
+            // Ligne de tête en trois zones : niveau à gauche, progression
+            // (« Jour 2 / 6 » ou « Terminé ») centrée, date à droite.
+            const day = splitDayLabel(t.dayLabel);
+            const dayClass = "tourn__day" + (t.status === "termine" ? " is-done" : "");
+            return (
             <div className="card tourn" key={t.name}>
               <div className="tourn__top">
                 <span className="tier" style={{ background: TIER_COLOR[t.tier] }}>{TIER_LABEL[t.tier]}</span>
-                <span className={"tourn__day" + (t.status === "termine" ? " is-done" : "")}>
-                  {t.dayLabel}
-                </span>
+                <span className={dayClass + " tourn__day--progress"}>{day.progress}</span>
+                <span className={dayClass + " tourn__day--date"}>{day.date}</span>
               </div>
               <div className="tourn__name">{t.name}</div>
               <div className="tourn__meta">
@@ -240,7 +254,8 @@ export default function App() {
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
         </section>
 
         <section className="vbwf__upcoming">

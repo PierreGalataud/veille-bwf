@@ -62,8 +62,22 @@ html, body, #root { margin: 0; min-height: 100%; background: var(--bg); }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
 .tourn { padding: 22px; position: relative; overflow: hidden; }
 .tier { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; font-size: 12px; padding: 4px 10px; border-radius: 6px; color: #0c0f14; display: inline-block; }
-.tourn__top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+/* Ligne de tête en TROIS zones : niveau à gauche, progression (« Jour 2 / 6 »
+   ou « Terminé ») centrée dans la ligne, date à droite. Les deux colonnes 1fr
+   qui encadrent se partagent l'espace restant à égalité : la colonne centrale
+   (auto) est donc vraiment centrée, quelles que soient les largeurs des côtés. */
+.tourn__top { display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 12px; }
+.tourn__top .tier { justify-self: start; }   /* sinon la pastille s'étire sur la colonne */
 .tourn__day { font-family: 'Oswald', sans-serif; color: var(--live); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+.tourn__day--progress { justify-self: center; text-align: center; }
+.tourn__day--date { justify-self: end; text-align: right; }
+/* Étroit : le niveau et la progression tiennent la 1re ligne, la date passe
+   dessous, toujours à droite (plutôt que trois zones écrasées). */
+@media (max-width: 520px) {
+  .tourn__top { grid-template-columns: auto 1fr; }
+  .tourn__day--progress { justify-self: end; }
+  .tourn__day--date { grid-column: 2; }
+}
 .tourn__name { font-family: 'Oswald', sans-serif; font-weight: 700; font-size: clamp(24px, 3.6vw, 34px); line-height: 1.02; margin: 14px 0 6px; }
 .tourn__meta { display: flex; gap: 18px; flex-wrap: wrap; color: var(--muted); font-size: 13.5px; }
 .tourn__meta b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
