@@ -1,6 +1,6 @@
 {
-  "generatedAt" : "2026-08-02T19:16:55.948675222Z",
-  "weekLabel" : "Semaine du 27 juillet – 2 août 2026",
+  "generatedAt" : "2026-08-03T03:25:22.787649117Z",
+  "weekLabel" : "Semaine du 3 – 9 août 2026",
   "current" : [ {
     "name" : "YONEX Taipei Open 2026",
     "tier" : "300",
@@ -8,9 +8,30 @@
     "dates" : "28 juillet – 2 août 2026",
     "prize" : "250 000 $",
     "timezone" : "—",
-    "dayLabel" : "Jour 6 / 6 · 2 août",
-    "status" : "en_cours",
-    "champions" : null,
+    "dayLabel" : "Terminé · 2 août",
+    "status" : "termine",
+    "champions" : {
+      "ms" : {
+        "name" : "Yudai Okimoto",
+        "country" : "JPN"
+      },
+      "ws" : {
+        "name" : "Tanvi Sharma",
+        "country" : "IND"
+      },
+      "md" : {
+        "name" : "Leo Rolly Carnando / Daniel Marthin",
+        "country" : "INA"
+      },
+      "wd" : {
+        "name" : "Sumire Nakade / Miyu Takahashi",
+        "country" : "JPN"
+      },
+      "xd" : {
+        "name" : "Yuta Watanabe / Maya Taguchi",
+        "country" : "JPN"
+      }
+    },
     "seeds" : [ ],
     "frenchStatus" : {
       "present" : false,
