@@ -1,37 +1,16 @@
 {
-  "generatedAt" : "2026-08-03T19:43:19.386144758Z",
+  "generatedAt" : "2026-08-04T02:54:14.152855607Z",
   "weekLabel" : "Semaine du 3 – 9 août 2026",
   "current" : [ {
-    "name" : "YONEX Taipei Open 2026",
+    "name" : "VICTOR Korea Masters 2026",
     "tier" : "300",
-    "location" : "Taipei, TPE",
-    "dates" : "28 juillet – 2 août 2026",
+    "location" : "Asan, KOR",
+    "dates" : "4 – 9 août 2026",
     "prize" : "250 000 $",
     "timezone" : "—",
-    "dayLabel" : "Terminé · 2 août",
-    "status" : "termine",
-    "champions" : {
-      "ms" : {
-        "name" : "Yudai Okimoto",
-        "country" : "JPN"
-      },
-      "ws" : {
-        "name" : "Tanvi Sharma",
-        "country" : "IND"
-      },
-      "md" : {
-        "name" : "Leo Rolly Carnando / Daniel Marthin",
-        "country" : "INA"
-      },
-      "wd" : {
-        "name" : "Sumire Nakade / Miyu Takahashi",
-        "country" : "JPN"
-      },
-      "xd" : {
-        "name" : "Yuta Watanabe / Maya Taguchi",
-        "country" : "JPN"
-      }
-    },
+    "dayLabel" : "Jour 1 / 6 · 4 août",
+    "status" : "en_cours",
+    "champions" : null,
     "seeds" : [ ],
     "frenchStatus" : {
       "present" : false,
@@ -130,11 +109,6 @@
     } ]
   } ],
   "upcoming" : [ {
-    "dates" : "4 – 9 août",
-    "name" : "VICTOR Korea Masters 2026",
-    "tier" : "300",
-    "french" : "FR : à confirmer"
-  }, {
     "dates" : "1 – 6 septembre",
     "name" : "LI-NING China Masters 2026",
     "tier" : "750",
