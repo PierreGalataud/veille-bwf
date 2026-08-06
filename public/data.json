@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-08-06T02:54:16.862939161Z",
+  "generatedAt" : "2026-08-06T08:44:06.942545641Z",
   "weekLabel" : "Semaine du 3 – 9 août 2026",
   "current" : [ {
     "name" : "VICTOR Korea Masters 2026",
@@ -136,6 +136,11 @@
   }, {
     "dates" : "3 – 8 novembre",
     "name" : "Korea Open 2026",
+    "tier" : "500",
+    "french" : "FR : à confirmer"
+  }, {
+    "dates" : "3 – 8 novembre",
+    "name" : "YEOSU VICTOR Korea Open 2026",
     "tier" : "500",
     "french" : "FR : à confirmer"
   }, {
