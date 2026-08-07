@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-08-06T14:22:36.598270988Z",
+  "generatedAt" : "2026-08-07T00:06:12.302369911Z",
   "weekLabel" : "Semaine du 3 – 9 août 2026",
   "current" : [ {
     "name" : "VICTOR Korea Masters 2026",
@@ -8,7 +8,7 @@
     "dates" : "4 – 9 août 2026",
     "prize" : "250 000 $",
     "timezone" : "—",
-    "dayLabel" : "Jour 3 / 6 · 6 août",
+    "dayLabel" : "Jour 4 / 6 · 7 août",
     "status" : "en_cours",
     "champions" : null,
     "seeds" : [ ],
@@ -21,7 +21,7 @@
   } ],
   "players" : [ {
     "name" : "Alex Lanier",
-    "rank" : "#7 mondial",
+    "rank" : "#10 mondial",
     "lines" : [ {
       "label" : "Dernier",
       "date" : null,
