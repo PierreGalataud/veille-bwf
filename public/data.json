@@ -1,6 +1,6 @@
 {
-  "generatedAt" : "2026-08-09T18:47:19.202838249Z",
-  "weekLabel" : "Semaine du 3 – 9 août 2026",
+  "generatedAt" : "2026-08-10T02:06:54.176851858Z",
+  "weekLabel" : "Semaine du 10 – 16 août 2026",
   "current" : [ {
     "name" : "VICTOR Korea Masters 2026",
     "tier" : "300",
@@ -8,9 +8,30 @@
     "dates" : "4 – 9 août 2026",
     "prize" : "250 000 $",
     "timezone" : "—",
-    "dayLabel" : "Jour 6 / 6 · 9 août",
-    "status" : "en_cours",
-    "champions" : null,
+    "dayLabel" : "Terminé · 9 août",
+    "status" : "termine",
+    "champions" : {
+      "ms" : {
+        "name" : "Zhu Xuanchen",
+        "country" : "CHN"
+      },
+      "ws" : {
+        "name" : "Ashmita Chaliha",
+        "country" : "IND"
+      },
+      "md" : {
+        "name" : "Tee Kai Wun / Yap Roy King",
+        "country" : "MAS"
+      },
+      "wd" : {
+        "name" : "Luo Yi / Wang Tingge",
+        "country" : "CHN"
+      },
+      "xd" : {
+        "name" : "Yuta Watanabe / Maya Taguchi",
+        "country" : "JPN"
+      }
+    },
     "seeds" : [ ],
     "frenchStatus" : {
       "present" : false,
