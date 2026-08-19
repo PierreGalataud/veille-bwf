@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-08-18T18:43:01.218411770Z",
+  "generatedAt" : "2026-08-19T01:27:29.679641957Z",
   "weekLabel" : "Semaine du 17 – 23 août 2026",
   "current" : [ {
     "name" : "VICTOR Korea Masters 2026",
@@ -172,6 +172,11 @@
   }, {
     "dates" : "17 – 22 novembre",
     "name" : "Hong Kong Open 2026",
+    "tier" : "500",
+    "french" : "FR : à confirmer"
+  }, {
+    "dates" : "17 – 22 novembre",
+    "name" : "LI-NING Hong Kong Open 2026",
     "tier" : "500",
     "french" : "FR : à confirmer"
   }, {
