@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-08-24T07:06:11.549208355Z",
+  "generatedAt" : "2026-08-24T12:58:04.334089255Z",
   "weekLabel" : "Semaine du 24 – 30 août 2026",
   "current" : [ {
     "name" : "VICTOR Korea Masters 2026",
@@ -46,19 +46,19 @@
     "lines" : [ {
       "label" : "Dernier",
       "date" : null,
-      "tournament" : "Singapore Open",
-      "stage" : "Vainqueur",
-      "medal" : "🥇",
-      "tone" : "win",
-      "value" : "Singapore Open · Vainqueur"
-    }, {
-      "label" : "Puis",
-      "date" : null,
       "tournament" : "Championnats du monde",
       "stage" : "Vainqueur",
       "medal" : "🥇",
       "tone" : "win",
       "value" : "Championnats du monde · Vainqueur"
+    }, {
+      "label" : "Puis",
+      "date" : null,
+      "tournament" : "Singapore Open",
+      "stage" : "Vainqueur",
+      "medal" : "🥇",
+      "tone" : "win",
+      "value" : "Singapore Open · Vainqueur"
     }, {
       "label" : "Puis",
       "date" : null,

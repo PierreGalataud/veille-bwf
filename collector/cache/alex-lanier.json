@@ -1,24 +1,24 @@
 {
   "formatVersion" : 4,
-  "wikiRevisionId" : 1370910954,
-  "extractedAt" : "2026-08-23T18:34:55.074833762Z",
+  "wikiRevisionId" : 1371067243,
+  "extractedAt" : "2026-08-24T12:58:06.748776472Z",
   "rank" : "#10 mondial",
   "lines" : [ {
     "label" : "Dernier",
-    "date" : null,
-    "tournament" : "Singapore Open",
-    "stage" : "Vainqueur",
-    "medal" : "🥇",
-    "tone" : "win",
-    "value" : "Singapore Open · Vainqueur"
-  }, {
-    "label" : "Puis",
     "date" : null,
     "tournament" : "Championnats du monde",
     "stage" : "Vainqueur",
     "medal" : "🥇",
     "tone" : "win",
     "value" : "Championnats du monde · Vainqueur"
+  }, {
+    "label" : "Puis",
+    "date" : null,
+    "tournament" : "Singapore Open",
+    "stage" : "Vainqueur",
+    "medal" : "🥇",
+    "tone" : "win",
+    "value" : "Singapore Open · Vainqueur"
   }, {
     "label" : "Puis",
     "date" : null,
