@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-08-25T01:27:32.900134590Z",
+  "generatedAt" : "2026-08-25T06:55:10.250763396Z",
   "weekLabel" : "Semaine du 24 – 30 août 2026",
   "current" : [ {
     "name" : "VICTOR Korea Masters 2026",
@@ -90,11 +90,11 @@
     "lines" : [ {
       "label" : "Dernier",
       "date" : null,
-      "tournament" : "Japan Open",
-      "stage" : "Vainqueur",
-      "medal" : "🥇",
-      "tone" : "win",
-      "value" : "Japan Open · Vainqueur"
+      "tournament" : "Championnats du monde",
+      "stage" : "Éliminé au 1er tour",
+      "medal" : "⚫",
+      "tone" : "out",
+      "value" : "Championnats du monde · Éliminé au 1er tour"
     }, {
       "label" : "Puis",
       "date" : null,
@@ -103,6 +103,14 @@
       "medal" : "🥈",
       "tone" : "out",
       "value" : "Coupe Thomas · Finaliste"
+    }, {
+      "label" : "Puis",
+      "date" : null,
+      "tournament" : "Japan Open",
+      "stage" : "Vainqueur",
+      "medal" : "🥇",
+      "tone" : "win",
+      "value" : "Japan Open · Vainqueur"
     }, {
       "label" : "Puis",
       "date" : null,
@@ -119,14 +127,6 @@
       "medal" : "🥇",
       "tone" : "win",
       "value" : "German Open · Vainqueur"
-    }, {
-      "label" : "Puis",
-      "date" : null,
-      "tournament" : "Championnats d'Europe par équipes",
-      "stage" : "Vainqueur",
-      "medal" : "🥇",
-      "tone" : "win",
-      "value" : "Championnats d'Europe par équipes · Vainqueur"
     }, {
       "label" : "Puis",
       "date" : null,
