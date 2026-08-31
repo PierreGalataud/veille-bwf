@@ -1,6 +1,6 @@
 {
-  "generatedAt" : "2026-08-30T20:48:39.045725188Z",
-  "weekLabel" : "Semaine du 24 – 30 août 2026",
+  "generatedAt" : "2026-08-31T04:44:20.435953558Z",
+  "weekLabel" : "Semaine du 31 août – 6 septembre 2026",
   "current" : [ {
     "name" : "VICTOR Korea Masters 2026",
     "tier" : "300",
@@ -98,19 +98,19 @@
     }, {
       "label" : "Puis",
       "date" : null,
-      "tournament" : "Coupe Thomas",
-      "stage" : "Finaliste",
-      "medal" : "🥈",
-      "tone" : "out",
-      "value" : "Coupe Thomas · Finaliste"
-    }, {
-      "label" : "Puis",
-      "date" : null,
       "tournament" : "Japan Open",
       "stage" : "Vainqueur",
       "medal" : "🥇",
       "tone" : "win",
       "value" : "Japan Open · Vainqueur"
+    }, {
+      "label" : "Puis",
+      "date" : null,
+      "tournament" : "Coupe Thomas",
+      "stage" : "Finaliste",
+      "medal" : "🥈",
+      "tone" : "out",
+      "value" : "Coupe Thomas · Finaliste"
     }, {
       "label" : "Puis",
       "date" : null,
@@ -130,11 +130,11 @@
     }, {
       "label" : "Puis",
       "date" : null,
-      "tournament" : "India Open",
-      "stage" : "1/4 de finale",
-      "medal" : "⚫",
-      "tone" : "out",
-      "value" : "India Open · 1/4 de finale"
+      "tournament" : "Championnats d'Europe par équipes",
+      "stage" : "Vainqueur",
+      "medal" : "🥇",
+      "tone" : "win",
+      "value" : "Championnats d'Europe par équipes · Vainqueur"
     } ]
   } ],
   "upcoming" : [ {

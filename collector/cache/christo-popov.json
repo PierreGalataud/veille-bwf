@@ -1,7 +1,7 @@
 {
   "formatVersion" : 4,
-  "wikiRevisionId" : 1371218235,
-  "extractedAt" : "2026-08-25T06:55:14.211459652Z",
+  "wikiRevisionId" : 1372242540,
+  "extractedAt" : "2026-08-31T04:44:25.446116738Z",
   "rank" : "#2 mondial",
   "lines" : [ {
     "label" : "Dernier",
@@ -14,19 +14,19 @@
   }, {
     "label" : "Puis",
     "date" : null,
-    "tournament" : "Coupe Thomas",
-    "stage" : "Finaliste",
-    "medal" : "🥈",
-    "tone" : "out",
-    "value" : "Coupe Thomas · Finaliste"
-  }, {
-    "label" : "Puis",
-    "date" : null,
     "tournament" : "Japan Open",
     "stage" : "Vainqueur",
     "medal" : "🥇",
     "tone" : "win",
     "value" : "Japan Open · Vainqueur"
+  }, {
+    "label" : "Puis",
+    "date" : null,
+    "tournament" : "Coupe Thomas",
+    "stage" : "Finaliste",
+    "medal" : "🥈",
+    "tone" : "out",
+    "value" : "Coupe Thomas · Finaliste"
   }, {
     "label" : "Puis",
     "date" : null,
@@ -46,10 +46,10 @@
   }, {
     "label" : "Puis",
     "date" : null,
-    "tournament" : "India Open",
-    "stage" : "1/4 de finale",
-    "medal" : "⚫",
-    "tone" : "out",
-    "value" : "India Open · 1/4 de finale"
+    "tournament" : "Championnats d'Europe par équipes",
+    "stage" : "Vainqueur",
+    "medal" : "🥇",
+    "tone" : "win",
+    "value" : "Championnats d'Europe par équipes · Vainqueur"
   } ]
 }
