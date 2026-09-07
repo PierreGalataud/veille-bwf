@@ -1,6 +1,6 @@
 {
-  "generatedAt" : "2026-09-06T20:12:54.945582070Z",
-  "weekLabel" : "Semaine du 31 août – 6 septembre 2026",
+  "generatedAt" : "2026-09-07T03:49:21.797433055Z",
+  "weekLabel" : "Semaine du 7 – 13 septembre 2026",
   "current" : [ {
     "name" : "LI-NING China Masters 2026",
     "tier" : "750",
@@ -8,9 +8,30 @@
     "dates" : "1 – 6 septembre 2026",
     "prize" : "1 250 000 $",
     "timezone" : "—",
-    "dayLabel" : "Jour 6 / 6 · 6 septembre",
-    "status" : "en_cours",
-    "champions" : null,
+    "dayLabel" : "Terminé · 6 septembre",
+    "status" : "termine",
+    "champions" : {
+      "ms" : {
+        "name" : "Jason Gunawan",
+        "country" : "HKG"
+      },
+      "ws" : {
+        "name" : "An Se-young",
+        "country" : "KOR"
+      },
+      "md" : {
+        "name" : "Satwiksairaj Rankireddy / Chirag Shetty",
+        "country" : "IND"
+      },
+      "wd" : {
+        "name" : "Sumire Nakade / Miyu Takahashi",
+        "country" : "JPN"
+      },
+      "xd" : {
+        "name" : "Feng Yanzhe / Huang Dongping",
+        "country" : "CHN"
+      }
+    },
     "seeds" : [ ],
     "frenchStatus" : {
       "present" : true,
