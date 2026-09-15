@@ -1,8 +1,8 @@
 {
   "formatVersion" : 4,
-  "wikiRevisionId" : 1372242540,
-  "extractedAt" : "2026-08-31T04:44:25.446116738Z",
-  "rank" : "#2 mondial",
+  "wikiRevisionId" : 1375021134,
+  "extractedAt" : "2026-09-15T16:38:18.838085222Z",
+  "rank" : "#3 mondial",
   "lines" : [ {
     "label" : "Dernier",
     "date" : null,
@@ -14,19 +14,19 @@
   }, {
     "label" : "Puis",
     "date" : null,
-    "tournament" : "Japan Open",
-    "stage" : "Vainqueur",
-    "medal" : "🥇",
-    "tone" : "win",
-    "value" : "Japan Open · Vainqueur"
-  }, {
-    "label" : "Puis",
-    "date" : null,
     "tournament" : "Coupe Thomas",
     "stage" : "Finaliste",
     "medal" : "🥈",
     "tone" : "out",
     "value" : "Coupe Thomas · Finaliste"
+  }, {
+    "label" : "Puis",
+    "date" : null,
+    "tournament" : "Japan Open",
+    "stage" : "Vainqueur",
+    "medal" : "🥇",
+    "tone" : "win",
+    "value" : "Japan Open · Vainqueur"
   }, {
     "label" : "Puis",
     "date" : null,

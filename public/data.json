@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-09-15T11:25:09.145671545Z",
+  "generatedAt" : "2026-09-15T16:38:14.424353712Z",
   "weekLabel" : "Semaine du 14 – 20 septembre 2026",
   "current" : [ {
     "name" : "LI-NING China Masters 2026",
@@ -86,7 +86,7 @@
     } ]
   }, {
     "name" : "Christo Popov",
-    "rank" : "#2 mondial",
+    "rank" : "#3 mondial",
     "lines" : [ {
       "label" : "Dernier",
       "date" : null,
@@ -98,19 +98,19 @@
     }, {
       "label" : "Puis",
       "date" : null,
-      "tournament" : "Japan Open",
-      "stage" : "Vainqueur",
-      "medal" : "🥇",
-      "tone" : "win",
-      "value" : "Japan Open · Vainqueur"
-    }, {
-      "label" : "Puis",
-      "date" : null,
       "tournament" : "Coupe Thomas",
       "stage" : "Finaliste",
       "medal" : "🥈",
       "tone" : "out",
       "value" : "Coupe Thomas · Finaliste"
+    }, {
+      "label" : "Puis",
+      "date" : null,
+      "tournament" : "Japan Open",
+      "stage" : "Vainqueur",
+      "medal" : "🥇",
+      "tone" : "win",
+      "value" : "Japan Open · Vainqueur"
     }, {
       "label" : "Puis",
       "date" : null,
