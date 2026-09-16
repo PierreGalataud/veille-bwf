@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-09-16T04:08:58.458510340Z",
+  "generatedAt" : "2026-09-16T11:11:01.461674176Z",
   "weekLabel" : "Semaine du 14 – 20 septembre 2026",
   "current" : [ {
     "name" : "LI-NING China Masters 2026",
@@ -98,19 +98,19 @@
     }, {
       "label" : "Puis",
       "date" : null,
-      "tournament" : "Coupe Thomas",
-      "stage" : "Finaliste",
-      "medal" : "🥈",
-      "tone" : "out",
-      "value" : "Coupe Thomas · Finaliste"
-    }, {
-      "label" : "Puis",
-      "date" : null,
       "tournament" : "Japan Open",
       "stage" : "Vainqueur",
       "medal" : "🥇",
       "tone" : "win",
       "value" : "Japan Open · Vainqueur"
+    }, {
+      "label" : "Puis",
+      "date" : null,
+      "tournament" : "Coupe Thomas",
+      "stage" : "Finaliste",
+      "medal" : "🥈",
+      "tone" : "out",
+      "value" : "Coupe Thomas · Finaliste"
     }, {
       "label" : "Puis",
       "date" : null,
