@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -12,9 +13,14 @@ import java.util.regex.Pattern;
 
 /**
  * Source A (CLAUDE.md) — statut français d'un tournoi, lu DÉTERMINISTIQUEMENT
- * dans le tableau (draw) de sa page Wikipédia. Aucun LLM pour lire le draw : les
- * tableaux annotent chaque tête de série entre parenthèses (« ''(champion)'' »,
- * « ''(second round)'' »…), ce qui suffit à dire jusqu'où un Français est allé.
+ * dans le tableau (draw) de sa page Wikipédia. Aucun LLM : tout est structuré.
+ *
+ * <p>LE PARCOURS VIENT DU BRACKET ({@link #parseBracketRuns}), pas des annotations :
+ * Wikipédia met en GRAS le vainqueur de chaque match, ce qui donne le tour atteint
+ * par N'IMPORTE QUEL joueur — têtes de série ou non — et dit qui est ENCORE EN LICE.
+ * Les annotations des Seeds (« ''(second round)'' ») ne couvrent que les têtes de
+ * série : elles ne servent plus qu'en complément ({@link #stageFr}), pour ce que le
+ * bracket ne peut pas dire (forfait, joueur absent du tableau).
  *
  * APPARIEMENT DE L'ARTICLE (durci) : un titre n'est retenu qu'après VÉRIFICATION
  * de son contenu, pas de son seul titre (« 2026 Australian Open » tennis passerait
@@ -43,7 +49,8 @@ import java.util.regex.Pattern;
  * Fonctions pures ({@link #searchQuery}, {@link #shortlist}, {@link #matchesTournament},
  * {@link #matchesChampionship}, {@link #infoboxName}, {@link #parseLevel},
  * {@link #parseInfoboxDates}, {@link #parseChampions}, {@link #parseMedalists},
- * {@link #cellChampion}, {@link #parseFrenchStatus}, {@link #stageFr}) testées ;
+ * {@link #cellChampion}, {@link #parseBracketRuns}, {@link #runLabel},
+ * {@link #parseFrenchStatus}, {@link #stageFr}) testées ;
  * seul {@link #resolve} fait du réseau (via {@link Wiki}).
  */
 final class WikiTournament {
@@ -630,6 +637,207 @@ final class WikiTournament {
     }
 
     // ------------------------------------------------------------
+    //  Fonctions pures — lecture du BRACKET (source de vérité du parcours)
+    // ------------------------------------------------------------
+
+    /**
+     * Le bracket dit TOUT le parcours, là où les Seeds n'annotent que les têtes de
+     * série : Wikipédia met en GRAS le vainqueur de chaque match, et la structure
+     * des pages de tournoi est régulière (VÉRIFIÉ sur le China Masters ET les
+     * Championnats d'Europe 2026, même squelette par discipline) :
+     *
+     * <pre>
+     *   == Men's singles ==
+     *   === Seeds ===                     (annotations — repli, cf. stageFr)
+     *   === Finals ===      {{4TeamBracket-Tennis3}}    RD1 = 1/2, RD2 = finale
+     *   === Top half ===
+     *   ==== Section 1 ==== {{8TeamBracket-Tennis3}}    RD1 = 1er tour … RD3 = 1/4
+     *   ==== Section 2 ==== …                           (ou 16TeamBracket si draw de 64)
+     *   === Bottom half ===
+     *   ==== Section 3/4 ==== …
+     * </pre>
+     *
+     * <p><b>Profondeur</b> — on raisonne en nombre de tours RESTANTS jusqu'au titre
+     * (0 = vainqueur, 1 = finale, 2 = demie, 3 = quart…), ce qui rend la taille du
+     * tableau sans importance. Pour un bracket de {@code N} équipes ({@code S =
+     * log2(N)} tours), {@code depth(RDk) = (S - k) + base}, avec {@code base = 1}
+     * pour la phase finale et {@code base = 3} pour une section (son vainqueur file
+     * en demie). Un bracket sous un en-tête inconnu (qualifications…) est IGNORÉ :
+     * un tour de qualif n'est pas un tour de tableau.
+     */
+    private static final Pattern HEADING_OR_BRACKET = Pattern.compile(
+            "(?im)^=+[ \\t]*([^=\\n]+?)[ \\t]*=+[ \\t]*$|\\{\\{[ \\t]*(\\d+)TeamBracket");
+
+    /** Case d'équipe d'un bracket : {@code | RD2-team4 = '''…'''} (le gras = gagnant). */
+    private static final Pattern BRACKET_SLOT = Pattern.compile(
+            "(?m)^[ \\t]*\\|[ \\t]*RD(\\d+)-team(\\d+)[ \\t]*=[ \\t]*(.*)$");
+
+    /**
+     * Sort d'un joueur à un tour donné. {@code PENDING} est indispensable : quand un
+     * joueur gagne, l'éditeur l'inscrit AUSSITÔT dans la case du tour suivant, qui
+     * n'est évidemment pas en gras tant que ce match n'est pas joué. Sans cet état,
+     * un joueur qui s'apprête à jouer son quart serait lu « éliminé en quart ».
+     * Wikipédia ne met en gras QUE le vainqueur d'un match joué : aucun gras des DEUX
+     * côtés d'un match = match à venir. L'ordre des constantes sert de départage.
+     */
+    enum Fate { LOST, PENDING, WON }
+
+    /** Parcours d'un joueur : profondeur atteinte, sort, nb de tours du tableau. */
+    record Run(int depth, Fate fate, int rounds) {}
+
+    /** Une case de bracket retenue : un Français, sa profondeur, son sort. */
+    private record Slot(String player, int depth, Fate fate) {}
+
+    /** Les cases françaises d'une discipline + la PROFONDEUR MAXIMALE de son tableau
+     *  (lue sur la STRUCTURE des brackets, pas sur les cases françaises : sinon un
+     *  tableau où aucun Bleu ne joue le 1er tour serait pris pour un tableau plus
+     *  petit, et « 2e tour » s'afficherait « 1er tour »). */
+    private record Draw(List<Slot> slots, int rounds) {}
+
+    /**
+     * Parcours de chaque Français suivi, lu dans les brackets — têtes de série ou
+     * non. Clé = cible du lien Wikipédia (nom canonique), valeur = son MEILLEUR
+     * parcours (profondeur la plus faible ; à égalité, le sort le plus avancé).
+     * Aucun bracket exploitable → map vide, l'appelant retombe sur les annotations.
+     */
+    static TreeMap<String, Run> parseBracketRuns(String wikitext) {
+        TreeMap<String, Run> best = new TreeMap<>();
+        if (wikitext == null) return best;
+        for (String discipline : disciplineSections(wikitext)) {
+            Draw draw = collectSlots(discipline);
+            for (Slot s : draw.slots()) {
+                Run run = new Run(s.depth(), s.fate(), draw.rounds());
+                Run kept = best.get(s.player());
+                if (kept == null || run.depth() < kept.depth()
+                        || (run.depth() == kept.depth()
+                            && run.fate().ordinal() > kept.fate().ordinal())) {
+                    best.put(s.player(), run);
+                }
+            }
+        }
+        return best;
+    }
+
+    /** Découpe l'article par discipline (en-têtes de niveau 2) : chaque tableau a sa
+     *  propre taille, donc sa propre numérotation de tours. */
+    private static List<String> disciplineSections(String wikitext) {
+        List<String> out = new ArrayList<>();
+        Matcher m = Pattern.compile("(?m)^==[^=].*$").matcher(wikitext);
+        int prev = -1;
+        while (m.find()) {
+            if (prev >= 0) out.add(wikitext.substring(prev, m.start()));
+            prev = m.start();
+        }
+        if (prev >= 0) out.add(wikitext.substring(prev));
+        return out;
+    }
+
+    /** Relève les cases françaises d'une discipline, bracket par bracket. */
+    private static Draw collectSlots(String discipline) {
+        List<Slot> slots = new ArrayList<>();
+        int rounds = 0;
+        Matcher m = HEADING_OR_BRACKET.matcher(discipline);
+        int base = 0;                      // 0 = en-tête inconnu → brackets ignorés
+        int start = -1, size = 0;
+        while (m.find()) {
+            if (start >= 0) {
+                rounds = Math.max(rounds,
+                        readBracket(discipline.substring(start, m.start()), size, base, slots));
+                start = -1;
+            }
+            if (m.group(1) != null) {      // en-tête
+                String h = TextUtil.norm(m.group(1));
+                base = h.contains("final") ? 1 : h.contains("section") ? 3 : 0;
+            } else if (base > 0) {         // début de bracket, sous un en-tête connu
+                size = Integer.parseInt(m.group(2));
+                start = m.start();
+            }
+        }
+        if (start >= 0) {
+            rounds = Math.max(rounds, readBracket(discipline.substring(start), size, base, slots));
+        }
+        return new Draw(slots, rounds);
+    }
+
+    /**
+     * Lit un bracket de {@code size} équipes et renvoie sa profondeur maximale
+     * (celle de son 1er tour), qu'un Français y figure ou non.
+     */
+    private static int readBracket(String bracket, int size, int base, List<Slot> into) {
+        if (size <= 1 || Integer.bitCount(size) != 1) return 0;  // taille non binaire → ignoré
+        int rounds = Integer.numberOfTrailingZeros(size);
+        // Toutes les cases d'abord : le sort d'un joueur dépend de son ADVERSAIRE
+        // (personne en gras des deux côtés = match pas encore joué).
+        Map<String, String> cells = new LinkedHashMap<>();
+        Matcher m = BRACKET_SLOT.matcher(bracket);
+        while (m.find()) cells.put(m.group(1) + "-" + m.group(2), m.group(3));
+
+        for (var e : cells.entrySet()) {
+            String[] key = e.getKey().split("-");
+            int round = Integer.parseInt(key[0]);
+            int team = Integer.parseInt(key[1]);
+            String cell = e.getValue();
+            List<String> players = frenchLinks(cell);
+            if (players.isEmpty()) continue;
+            String facing = round + "-" + (team % 2 == 1 ? team + 1 : team - 1);
+            Fate fate = cell.contains("'''") ? Fate.WON
+                    : cells.getOrDefault(facing, "").contains("'''") ? Fate.LOST
+                    : Fate.PENDING;
+            int depth = rounds - round + base;
+            for (String player : players) into.add(new Slot(player, depth, fate));
+        }
+        return rounds - 1 + base;                                // profondeur du 1er tour
+    }
+
+    /** Cibles des liens de la case qui désignent un Français suivi (paire = 2 noms). */
+    private static List<String> frenchLinks(String cell) {
+        List<String> out = new ArrayList<>();
+        Matcher m = NAME_LINK.matcher(cell);
+        while (m.find()) {
+            String target = m.group(1).trim();
+            String norm = TextUtil.norm(target);
+            for (String a : FR_ALIASES) {
+                if (TextUtil.hasWord(norm, a)) { out.add(target); break; }
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Stade français d'un parcours de bracket, au tour le plus profond atteint :
+     * <ul>
+     *   <li>{@code WON} — il a gagné son dernier match : le titre si c'était la
+     *       finale, sinon il est qualifié pour le tour suivant, donc ENCORE EN LICE ;</li>
+     *   <li>{@code PENDING} — inscrit à ce tour, match pas encore joué : ENCORE EN LICE ;</li>
+     *   <li>{@code LOST} — éliminé à ce tour-là.</li>
+     * </ul>
+     * Les tours au-delà des quarts sont numérotés depuis le DÉBUT du tableau
+     * ({@code rounds} tours au total) : « 1er tour » vaut dans un tableau de 32
+     * comme de 64, sans rien coder en dur sur la taille des draws.
+     */
+    static String runLabel(Run run) {
+        switch (run.fate()) {
+            case WON:
+                return run.depth() <= 1 ? "Vainqueur"
+                        : "encore en lice (" + roundName(run.depth() - 1, run.rounds()) + ")";
+            case PENDING:
+                return "encore en lice (" + roundName(run.depth(), run.rounds()) + ")";
+            default:
+                if (run.depth() <= 1) return "Finaliste";
+                return TextUtil.capitalize(roundName(run.depth(), run.rounds()));
+        }
+    }
+
+    /** Nom du tour situé à {@code depth} tours du titre, dans un tableau de {@code rounds}. */
+    private static String roundName(int depth, int rounds) {
+        if (depth <= 1) return "finale";
+        if (depth == 2) return "1/2 finale";
+        if (depth == 3) return "1/4 de finale";
+        int tour = rounds - depth + 1;
+        return tour <= 1 ? "1er tour" : tour + "e tour";
+    }
+
+    // ------------------------------------------------------------
     //  Fonctions pures — lecture du draw
     // ------------------------------------------------------------
 
@@ -669,8 +877,19 @@ final class WikiTournament {
             return podium != null ? podium
                     : FrenchStatus.unknown("Tableau non publié sur Wikipédia — statut inconnu.");
         }
-        // Joueur → meilleur stade (label) atteint ; TreeMap pour un ordre stable.
-        TreeMap<String, String> label = new TreeMap<>();
+        // 1) LE BRACKET D'ABORD : il porte le parcours de TOUS les joueurs, têtes de
+        //    série ou non, et son gras dit qui a gagné son dernier match — donc qui
+        //    est encore en lice. C'est la source de vérité (cf. parseBracketRuns).
+        TreeMap<String, String> label = new TreeMap<>();   // joueur → stade ; ordre stable
+        TreeMap<String, Run> runs = parseBracketRuns(wikitext);
+        for (var e : runs.entrySet()) label.put(e.getKey(), runLabel(e.getValue()));
+
+        // 2) LES ANNOTATIONS DES SEEDS EN COMPLÉMENT : elles seules portent ce que le
+        //    bracket ne peut pas dire (« withdrew » → Forfait, joueur absent du
+        //    tableau). Le bracket garde la main quand il a déjà tranché.
+        //    PRÉSENCE et STADE restent deux informations distinctes : un Français
+        //    peut figurer au tableau sans qu'on sache jusqu'où il est allé.
+        boolean anyFrench = !label.isEmpty();
         TreeMap<String, Integer> rank = new TreeMap<>();
         Matcher m = LINK.matcher(wikitext);
         while (m.find()) {
@@ -679,16 +898,26 @@ final class WikiTournament {
             boolean french = false;
             for (String a : FR_ALIASES) if (TextUtil.hasWord(norm, a)) french = true;
             if (!french) continue;
-            String[] fr = stageFr(m.group(2));           // {label, rank} ; annotation nulle → en lice
+            anyFrench = true;
+            if (runs.containsKey(target)) continue;      // le bracket a déjà tranché
+            String[] fr = stageFr(m.group(2));           // {label, rank} ; null = stade inconnu
+            if (fr == null) continue;                    // pas d'annotation → on n'affiche rien
             int r = Integer.parseInt(fr[1]);
             if (!rank.containsKey(target) || r > rank.get(target)) {
                 rank.put(target, r);
                 label.put(target, fr[0]);
             }
         }
-        if (label.isEmpty()) {
+        if (!anyFrench) {
             return new FrenchStatus(false, "Aucun Français engagé",
                     "Aucun Français au tableau (Wikipédia).", false);
+        }
+        if (label.isEmpty()) {
+            // Des Français au tableau, mais aucun stade lisible (aucun n'est tête de
+            // série). On l'assume plutôt que d'inventer un parcours : PAS de « En
+            // lice » par défaut, qui ferait passer un tournoi TERMINÉ pour en cours.
+            return new FrenchStatus(true, "Français au tableau",
+                    "Français au tableau, résultats non disponibles sur Wikipédia.", false);
         }
         StringBuilder note = new StringBuilder();
         for (var e : label.entrySet()) {
@@ -744,16 +973,32 @@ final class WikiTournament {
 
     /**
      * Traduit l'annotation anglaise d'un tableau Wikipédia en stade français +
-     * rang de progression (1er tour = 1 … champion = 7). Annotation absente
-     * (joueur encore en lice, ou tête de série non renseignée) → « En lice », 0.
-     * Les échelons « quarter/semi » sont testés AVANT « final » (qu'ils contiennent).
+     * rang de progression (1er tour = 1 … champion = 7).
+     *
+     * <p><b>Aucune annotation lisible → {@code null}, jamais un stade par défaut.</b>
+     * Seules les TÊTES DE SÉRIE sont annotées : un Français non tête de série
+     * n'apparaît que dans le bracket, sans un mot sur son parcours. L'ancien défaut
+     * « En lice » en faisait un joueur encore en course — faux dès que le tournoi
+     * est terminé (VÉRIFIÉ : au LI-NING China Masters 2026, fini, Toma Junior Popov
+     * s'affichait « En lice »). Absence d'annotation = absence d'information :
+     * {@link #parseFrenchStatus} n'affiche alors pas ce joueur. « En lice » ne sort
+     * plus d'ici que si l'annotation le dit explicitement.
+     *
+     * <p>Les échelons « quarter/semi » sont testés AVANT « final » (qu'ils contiennent).
+     * Une annotation non répertoriée est rendue telle quelle (rang 0) : elle vient
+     * bien de la source, on ne la jette pas.
      */
     static String[] stageFr(String annotation) {
-        if (annotation == null || annotation.isBlank()) return new String[]{"En lice", "0"};
+        if (annotation == null || annotation.isBlank()) return null;
         // Parenthèse sans aucune lettre (« (2) », un numéro de tête de série) :
-        // ce n'est pas une annotation de résultat, on ne l'affiche pas comme un stade.
-        if (!annotation.matches(".*\\p{L}.*")) return new String[]{"En lice", "0"};
+        // ce n'est pas une annotation de résultat, pas un stade connu non plus.
+        if (!annotation.matches(".*\\p{L}.*")) return null;
         String a = annotation.toLowerCase(Locale.ROOT);
+        // « En lice » n'existe que si la source l'écrit — aucune annotation connue de
+        // Wikipédia ne le fait aujourd'hui, c'est un garde-fou, plus un défaut.
+        if (a.contains("in progress") || a.contains("ongoing")) {
+            return new String[]{"En lice", "0"};
+        }
         if (a.contains("champion")) return new String[]{"Vainqueur", "7"};
         if (a.contains("quarter")) return new String[]{"1/4 de finale", "4"};
         if (a.contains("semi")) return new String[]{"1/2 finale", "5"};

@@ -171,7 +171,11 @@ d'édition souvent pas encore créé) : « à confirmer » sans sonder.
 
 `frenchStatus.present` (tournois `current`) est à **TROIS états**, jamais confondus :
 - `true`  : un Français (Lanier / Popov) figure au tableau Wikipédia (`note` = qui,
-  et jusqu'où — « Christo Popov — 2e tour »).
+  et jusqu'où — « Christo Popov — 2e tour »). **PRÉSENCE et PARCOURS sont deux
+  choses** : la `note` ne liste que les joueurs dont le stade est réellement annoté
+  (cf. `stageFr`). Aucun stade lisible pour aucun d'eux -> `present` reste `true`,
+  `note` = « Français au tableau, résultats non disponibles sur Wikipédia. » — jamais
+  une note vide, jamais un « aucun Français », jamais un stade inventé.
 - `false` : tableau publié (bracket présent), aucun Français.
 - `null`  : article introuvable OU tableau non publié -> **statut inconnu**.
 
@@ -260,10 +264,12 @@ calendrier fusionné, jamais sur le seul fetch.
 - **Wikipédia — page tournoi** (`WikiTournament`, Source A) : on ne DEVINE jamais
   l'URL (le suffixe « (badminton) » est irrégulier) — on cherche via l'API
   (`list=search`), on retient le titre commençant par l'année visée + partageant un
-  jeton, puis on lit son wikitexte. Les **Seeds** annotent chaque tête de série entre
-  parenthèses (« ''(champion)'' », « ''(second round)'' »… -> `stageFr`) ; le bracket
-  (`RDx-teamY`) atteste que le tableau est publié. Déterministe, **zéro LLM**. La
-  MÊME lecture rend aussi les **champions** (infobox), en un seul appel réseau.
+  jeton, puis on lit son wikitexte. Le **bracket** (`RDx-teamY`) atteste que le
+  tableau est publié ET porte le parcours de chaque joueur (le gras désigne le
+  vainqueur de chaque match -> `parseBracketRuns`) ; les **Seeds**, qui n'annotent
+  que les têtes de série (« ''(champion)'' », « ''(second round)'' »… -> `stageFr`),
+  ne servent plus qu'en repli. Déterministe, **zéro LLM**. La MÊME lecture rend
+  aussi les **champions** (infobox), en un seul appel réseau.
 - **Wikipédia — page joueur** (`WikiPlayer`, Source B) : `current_ranking` de
   l'infobox -> `rank` (déterministe, 1er entier = simple). La section « Career »
   est en prose -> nettoyée, filtrée sur l'année, passée à **Haiku** (`LlmNet`) qui
@@ -418,11 +424,53 @@ Le code a été audité et durci (détail : historique git, commits « Audit lot
   (il est rarement français — c'est voulu).
 - **Noms de joueurs en MOTS ENTIERS** (`TextUtil.hasWord`), jamais en sous-chaîne :
   « popov » matche « Toma Junior Popov » mais « christo » ⊄ « Christophe ».
-- **Stade depuis l'annotation** (`stageFr`) : les Seeds Wikipédia annotent le
-  résultat entre parenthèses. Ordre de test : `champion` -> `quarter`/`semi` AVANT
-  `final` (qu'ils contiennent) -> `runner`/`final` -> `third`/`second`/`first`. Pas
-  d'annotation = joueur encore en lice -> « En lice » (rang 0). Le stade le plus
-  avancé l'emporte si le joueur apparaît en plusieurs disciplines.
+- **LE PARCOURS VIENT DU BRACKET** (`parseBracketRuns`), pas des annotations. Les
+  Seeds n'annotent que les TÊTES DE SÉRIE : un Français non classé n'y a jamais une
+  ligne, et l'ancien défaut « En lice » le faisait passer pour encore en course —
+  faux dès le tournoi terminé (VÉRIFIÉ : Toma Junior Popov s'affichait « En lice »
+  au LI-NING China Masters 2026, fini ; il était même FINALISTE du China Open).
+  Le bracket, lui, décrit tout le monde, et **Wikipédia met en GRAS le vainqueur de
+  chaque match**. Structure régulière par discipline (VÉRIFIÉ China Masters, Euros,
+  China Open, Taipei, Korea Masters) :
+
+  ```
+  == Men's singles ==
+  === Seeds ===            annotations (repli seulement)
+  === Finals ===           {{4TeamBracket}}    RD1 = 1/2, RD2 = finale
+  === Top half ===
+  ==== Section 1 ====      {{8TeamBracket}}    RD1 = 1er tour … RD3 = 1/4
+  ==== Section 2 ====      (ou {{16TeamBracket…}} pour un tableau de 64)
+  === Bottom half ===      ==== Section 3/4 ====
+  ```
+
+  On raisonne en **tours RESTANTS jusqu'au titre** (0 = vainqueur, 1 = finale,
+  2 = demie, 3 = quart…), ce qui rend la taille du tableau sans importance :
+  `depth(RDk) = (log2(N) - k) + base`, avec `base = 1` en phase finale et `base = 3`
+  en section (son vainqueur file en demie). Les tours au-delà des quarts sont
+  nommés depuis le DÉBUT du tableau, dont le nombre de tours est lu sur la
+  **STRUCTURE** des brackets, jamais sur les seules cases françaises (sinon un
+  tableau où aucun Bleu ne joue le 1er tour serait pris pour un tableau plus petit,
+  et « 2e tour » deviendrait « 1er tour »). Bracket sous un en-tête inconnu
+  (`=== Qualification ===`) -> **ignoré** : un tour de qualif n'est pas un tour de
+  tableau.
+- **Trois sorts, et le PIÈGE du match non joué** (`Fate`) : gras = match GAGNÉ ;
+  adversaire en gras = ÉLIMINÉ à ce tour ; **aucun gras des deux côtés = match PAS
+  ENCORE JOUÉ**. Ce troisième état est indispensable : dès qu'un joueur gagne,
+  l'éditeur l'inscrit AUSSITÔT dans la case du tour suivant, qui n'est évidemment
+  pas en gras. Sans `PENDING`, un joueur sur le point de jouer son quart serait lu
+  « éliminé en quart ». `WON` (hors finale) et `PENDING` donnent tous deux
+  « encore en lice (<prochain tour>) ». Le tour le plus profond atteint l'emporte,
+  toutes disciplines confondues.
+- **Stade depuis l'annotation** (`stageFr`) — REPLI, pour ce que le bracket ne dit
+  pas (forfait, joueur absent du tableau). Ordre de test : `champion` ->
+  `quarter`/`semi` AVANT `final` (qu'ils contiennent) -> `runner`/`final` ->
+  `third`/`second`/`first`. Une annotation non répertoriée est rendue telle quelle
+  (rang 0) : elle vient de la source, on ne la jette pas. **Le bracket est
+  prioritaire** quand les deux savent quelque chose.
+- **Pas d'annotation ET pas de bracket = AUCUNE information, jamais un stade par
+  défaut.** `stageFr` renvoie `null` (annotation absente, vide, ou sans aucune
+  lettre — « (2) » est un numéro de tête de série, pas un résultat) et
+  `parseFrenchStatus` n'affiche pas ce joueur.
 - **Les italiques de l'annotation sont OPTIONNELLES** (regex `LINK`). VÉRIFIÉ sur
   plusieurs articles (China Open, Championnats d'Europe) : Wikipédia écrit
   `''(quarter-finals)''` **mais** `'''[[X]] (champion)'''` — le vainqueur est en gras
@@ -500,11 +548,13 @@ Le code a été audité et durci (détail : historique git, commits « Audit lot
   du calendrier BWF (qui ne liste que les épreuves qu'elle sanctionne). Ne pas
   chercher à les y trouver — il faudrait une source FFBaD distincte, avec son propre
   parsing et ses propres règles de fraîcheur. Non prévu.
-- **Mondiaux : pas de tableau sur la page principale** -> `frenchStatus` vient du
+- **Mondiaux : pas de bracket sur la page principale** -> `frenchStatus` vient du
   PODIUM (cf. règles de lecture). Un Français sorti avant les demies n'y apparaît pas :
-  le tableau de bord dira « statut inconnu », pas « aucun ». Les draws complets sont
-  dans les sous-articles par discipline — non lus (une lecture par discipline, soit
-  5 requêtes de plus par tournoi, pour un gain marginal).
+  le tableau de bord dira « statut inconnu », pas « aucun ». Les brackets complets
+  existent, mais dans les SOUS-ARTICLES par discipline (`… – Men's singles`) : les
+  lire donnerait le parcours exact comme sur un tournoi World Tour, au prix de 5
+  requêtes MediaWiki de plus par tournoi. Pas fait — à rouvrir si les Mondiaux
+  deviennent frustrants à suivre (`parseBracketRuns` s'appliquerait tel quel).
 - **`players[].lines` : pas de date pour les Mondiaux.** `LlmNet.matchTournament`
   exige un jeton distinctif hors type d'épreuve ; « BWF World Championships » se
   réduit à `{championships}` (« bwf »/« world » sont du bruit d'appariement) -> aucun
@@ -618,6 +668,18 @@ cron / clic  ->  GitHub Actions  ->  collecteur  ->  commit data.json
   `matchesChampionshipRejetteLarticleDunAutreSport` (l'anti-régression tennis vaut
   AUSSI sur un tier championnat — c'est `{{Infobox badminton event}}` qui prend le
   relais du niveau) et `parseMedalistsNeConfondPasSimpleDamesEtSimpleMessieurs`.
+- **Tests anti-régression à conserver** : `stageFrNinventePasDeStadeSansAnnotation`,
+  `frenchStatusNaffichePasUnJoueurSansAnnotation` et
+  `frenchStatusSansAucunStadeLisibleResteVrai` — ne PAS réintroduire un stade par
+  défaut dans `stageFr` (un tournoi terminé passerait pour en cours), et ne pas
+  confondre « aucun Français » avec « aucun stade connu ».
+- **Tests anti-régression à conserver (bracket)** :
+  `bracketNeDeclarePasElimineUnMatchNonJoue` (le piège `PENDING` — ne jamais le
+  supprimer, un joueur qui s'apprête à jouer serait déclaré éliminé),
+  `bracketDonneLeTourDunJoueurNonTeteDeSerie`,
+  `bracketNumeroteLesToursSelonLaTailleDuTableau` (le nb de tours se lit sur la
+  structure, pas sur les cases françaises), `bracketIgnoreLesQualifications` et
+  `frenchStatusPrefereLeBracketEtGardeLeForfaitDesSeeds`.
 - **Une date, un fuseau** : toute logique de date passe par `Window.today()`
   (Europe/Paris) et prend son instant en paramètre pour rester testable. Pas de
   `LocalDate.now()` disséminé dans le code.

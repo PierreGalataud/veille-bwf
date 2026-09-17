@@ -509,7 +509,10 @@ class CollectorTest {
                     java.time.LocalDate.of(2026, 6, 9), java.time.LocalDate.of(2026, 6, 14), "500"));
         }
 
-        /** Un Français au tableau → present true, avec son stade le plus avancé. */
+        /** Un Français au tableau → present true, avec son stade le plus avancé.
+         *  Toma Junior Popov n'est PAS tête de série : il n'existe que dans le
+         *  bracket, sans annotation — on ne liste que les stades réellement connus,
+         *  jamais un « En lice » par défaut (cf. test suivant). */
         @Test
         void frenchStatusPresentAvecStade() {
             String wt = "{{colbegin}}\n"
@@ -522,7 +525,152 @@ class CollectorTest {
             assertEquals(Boolean.TRUE, fs.present());
             assertFalse(fs.confirm());
             assertTrue(fs.note().contains("Christo Popov — 2e tour"));
-            assertTrue(fs.note().contains("Toma Junior Popov — En lice"));
+            assertFalse(fs.note().contains("Toma Junior Popov"));
+        }
+
+        /** ANTI-RÉGRESSION (cas réel du LI-NING China Masters 2026, TERMINÉ) : un
+         *  joueur non tête de série n'a aucune annotation. Il ne doit PAS ressortir
+         *  « En lice » — un tournoi fini passerait pour en cours. */
+        @Test
+        void frenchStatusNaffichePasUnJoueurSansAnnotation() {
+            String wt = "{{colbegin}}\n"
+                    + "# {{flagicon|FRA}} [[Christo Popov]] ''(semi-finals)''\n"
+                    + "# {{flagicon|FRA}} [[Alex Lanier]] ''(withdrew)''\n"
+                    + "{{colend}}\n"
+                    + "| RD1-team7 = '''{{flagicon|FRA}} [[Toma Junior Popov|T J Popov]]'''\n"
+                    + "| RD2-team4 = {{flagicon|FRA}} [[Toma Junior Popov|T J Popov]] \n";
+            WikiTournament.FrenchStatus fs = WikiTournament.parseFrenchStatus(wt);
+            assertEquals(Boolean.TRUE, fs.present());
+            assertEquals("Alex Lanier — Forfait · Christo Popov — 1/2 finale", fs.note());
+            assertFalse(fs.note().contains("En lice"));
+        }
+
+        /** Des Français au tableau mais AUCUN stade lisible (aucun tête de série) :
+         *  la présence reste vraie — c'est le PARCOURS qu'on ignore. Note explicite,
+         *  jamais vide, jamais un « aucun Français » ni un stade inventé. */
+        @Test
+        void frenchStatusSansAucunStadeLisibleResteVrai() {
+            String wt = "| RD1-team1 = [[Shi Yuqi]]\n"
+                    + "| RD1-team4 = {{flagicon|FRA}} [[Toma Junior Popov]]\n";
+            WikiTournament.FrenchStatus fs = WikiTournament.parseFrenchStatus(wt);
+            assertEquals(Boolean.TRUE, fs.present());
+            assertFalse(fs.confirm());
+            assertEquals("Français au tableau", fs.title());
+            assertTrue(fs.note().contains("résultats non disponibles"));
+            assertFalse(fs.note().contains("En lice"));
+            assertFalse(fs.note().contains("Toma Junior Popov —"));
+        }
+
+        // --------------------------------------------------------
+        // Lecture du BRACKET — le parcours réel, têtes de série ou non
+        // --------------------------------------------------------
+
+        /** Squelette RÉEL d'une page de tournoi (vérifié China Masters ET Euros) :
+         *  phase finale à 4 équipes, puis des sections à 8 (donc un tableau de 32). */
+        private String page(String finals, String section) {
+            return "== Men's singles ==\n"
+                    + "=== Seeds ===\n"
+                    + "# {{flagicon|FRA}} [[Alex Lanier]] ''(withdrew)''\n"
+                    + "=== Finals ===\n{{4TeamBracket-Tennis3\n" + finals + "}}\n"
+                    + "=== Top half ===\n"
+                    + "==== Section 1 ====\n{{8TeamBracket-Tennis3\n" + section + "}}\n";
+        }
+
+        private String stade(String finals, String section, String joueur) {
+            WikiTournament.Run run = WikiTournament.parseBracketRuns(page(finals, section)).get(joueur);
+            return run == null ? null : WikiTournament.runLabel(run);
+        }
+
+        /** LE CAS QUI MANQUAIT : non tête de série, donc jamais annoté dans les Seeds.
+         *  Le bracket, lui, dit tout — gagné au 1er tour, perdu au 2e (cas réel du
+         *  LI-NING China Masters 2026, où il s'affichait « En lice »). */
+        @Test
+        void bracketDonneLeTourDunJoueurNonTeteDeSerie() {
+            String section = "| RD1-team7 = '''{{flagicon|FRA}} [[Toma Junior Popov|T J Popov]]'''\n"
+                    + "| RD1-team8 = {{flagicon|IND}} [[Lakshya Sen]]\n"
+                    + "| RD2-team3 = '''{{flagicon|CHN}} [[Shi Yuqi]]'''\n"
+                    + "| RD2-team4 = {{flagicon|FRA}} [[Toma Junior Popov|T J Popov]]\n";
+            assertEquals("2e tour", stade("", section, "Toma Junior Popov"));
+        }
+
+        /** ENCORE EN LICE, cas 1 : il vient de gagner et n'est pas encore reparu
+         *  dans le tour suivant → qualifié pour les demies. */
+        @Test
+        void bracketDitEncoreEnLiceApresUneVictoire() {
+            String section = "| RD3-team1 = {{flagicon|DEN}} [[Anders Antonsen]]\n"
+                    + "| RD3-team2 = '''{{flagicon|FRA}} [[Christo Popov|C Popov]]'''\n";
+            assertEquals("encore en lice (1/2 finale)", stade("", section, "Christo Popov"));
+        }
+
+        /** ENCORE EN LICE, cas 2 — LE PIÈGE : dès qu'il gagne, l'éditeur l'inscrit au
+         *  tour suivant, qui n'est en gras NI d'un côté NI de l'autre tant que le
+         *  match n'est pas joué. Sans l'état PENDING il passerait pour ÉLIMINÉ. */
+        @Test
+        void bracketNeDeclarePasElimineUnMatchNonJoue() {
+            String section = "| RD2-team3 = {{flagicon|CHN}} [[Shi Yuqi]]\n"
+                    + "| RD2-team4 = {{flagicon|FRA}} [[Toma Junior Popov|T J Popov]]\n";
+            assertEquals("encore en lice (2e tour)", stade("", section, "Toma Junior Popov"));
+        }
+
+        /** Phase finale : gagner RD2 = le titre, le perdre = finaliste, perdre RD1 = demie. */
+        @Test
+        void bracketLitLaPhaseFinale() {
+            String titre = "| RD2-team1 = '''{{flagicon|FRA}} [[Christo Popov]]'''\n"
+                    + "| RD2-team2 = {{flagicon|JPN}} [[Kodai Naraoka]]\n";
+            assertEquals("Vainqueur", stade(titre, "", "Christo Popov"));
+
+            String finaliste = "| RD2-team1 = '''{{flagicon|JPN}} [[Kodai Naraoka]]'''\n"
+                    + "| RD2-team2 = {{flagicon|FRA}} [[Christo Popov]]\n";
+            assertEquals("Finaliste", stade(finaliste, "", "Christo Popov"));
+
+            String demie = "| RD1-team3 = '''{{flagicon|CHN}} [[Shi Yuqi]]'''\n"
+                    + "| RD1-team4 = {{flagicon|FRA}} [[Christo Popov]]\n";
+            assertEquals("1/2 finale", stade(demie, "", "Christo Popov"));
+        }
+
+        /** La numérotation des tours vient de la STRUCTURE du tableau, pas des cases
+         *  françaises : dans un tableau de 64 (sections de 16), perdre au 1er tour de
+         *  section reste « 1er tour » et le dernier tour de section reste un quart. */
+        @Test
+        void bracketNumeroteLesToursSelonLaTailleDuTableau() {
+            String page64 = "== Men's singles ==\n=== Finals ===\n{{4TeamBracket-Tennis3\n}}\n"
+                    + "==== Section 1 ====\n{{16TeamBracket-Compact-Tennis3-Byes\n"
+                    + "| RD1-team15 = '''{{flagicon|CHN}} [[Shi Yuqi]]'''\n"
+                    + "| RD1-team16 = {{flagicon|FRA}} [[Alex Lanier]]\n"
+                    + "| RD4-team1 = '''{{flagicon|DEN}} [[Anders Antonsen]]'''\n"
+                    + "| RD4-team2 = {{flagicon|FRA}} [[Christo Popov]]\n}}\n";
+            var runs = WikiTournament.parseBracketRuns(page64);
+            assertEquals("1er tour", WikiTournament.runLabel(runs.get("Alex Lanier")));
+            assertEquals("1/4 de finale", WikiTournament.runLabel(runs.get("Christo Popov")));
+        }
+
+        /** Un bracket sous un en-tête inconnu (qualifications) n'est PAS un tour de
+         *  tableau : on l'ignore plutôt que de le compter comme un 1er tour. */
+        @Test
+        void bracketIgnoreLesQualifications() {
+            String qualifs = "== Men's singles ==\n=== Qualification ===\n"
+                    + "{{8TeamBracket-Tennis3\n"
+                    + "| RD1-team1 = '''{{flagicon|CHN}} [[Shi Yuqi]]'''\n"
+                    + "| RD1-team2 = {{flagicon|FRA}} [[Toma Junior Popov]]\n}}\n";
+            assertTrue(WikiTournament.parseBracketRuns(qualifs).isEmpty());
+        }
+
+        /** Intégration : le BRACKET tranche le parcours, les Seeds ne servent plus
+         *  qu'à ce qu'il ne peut pas dire — ici le forfait d'un joueur qui n'est même
+         *  pas au tableau (cas réel du LI-NING China Masters 2026 au complet). */
+        @Test
+        void frenchStatusPrefereLeBracketEtGardeLeForfaitDesSeeds() {
+            String section = "| RD1-team7 = '''{{flagicon|FRA}} [[Toma Junior Popov|T J Popov]]'''\n"
+                    + "| RD1-team8 = {{flagicon|IND}} [[Lakshya Sen]]\n"
+                    + "| RD2-team3 = '''{{flagicon|CHN}} [[Shi Yuqi]]'''\n"
+                    + "| RD2-team4 = {{flagicon|FRA}} [[Toma Junior Popov|T J Popov]]\n";
+            String demie = "| RD1-team3 = '''{{flagicon|CHN}} [[Shi Yuqi]]'''\n"
+                    + "| RD1-team4 = {{flagicon|FRA}} [[Christo Popov]]\n";
+            WikiTournament.FrenchStatus fs =
+                    WikiTournament.parseFrenchStatus(page(demie, section));
+            assertEquals(Boolean.TRUE, fs.present());
+            assertEquals("Alex Lanier — Forfait · Christo Popov — 1/2 finale"
+                    + " · Toma Junior Popov — 2e tour", fs.note());
         }
 
         /** Tableau publié sans Français → present false (confirmé), jamais null. */
@@ -630,15 +778,19 @@ class CollectorTest {
             assertArrayEquals(new String[]{"1/2 finale", "5"}, WikiTournament.stageFr("semi-finals"));
             assertArrayEquals(new String[]{"1/4 de finale", "4"}, WikiTournament.stageFr("quarter-finals"));
             assertArrayEquals(new String[]{"2e tour", "2"}, WikiTournament.stageFr("second round"));
-            assertArrayEquals(new String[]{"En lice", "0"}, WikiTournament.stageFr(null));
+            assertArrayEquals(new String[]{"Forfait", "0"}, WikiTournament.stageFr("withdrew"));
         }
 
-        /** Une parenthèse sans aucune lettre (numéro de tête de série) n'est pas
-         *  une annotation de résultat — on ne l'affiche pas comme un stade. */
+        /** Pas d'annotation = pas d'information sur le parcours → null, JAMAIS un
+         *  stade par défaut (l'ancien « En lice » faisait passer un tournoi terminé
+         *  pour en cours). Idem pour une parenthèse sans lettre (numéro de série). */
         @Test
-        void stageFrIgnoreUneParentheseNumerique() {
-            assertArrayEquals(new String[]{"En lice", "0"}, WikiTournament.stageFr("2"));
-            assertArrayEquals(new String[]{"En lice", "0"}, WikiTournament.stageFr(" 12 "));
+        void stageFrNinventePasDeStadeSansAnnotation() {
+            assertNull(WikiTournament.stageFr(null));
+            assertNull(WikiTournament.stageFr(""));
+            assertNull(WikiTournament.stageFr("   "));
+            assertNull(WikiTournament.stageFr("2"));
+            assertNull(WikiTournament.stageFr(" 12 "));
         }
 
         /** VÉRIFIÉ sur plusieurs articles (China Open, Championnats d'Europe) :
