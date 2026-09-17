@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react";
 import "./styles.css";
 
-// Échelle des niveaux : couleur + libellés cohérents partout
+// Échelle des niveaux : couleur + libellés cohérents partout.
+// « monde » et « europe » sont les deux grands championnats individuels (hors
+// World Tour) — couleurs volontairement à l'écart de celles des 5 Super.
 const TIER_COLOR = {
+  monde: "var(--t-monde)",
+  europe: "var(--t-europe)",
   wtf: "var(--t-wtf)",
   "1000": "var(--t-1000)",
   "750": "var(--t-750)",
@@ -10,14 +14,24 @@ const TIER_COLOR = {
   "300": "var(--t-300)",
 };
 const TIER_LABEL = {
+  monde: "Championnats du monde",
+  europe: "Championnats d'Europe",
   wtf: "World Tour Finals",
   "1000": "Super 1000",
   "750": "Super 750",
   "500": "Super 500",
   "300": "Super 300",
 };
-const TIER_SHORT = { wtf: "WTF", "1000": "S1000", "750": "S750", "500": "S500", "300": "S300" };
-const ALL_TIERS = ["wtf", "1000", "750", "500", "300"];
+const TIER_SHORT = {
+  monde: "MONDE",
+  europe: "EURO",
+  wtf: "WTF",
+  "1000": "S1000",
+  "750": "S750",
+  "500": "S500",
+  "300": "S300",
+};
+const ALL_TIERS = ["monde", "europe", "wtf", "1000", "750", "500", "300"];
 
 // Disciplines du bloc « Champions » (contrat current[].champions), dans l'ordre
 // d'affichage. Vocabulaire d'interface, pas des données badminton : les noms des
@@ -158,7 +172,7 @@ export default function App() {
         </div>
         <h1 className="vbwf__title">Veille <b>BWF</b> World Tour</h1>
         <p className="vbwf__sub">
-          Tournois internationaux des 5 niveaux du World Tour, priorité à la semaine en cours, puis aux Français en lice.
+          Tournois internationaux des 5 niveaux du World Tour, plus les Championnats du monde et d'Europe. Priorité à la semaine en cours, puis aux Français en lice.
         </p>
 
         <div className="vbwf__filters">
@@ -259,7 +273,7 @@ export default function App() {
         </section>
 
         <section className="vbwf__upcoming">
-          <h2 className="sec-label">À venir — prochains tournois World Tour</h2>
+          <h2 className="sec-label">À venir — prochains tournois internationaux</h2>
           {visibleUpcoming.length === 0 && (
             <div className="card empty">Aucun tournoi de ce niveau au calendrier.</div>
           )}

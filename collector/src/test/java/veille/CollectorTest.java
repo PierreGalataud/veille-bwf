@@ -65,6 +65,93 @@ class CollectorTest {
     }
 
     // ------------------------------------------------------------
+    // Calendrier BWF — périmètre : catégories acceptées / rejetées, région, dotation
+    // ------------------------------------------------------------
+    @Nested
+    class CategoriesCalendrier {
+
+        /** Les 5 niveaux du World Tour restent acceptés, avec leur tier. */
+        @Test
+        void tierOfAccepteLesCinqNiveauxWorldTour() {
+            assertEquals("wtf", BwfCalendar.tierOf("HSBC BWF World Tour Finals"));
+            assertEquals("1000", BwfCalendar.tierOf("HSBC BWF World Tour Super 1000"));
+            assertEquals("750", BwfCalendar.tierOf("HSBC BWF World Tour Super 750"));
+            assertEquals("500", BwfCalendar.tierOf("HSBC BWF World Tour Super 500"));
+            assertEquals("300", BwfCalendar.tierOf("HSBC BWF World Tour Super 300"));
+        }
+
+        /** Périmètre élargi : Championnats du monde et championnats continentaux
+         *  individuels. Le tiret du libellé « Grade 1 – … » est un U+2013, pas un
+         *  trait d'union — les deux écritures doivent marcher. */
+        @Test
+        void tierOfAccepteMondiauxEtContinentaux() {
+            assertEquals("monde", BwfCalendar.tierOf("Grade 1 – Individual Tournaments"));
+            assertEquals("monde", BwfCalendar.tierOf("Grade 1 - Individual Tournaments"));
+            assertEquals("monde", BwfCalendar.tierOf("  grade 1 –  individual   tournaments "));
+            assertEquals("europe", BwfCalendar.tierOf("Continental Individual Championships"));
+        }
+
+        /** ANTI-RÉGRESSION : les catégories juniors, vétérans (« Senior ») et par
+         *  équipes ne diffèrent que d'UN mot des acceptées. Le Mondial junior ne
+         *  doit JAMAIS arriver en tête d'affiche. */
+        @Test
+        void tierOfRejetteLesVariantesJuniorsSeniorsEtEquipes() {
+            assertNull(BwfCalendar.tierOf("Grade 1 – Individual Junior Tournaments"));
+            assertNull(BwfCalendar.tierOf("Grade 1 – Individual Senior Tournaments"));
+            assertNull(BwfCalendar.tierOf("Grade 1 – Junior Team Tournaments"));
+            assertNull(BwfCalendar.tierOf("Grade 1 – Team Tournaments"));
+            assertNull(BwfCalendar.tierOf("Continental Junior Individual Championships"));
+            assertNull(BwfCalendar.tierOf("Continental Junior Team Championships"));
+            assertNull(BwfCalendar.tierOf("Continental Team Championships"));
+            assertNull(BwfCalendar.tierOf("Junior International Series"));
+            assertNull(BwfCalendar.tierOf("Junior International Challenge"));
+            assertNull(BwfCalendar.tierOf("Junior Future Series"));
+            assertNull(BwfCalendar.tierOf("Junior International Grand Prix"));
+            assertNull(BwfCalendar.tierOf("Upgraded Junior Future Series"));
+        }
+
+        /** Le reste du calendrier reste hors périmètre. */
+        @Test
+        void tierOfRejetteLesCategoriesHorsPerimetre() {
+            assertNull(BwfCalendar.tierOf("BWF Tour Super 100"));
+            assertNull(BwfCalendar.tierOf("International Challenge"));
+            assertNull(BwfCalendar.tierOf("International Series"));
+            assertNull(BwfCalendar.tierOf("Future Series"));
+            assertNull(BwfCalendar.tierOf("Multi-Sport Games"));
+            assertNull(BwfCalendar.tierOf("Multi-Sport Games - Team Tournaments"));
+            assertNull(BwfCalendar.tierOf("Continental Individual Games"));
+            assertNull(BwfCalendar.tierOf("HSBC BWF World Tour"));      // sans niveau
+            assertNull(BwfCalendar.tierOf(null));
+        }
+
+        /** « Continental Individual Championships » couvre TOUS les continents :
+         *  sans filtre, le tableau de bord afficherait les championnats d'Afrique. */
+        @Test
+        void isEuropeanNeGardeQueLeChampionnatEuropeen() {
+            assertTrue(BwfCalendar.isEuropean("European Championships 2026", "ESP"));
+            assertTrue(BwfCalendar.isEuropean("European Individual Championships 2026", ""));
+            assertTrue(BwfCalendar.isEuropean("Individual Championships 2026", "FRA")); // pays hôte
+            assertFalse(BwfCalendar.isEuropean("All Africa Championships 2026", "RSA"));
+            assertFalse(BwfCalendar.isEuropean("Badminton Asia Championships 2026", "CHN"));
+            assertFalse(BwfCalendar.isEuropean("Pan Am Individual Championships 2026", "USA"));
+            assertFalse(BwfCalendar.isEuropean("Oceania Championships 2026", null));
+        }
+
+        /** Mondiaux et Euros n'affichent AUCUNE dotation : le bouton peut manquer
+         *  ou ne porter qu'un tiret. Pas d'exception, pas de montant inventé —
+         *  l'appelant retombe sur « — ». */
+        @Test
+        void formatPrizeToleranteQuandLaDotationManque() {
+            assertNull(BwfCalendar.formatPrize("PRIZE MONEY -"));
+            assertNull(BwfCalendar.formatPrize("PRIZE MONEY"));
+            assertNull(BwfCalendar.formatPrize("TOURNAMENT LINK"));      // autre bouton
+            assertNull(BwfCalendar.formatPrize(null));
+            // Séparateur de milliers = espace insécable fine U+202F (cf. CLAUDE.md).
+            assertEquals("500 000 $", BwfCalendar.formatPrize("PRIZE MONEY US$ 500,000"));
+        }
+    }
+
+    // ------------------------------------------------------------
     // Fenêtre temporelle (Window) — bornes inclusives + fuseau Europe/Paris
     // ------------------------------------------------------------
     @Nested
@@ -544,6 +631,221 @@ class CollectorTest {
             assertArrayEquals(new String[]{"1/4 de finale", "4"}, WikiTournament.stageFr("quarter-finals"));
             assertArrayEquals(new String[]{"2e tour", "2"}, WikiTournament.stageFr("second round"));
             assertArrayEquals(new String[]{"En lice", "0"}, WikiTournament.stageFr(null));
+        }
+
+        /** Une parenthèse sans aucune lettre (numéro de tête de série) n'est pas
+         *  une annotation de résultat — on ne l'affiche pas comme un stade. */
+        @Test
+        void stageFrIgnoreUneParentheseNumerique() {
+            assertArrayEquals(new String[]{"En lice", "0"}, WikiTournament.stageFr("2"));
+            assertArrayEquals(new String[]{"En lice", "0"}, WikiTournament.stageFr(" 12 "));
+        }
+
+        /** VÉRIFIÉ sur plusieurs articles (China Open, Championnats d'Europe) :
+         *  Wikipédia écrit « ''(quarter-finals)'' » MAIS « '''[[X]] (champion)''' » —
+         *  le vainqueur est en gras et son annotation n'a pas d'italiques. Exiger
+         *  les italiques faisait ressortir le champion comme « En lice ». */
+        @Test
+        void frenchStatusLitLeChampionAnnoteSansItaliques() {
+            String wt = "# {{flagicon|FRA}} '''[[Christo Popov]] (champion)'''\n"
+                    + "# {{flagicon|FRA}} [[Alex Lanier]] ''(quarter-finals)''\n"
+                    + "| RD1-team1 = [[Christo Popov]]\n";
+            WikiTournament.FrenchStatus fs = WikiTournament.parseFrenchStatus(wt);
+            assertEquals(Boolean.TRUE, fs.present());
+            assertTrue(fs.note().contains("Christo Popov — Vainqueur"));
+            assertTrue(fs.note().contains("Alex Lanier — 1/4 de finale"));
+        }
+
+        // --------------------------------------------------------
+        // Championnats du monde / d'Europe : pas de code de niveau
+        // --------------------------------------------------------
+
+        /** Infobox RÉELLE des Championnats du monde 2026 : le champ vaut « 1 », pas
+         *  « G2L<n> » — le niveau ne peut donc PAS servir de preuve d'identité. */
+        private String infoboxMondiaux() {
+            return "{{Infobox badminton event\n|name           = 2026 BWF World Championships\n"
+                    + "|dates          = 17 – 23 August 2026\n|number_edition = 30th\n"
+                    + "|level          = 1\n|prize_money    =\n"
+                    + "|location       = New Delhi, India\n}}\n";
+        }
+
+        /** Infobox RÉELLE des Championnats d'Europe 2026 : « level » VIDE, et le
+         *  nom enveloppé dans un {{nowrap}}. */
+        private String infoboxEuros() {
+            return "{{Infobox badminton event\n"
+                    + "|name           = {{nowrap|2026 European Badminton Championships}}\n"
+                    + "|dates          = 6–12 April\n|level          = \n"
+                    + "|location       = [[Huelva]], Spain\n}}\n";
+        }
+
+        @Test
+        void matchesTournamentAccepteLesMondiauxSansCodeDeNiveau() {
+            LocalDate s = LocalDate.of(2026, 8, 17);
+            LocalDate e = LocalDate.of(2026, 8, 23);
+            assertNull(WikiTournament.parseLevel(infoboxMondiaux()));   // « level = 1 » ≠ G2L<n>
+            assertTrue(WikiTournament.matchesTournament(
+                    "2026 BWF World Championships", infoboxMondiaux(), s, e, "monde"));
+            assertFalse(WikiTournament.matchesTournament(               // pas un World Tour
+                    "2026 BWF World Championships", infoboxMondiaux(), s, e, "500"));
+            assertFalse(WikiTournament.matchesTournament(               // pas l'européen
+                    "2026 BWF World Championships", infoboxMondiaux(), s, e, "europe"));
+            assertFalse(WikiTournament.matchesTournament(               // dates hors plage
+                    "2026 BWF World Championships", infoboxMondiaux(),
+                    LocalDate.of(2026, 4, 6), LocalDate.of(2026, 4, 12), "monde"));
+        }
+
+        @Test
+        void matchesTournamentAccepteLesEurosDontLeNomEstDansUnNowrap() {
+            LocalDate s = LocalDate.of(2026, 4, 6);
+            LocalDate e = LocalDate.of(2026, 4, 12);
+            assertEquals("2026 European Badminton Championships",
+                    WikiTournament.infoboxName(infoboxEuros()));
+            assertTrue(WikiTournament.matchesTournament(
+                    "2026 European Badminton Championships", infoboxEuros(), s, e, "europe"));
+            // Titre inconnu → repli sur le nom de l'infobox, même verdict.
+            assertTrue(WikiTournament.matchesTournament(null, infoboxEuros(), s, e, "europe"));
+            assertFalse(WikiTournament.matchesTournament(
+                    "2026 European Badminton Championships", infoboxEuros(), s, e, "monde"));
+        }
+
+        /** ANTI-RÉGRESSION juniors / para / équipes : mêmes modèle d'infobox et
+         *  mêmes dates que le vrai championnat — seule l'identité les sépare. */
+        @Test
+        void matchesChampionshipRejetteLesEditionsVoisines() {
+            assertFalse(WikiTournament.matchesChampionship(
+                    "2026 BWF World Junior Championships", infoboxMondiaux(), "monde"));
+            assertFalse(WikiTournament.matchesChampionship(
+                    "2026 BWF Para-Badminton World Championships", infoboxMondiaux(), "monde"));
+            assertFalse(WikiTournament.matchesChampionship(
+                    "2026 BWF World Senior Championships", infoboxMondiaux(), "monde"));
+            assertFalse(WikiTournament.matchesChampionship(
+                    "2026 European Men's and Women's Team Badminton Championships",
+                    infoboxEuros(), "europe"));
+            assertFalse(WikiTournament.matchesChampionship(
+                    "2027 European Mixed Team Championships Qualification",
+                    infoboxEuros(), "europe"));
+            assertFalse(WikiTournament.matchesChampionship(     // pas un championnat du tout
+                    "2026 BWF World Tour Finals", infoboxMondiaux(), "monde"));
+        }
+
+        /** ANTI-RÉGRESSION tennis ÉTENDUE : sur un tier championnat, c'est le modèle
+         *  {{Infobox badminton event}} qui prend le relais du niveau. Un homonyme
+         *  d'un autre sport reste recalé — on n'a rien relâché. */
+        @Test
+        void matchesChampionshipRejetteLarticleDunAutreSport() {
+            String tennis = "{{Infobox tennis event|2026|Australian Open|\n"
+                    + "|date = 18 January – 1 February 2026\n"
+                    + "|category = [[Grand Slam (tennis)|Grand Slam]]\n}}";
+            assertFalse(WikiTournament.matchesChampionship(
+                    "2026 Australian Open Championships", tennis, "monde"));
+            assertFalse(WikiTournament.matchesTournament("2026 Australian Open Championships",
+                    tennis, LocalDate.of(2026, 1, 18), LocalDate.of(2026, 2, 1), "monde"));
+        }
+
+        // --------------------------------------------------------
+        // Tableau « Medalists » (Championnats du monde)
+        // --------------------------------------------------------
+
+        /** Extrait RÉEL du tableau des médaillés des Championnats du monde 2026.
+         *  Deux écritures de cellule coexistent : {{flagmedalist}} pour un simple,
+         *  {{flagcountry}} + deux liens pour une paire. */
+        private String medalistsReel() {
+            return "=== Medalists ===\n"
+                    + "{| {{MedalistTable|type=Events}}\n"
+                    + "|-\n"
+                    + "| rowspan=\"2\" | Men's singles<br>{{DetailsLink|2026 BWF World Championships – Men's singles}}\n"
+                    + "| rowspan=\"2\" | {{flagmedalist|[[Alex Lanier]]|FRA}}  \n"
+                    + "| rowspan=\"2\" | {{flagmedalist|[[Kodai Naraoka]]|JPN}}\n"
+                    + "| {{flagmedalist|[[Chou Tien-chen]]|TPE}}\n"
+                    + "|-\n"
+                    + "| {{flagmedalist|[[Victor Lai]]|CAN}}\n"
+                    + "|-\n"
+                    + "| rowspan=\"2\" | Women's singles<br>{{DetailsLink|2026 BWF World Championships – Women's singles}}\n"
+                    + "| rowspan=\"2\" | {{flagmedalist|[[An Se-young]]|KOR}}\n"
+                    + "| rowspan=\"2\" | {{flagmedalist|[[Akane Yamaguchi]]|JPN}}\n"
+                    + "| {{flagmedalist|[[Wang Zhiyi]]|CHN}}\n"
+                    + "|-\n"
+                    + "| {{flagmedalist|[[Pornpawee Chochuwong]]|THA}}\n"
+                    + "|-\n"
+                    + "| rowspan=\"2\" | Men's doubles<br>{{DetailsLink|2026 BWF World Championships – Men's doubles}}\n"
+                    + "| rowspan=\"2\" | {{flagcountry|CHN}} <br/>[[Liang Weikeng]] <br />[[Wang Chang (badminton)|Wang Chang]]\n"
+                    + "| rowspan=\"2\" | {{flagcountry|MAS}}<br/> [[Aaron Chia]]<br/>[[Soh Wooi Yik]]\n"
+                    + "| {{flagcountry|KOR}}<br/>[[Kim Won-ho]]<br />[[Seo Seung-jae]] \n"
+                    + "|-\n"
+                    + "| {{flagcountry|TPE}}<br/>[[Lee Jhe-huei]]<br/>[[Yang Po-hsuan]]\n"
+                    + "|-\n"
+                    + "| rowspan=\"2\" | Women's doubles<br>{{DetailsLink|2026 BWF World Championships – Women's doubles}}\n"
+                    + "| rowspan=\"2\" | {{flagcountry|KOR}} <br/>[[Baek Ha-na]]<br/> [[Lee So-hee]]\n"
+                    + "| rowspan=\"2\" | {{flagcountry|CHN}} <br/>[[Liu Shengshu]]<br/> [[Tan Ning (badminton)|Tan Ning]]\n"
+                    + "| {{flagcountry|IND}}<br/>[[Treesa Jolly]]<br/>[[Gayatri Gopichand]]\n"
+                    + "|-\n"
+                    + "| {{flagcountry|CHN}}<br/>[[Li Yijing]]<br/>[[Luo Xumin]]\n"
+                    + "|-\n"
+                    + "| rowspan=\"2\" | Mixed doubles<br>{{DetailsLink|2026 BWF World Championships – Mixed doubles}}\n"
+                    + "| rowspan=\"2\" | {{flagcountry|FRA}} <br/> [[Thom Gicquel]] <br /> [[Delphine Delrue]] \n"
+                    + "| rowspan=\"2\" | {{flagcountry|CHN}} <br/> [[Feng Yanzhe]] <br /> [[Huang Dongping]] \n"
+                    + "| {{flagcountry|INA}} <br/> [[Amri Syahnawi]]<br/>[[Nita Violina Marwah]]\n"
+                    + "|-\n"
+                    + "| {{flagcountry|CHN}} <br/> [[Jiang Zhenbang]] <br/> [[Wei Yaxin]]\n"
+                    + "|-\n"
+                    + "|}\n";
+        }
+
+        /** VÉRIFIÉ : la page principale des Mondiaux n'a NI bloc Champions dans son
+         *  infobox NI tableau (les draws sont dans des sous-articles par discipline).
+         *  Le seul résultat publié est le tableau des médaillés — on bascule dessus. */
+        @Test
+        void parseChampionsBasculeSurLeTableauDesMedailles() {
+            WikiTournament.Champions c =
+                    WikiTournament.parseChampions(infoboxMondiaux() + medalistsReel());
+            assertEquals("Alex Lanier", c.ms().name());
+            assertEquals("FRA", c.ms().country());               // pays = dernier segment
+            assertEquals("An Se-young", c.ws().name());
+            assertEquals("Liang Weikeng / Wang Chang", c.md().name());  // paire + [[cible|affichage]]
+            assertEquals("CHN", c.md().country());               // pays = {{flagcountry}}
+            assertEquals("Baek Ha-na / Lee So-hee", c.wd().name());
+            assertEquals("Thom Gicquel / Delphine Delrue", c.xd().name());
+        }
+
+        /** PIÈGE DU SUFFIXE : « Men's singles » est contenu dans « Women's singles ».
+         *  Chaque discipline doit lire SA ligne, et les DEUX bronzes (pas de petite
+         *  finale en badminton). */
+        @Test
+        void parseMedalistsNeConfondPasSimpleDamesEtSimpleMessieurs() {
+            List<WikiTournament.Medalists> rows = WikiTournament.parseMedalists(medalistsReel());
+            assertEquals(5, rows.size());
+            assertEquals("Alex Lanier", rows.get(0).gold().name());
+            assertEquals("Kodai Naraoka", rows.get(0).silver().name());
+            assertEquals(List.of("Chou Tien-chen", "Victor Lai"),
+                    rows.get(0).bronze().stream().map(WikiTournament.Champion::name).toList());
+            assertEquals("An Se-young", rows.get(1).gold().name());
+            assertEquals("Akane Yamaguchi", rows.get(1).silver().name());
+        }
+
+        /** TOUT OU RIEN, comme le bloc Champions : une discipline manquante (tableau
+         *  pas encore rempli) → aucun champion, le front dira « résultats en attente ». */
+        @Test
+        void parseMedalistsToutOuRienSiPartiel() {
+            String sansMixte = medalistsReel().replace("Mixed doubles", "Mixed pairs");
+            assertTrue(WikiTournament.parseMedalists(sansMixte).isEmpty());
+            assertNull(WikiTournament.parseChampions(infoboxMondiaux() + sansMixte));
+            assertTrue(WikiTournament.parseMedalists("Un article sans tableau.").isEmpty());
+            assertTrue(WikiTournament.parseMedalists(null).isEmpty());
+        }
+
+        /** Sans tableau sur la page, le PODIUM reste une source sûre de PRÉSENCE
+         *  française — mais jamais d'absence : un Français hors podium est invisible,
+         *  donc pas de Français au podium ⇒ statut inconnu, pas « aucun ». */
+        @Test
+        void frenchStatusDeduitDuPodiumQuandLaPageNaPasDeTableau() {
+            WikiTournament.FrenchStatus fs =
+                    WikiTournament.parseFrenchStatus(infoboxMondiaux() + medalistsReel());
+            assertEquals(Boolean.TRUE, fs.present());
+            assertEquals("Français sur le podium", fs.title());
+            assertTrue(fs.note().contains("Alex Lanier — Vainqueur"));
+
+            String sansFrancais = medalistsReel().replace("[[Alex Lanier]]", "[[Shi Yuqi]]");
+            assertNull(WikiTournament.parseFrenchStatus(infoboxMondiaux() + sansFrancais).present());
         }
     }
 

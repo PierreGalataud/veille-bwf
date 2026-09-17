@@ -16,7 +16,9 @@ record DataJson(
         List<UpcomingJson> upcoming) {
 
     /**
-     * Tournoi en tête d'affiche. {@code tier} ∈ wtf|1000|750|500|300.
+     * Tournoi en tête d'affiche. {@code tier} ∈ wtf|1000|750|500|300 pour les 5
+     * niveaux du World Tour, plus {@code monde} (Championnats du monde) et
+     * {@code europe} (Championnats d'Europe) — cf. {@code BwfCalendar.tierOf}.
      *
      * <p>{@code status} ∈ {@code "en_cours"} | {@code "termine"} (cf.
      * {@link Window#featured}) : un tournoi reste en tête d'affiche APRÈS sa

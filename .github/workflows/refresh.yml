@@ -49,8 +49,8 @@ jobs:
             (.current     | type == "array") and
             (.players     | type == "array") and
             (.upcoming    | type == "array") and
-            ([.current[].tier]  | all(IN("wtf","1000","750","500","300"))) and
-            ([.upcoming[].tier] | all(IN("wtf","1000","750","500","300"))) and
+            ([.current[].tier]  | all(IN("wtf","1000","750","500","300","monde","europe"))) and
+            ([.upcoming[].tier] | all(IN("wtf","1000","750","500","300","monde","europe"))) and
             ([.current[].status] | all(IN("en_cours","termine"))) and
             ([.current[] | select(.champions != null) | .champions]
               | all([.ms,.ws,.md,.wd,.xd] | all(.name | type == "string"))) and

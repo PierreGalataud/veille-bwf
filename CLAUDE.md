@@ -4,14 +4,50 @@ Contexte et règles pour travailler sur ce dépôt. À lire avant toute modifica
 
 ## Ce qu'est le projet
 
-Un tableau de bord des tournois de badminton du **BWF World Tour** de la semaine
+Un tableau de bord des grands tournois internationaux de badminton de la semaine
 en cours, avec suivi prioritaire des joueurs français. **Suivi individuel réduit à
 deux joueurs : Alex Lanier et Christo Popov** (`players[]`). Le statut français
 d'un tournoi (`frenchStatus`) reste, lui, large : tout Français au tableau compte
 (Lanier ou l'un des deux frères **Popov**).
 
-Niveaux suivis (les 5 du World Tour) : **World Tour Finals, Super 1000, Super 750,
-Super 500, Super 300**.
+Niveaux suivis — les 5 du World Tour : **World Tour Finals, Super 1000, Super 750,
+Super 500, Super 300** — PLUS les deux grands championnats individuels seniors :
+**Championnats du monde** (`monde`) et **Championnats d'Europe** (`europe`).
+
+### Périmètre : catégories du calendrier BWF (VÉRIFIÉ sur la liste officielle)
+
+Le filtre se fait sur la **CATÉGORIE** de la ligne, pas sur le nom (`BwfCalendar.tierOf`).
+
+| Catégorie BWF | tier | |
+|---|---|---|
+| `HSBC BWF World Tour Finals` | `wtf` | ✅ |
+| `HSBC BWF World Tour Super 1000 / 750 / 500 / 300` | `1000`…`300` | ✅ |
+| `Grade 1 – Individual Tournaments` | `monde` | ✅ Championnats du monde |
+| `Continental Individual Championships` | `europe` | ✅ **européen seulement** |
+| `Grade 1 – Individual Junior Tournaments` | — | ❌ Mondial **junior** |
+| `Grade 1 – Individual Senior Tournaments` | — | ❌ **vétérans** |
+| `Grade 1 – Junior Team Tournaments` · `Grade 1 – Team Tournaments` | — | ❌ par équipes |
+| `Continental Junior Individual Championships` | — | ❌ |
+| `Continental Junior Team Championships` · `Continental Team Championships` | — | ❌ |
+| `BWF Tour Super 100`, `International Challenge`, `International Series`, `Future Series`, `Junior *`, `Multi-Sport Games`, `Continental Individual Games` | — | ❌ |
+
+**Les libellés à rejeter ne diffèrent que d'UN mot de ceux à garder.** D'où deux
+régimes d'appariement dans `tierOf`, volontairement différents :
+- World Tour : **préfixe** `HSBC BWF World Tour` + niveau — souple (un changement
+  de sponsor ne doit pas vider le tableau de bord), et sans risque de confusion
+  (aucune catégorie junior ne porte ce préfixe) ;
+- championnats : libellé **EXACT** normalisé (minuscules, accents, tiret U+2013 du
+  « Grade 1 – … » ramené au tiret simple, espaces compactés). Un `contains()` ferait
+  passer le Mondial junior — verrouillé par `tierOfRejetteLesVariantesJuniorsSeniorsEtEquipes`.
+
+**Filtre régional** (`BwfCalendar.isEuropean`) : `Continental Individual Championships`
+couvre TOUS les continents (All Africa, Badminton Asia, Pan Am, Oceania…). On ne garde
+que l'européen : mot « European »/« Europe » dans le nom, **ou** pays hôte membre de
+Badminton Europe. Sans ce filtre, le tableau afficherait les championnats d'Afrique.
+
+**Pas de dotation** hors World Tour : la BWF n'affiche aucun prize money pour ces
+événements → `prize` vaut `"—"` (`BwfCalendar.formatPrize` renvoie `null` quand le
+bouton n'a pas de montant, jamais une exception ni un montant inventé).
 
 Deux priorités d'affichage : (1) les tournois de la semaine courante, (2) ceux où
 des Français sont en lice.
@@ -76,7 +112,9 @@ Jackson, ordre des composants = ordre des clés). Toute modif du schéma passe p
 fichier ET `src/App.jsx`, même commit. Le workflow VALIDE le contrat (step jq) avant
 tout commit de data.json.
 
-`tier` ∈ `"wtf" | "1000" | "750" | "500" | "300"`. `status` ∈ `"en_cours" | "termine"`.
+`tier` ∈ `"wtf" | "1000" | "750" | "500" | "300" | "monde" | "europe"` (cf. la table
+des catégories plus haut ; le step jq du workflow valide cette liste, **la tenir à
+jour des deux côtés**). `status` ∈ `"en_cours" | "termine"`.
 `tone` ∈ `"win" | "out" | null`.
 `medal` (échelle badminton — deux demi-finalistes ont le bronze, pas de petite
 finale) : `🥇` vainqueur · `🥈` finaliste · `🥉` demi-finaliste · `⚫` éliminé avant
@@ -139,7 +177,8 @@ d'édition souvent pas encore créé) : « à confirmer » sans sonder.
 
 « Pas trouvé » (`null`) et « trouvé, personne » (`false`) doivent rester distincts,
 dans le collecteur ET à l'affichage. `App.jsx` mappe `tier` via `TIER_COLOR` /
-`TIER_LABEL` / `TIER_SHORT`.
+`TIER_LABEL` / `TIER_SHORT` et liste `ALL_TIERS` (filtres de niveau) : **tout
+nouveau tier s'ajoute aux quatre, plus une couleur `--t-<tier>` dans `styles.css`**.
 
 ## Fenêtre temporelle — bornes INCLUSIVES, fuseau Europe/Paris (`Window.java`)
 
@@ -204,18 +243,20 @@ calendrier fusionné, jamais sur le seul fetch.
 
 | Donnée | Source | Accès |
 |---|---|---|
-| Calendrier + niveaux + prize | corporate.bwfbadminton.com/events/calendar/ | **Jsoup OK** (WordPress rendu serveur) |
+| Calendrier + catégories + prize | corporate.bwfbadminton.com/events/calendar/ | **Jsoup OK** (WordPress rendu serveur) |
 | Statut français d'un tournoi (`frenchStatus`) | Wikipédia EN — **page du tournoi** (tableau/draws) | **API MediaWiki** (`Wiki.java`) |
-| Vainqueurs des 5 disciplines (`champions`) | Wikipédia EN — **page du tournoi** (bloc Champions de l'infobox) | **API MediaWiki** (même lecture que `frenchStatus`) |
+| Vainqueurs des 5 disciplines (`champions`) | Wikipédia EN — **page du tournoi** : bloc Champions de l'infobox, à défaut tableau « Medalists » (Mondiaux) | **API MediaWiki** (même lecture que `frenchStatus`) |
 | Rank + historique de saison (`players[]`) | Wikipédia EN — **page du joueur** (infobox + prose) | **API MediaWiki** (`Wiki.java`) |
 | Tableaux / scores live | TournamentSoftware, Flashscore | **INTERDIT** — robots.txt bloque, ne pas scraper |
 
 > **equipe-france.fr est ABANDONNÉ** (peu fiable). Ne PAS le réintroduire pour le
 > suivi des Français : tout passe désormais par Wikipédia.
 
-- **Calendrier** : table groupée par mois ; colonne CATEGORY -> niveau (on ne garde
-  que `HSBC BWF World Tour …`). La ligne détail contient le GUID TournamentSoftware
-  (identifiant seulement, PAS pour scraper le site).
+- **Calendrier** : table groupée par mois ; colonne CATEGORY -> tier (cf. la table
+  des catégories en tête de fichier : les 5 `HSBC BWF World Tour …`, plus
+  `Grade 1 – Individual Tournaments` et `Continental Individual Championships`).
+  La ligne détail contient le GUID TournamentSoftware (identifiant seulement, PAS
+  pour scraper le site).
 - **Wikipédia — page tournoi** (`WikiTournament`, Source A) : on ne DEVINE jamais
   l'URL (le suffixe « (badminton) » est irrégulier) — on cherche via l'API
   (`list=search`), on retient le titre commençant par l'année visée + partageant un
@@ -240,6 +281,11 @@ calendrier fusionné, jamais sur le seul fetch.
 - [x] Tête d'affiche à deux états (`en_cours` / `termine`) + champions des 5
       disciplines : un tournoi reste affiché jusqu'au démarrage du suivant, et la
       mémoire du calendrier (`CalendarMemory`) compense l'oubli de la source BWF.
+- [x] Périmètre élargi aux **Championnats du monde** et **d'Europe** (tiers `monde`
+      et `europe`) : catégories du calendrier, appariement d'article sans code de
+      niveau, champions depuis le tableau « Medalists », filtre régional des
+      continentaux. Vérifié en rejouant le collecteur aux 20 et 25 août 2026
+      (Mondiaux de New Delhi) et au 10 avril 2026 (Euros de Huelva).
 
 La logique de fond est complète et fiable. Ce qui reste côté déterministe n'est plus
 de la logique mais de la **finition** : affichage, cas vides, fuseau/têtes de série
@@ -320,6 +366,40 @@ Le code a été audité et durci (détail : historique git, commits « Audit lot
   Aucun candidat vérifié -> `frenchStatus` null (jamais un faux match). Tout
   appariement accepté est **mémorisé** dans `collector/aliases.json` : au run
   suivant, entrée présente -> wikitexte direct, **zéro recherche `list=search`**.
+- **Appariement d'un CHAMPIONNAT (`monde`, `europe`) — le niveau ne sert plus de
+  preuve** (`matchesChampionship`). VÉRIFIÉ : les Mondiaux 2026 écrivent `level = 1`
+  (pas `G2L<n>`) et les Euros 2026 laissent le champ VIDE. `parseLevel` renvoie donc
+  `null` et la règle habituelle rejetterait le bon article. On remplace ce signal par
+  trois autres, **tous exigés**, sans rien relâcher :
+  1. le modèle **`{{Infobox badminton event}}`** (casse libre) — c'est LUI qui prend
+     le relais du niveau pour recaler un homonyme d'un autre sport ;
+  2. le mot « championship(s) » dans l'identité (titre de l'article, à défaut le
+     champ `| name =` de l'infobox, déballé de son `{{nowrap|…}}`) ;
+  3. le bon périmètre — « world » pour `monde`, « europe(an) » pour `europe` — et
+     **aucun mot d'édition voisine** : `junior`, `youth`, `senior`, `para`, `team`,
+     `qualification`, `u15/u17/u19`. Sans cette liste, « 2026 BWF World Junior
+     Championships » et « 2026 BWF Para-Badminton World Championships » passeraient.
+  Les DATES restent vérifiées comme pour tout le monde (± 1 jour).
+  La **requête de recherche** garde « bwf » et « world » pour ces tiers
+  (`searchQuery(name, year, tier)`) : ce ne sont pas des sponsors mais l'identité de
+  l'épreuve — sans eux, « 2026 championships badminton » place les championnats
+  d'Asie devant les Mondiaux.
+- **Champions d'un championnat : le tableau « Medalists »** (`parseMedalists`).
+  VÉRIFIÉ sur les Mondiaux 2026 : la page principale n'a NI bloc Champions dans
+  l'infobox NI tableau — les draws vivent dans des sous-articles par discipline
+  (`… – Men's singles`). Le seul résultat publié est le tableau des médaillés :
+  `parseChampions` bascule dessus quand l'infobox est muette, **avec le même tout ou
+  rien** (moins de 5 disciplines -> `null`). Deux écritures de cellule coexistent :
+  `{{flagmedalist|[[X]]|FRA}}` (simple, le pays est le DERNIER segment) et
+  `{{flagcountry|CHN}}` + deux liens (paire). PIÈGE testé : « Men's singles » est un
+  SUFFIXE de « Women's singles » — la recherche de la ligne exige une borne à gauche.
+  Les Euros, eux, ont bien le bloc d'infobox ET les draws : ils passent par le chemin
+  habituel.
+- **`frenchStatus` sans tableau : repli sur le PODIUM.** Faute de draw sur la page des
+  Mondiaux, on lit les médaillés. Un Français au podium -> `present = true`, titre
+  « Français sur le podium ». Un Français ÉLIMINÉ avant les demies y est invisible :
+  aucun Français au podium ne prouve donc rien -> on reste à `null` (inconnu),
+  **jamais un « aucun »**.
 - **Champions = bloc de l'infobox, TOUT OU RIEN** (`WikiTournament.parseChampions`).
   Les vainqueurs sont des champs nommés de `{{Infobox badminton event}}` : `MS`,
   `WS`, puis `MD1`/`MD2`, `WD1`/`WD2`, `XD1`/`XD2` pour les paires, chacun doublé
@@ -343,6 +423,15 @@ Le code a été audité et durci (détail : historique git, commits « Audit lot
   `final` (qu'ils contiennent) -> `runner`/`final` -> `third`/`second`/`first`. Pas
   d'annotation = joueur encore en lice -> « En lice » (rang 0). Le stade le plus
   avancé l'emporte si le joueur apparaît en plusieurs disciplines.
+- **Les italiques de l'annotation sont OPTIONNELLES** (regex `LINK`). VÉRIFIÉ sur
+  plusieurs articles (China Open, Championnats d'Europe) : Wikipédia écrit
+  `''(quarter-finals)''` **mais** `'''[[X]] (champion)'''` — le vainqueur est en gras
+  et son annotation n'a PAS d'italiques. Exiger `''` faisait rater précisément le
+  stade le plus important : le champion ressortait « En lice ». On tolère donc
+  espaces et apostrophes de mise en forme avant la parenthèse, **mais pas de saut de
+  ligne** (une annotation est sur sa ligne ; sinon on attraperait une parenthèse de
+  prose plus bas), et une parenthèse **sans aucune lettre** (« (2) », un numéro de
+  tête de série) n'est pas un stade.
 - **Rank depuis l'infobox** (`WikiPlayer.parseCurrentRanking`) : 1er entier du champ
   `current_ranking` (le simple ; le double suit après `<br />`). Ne jamais confondre
   avec `highest_ranking` ni `current_ranking_date`. Champ absent -> `null`.
@@ -407,6 +496,21 @@ Le code a été audité et durci (détail : historique git, commits « Audit lot
 - **Statut d'un à-venir** : un tableau Wikipédia non figé ne prouve pas l'absence
   de Français -> `upcoming[].french` ne dit jamais « aucun », seulement « engagés »
   ou « à confirmer ».
+- **Les Championnats de France sont HORS PÉRIMÈTRE** : compétition nationale, absente
+  du calendrier BWF (qui ne liste que les épreuves qu'elle sanctionne). Ne pas
+  chercher à les y trouver — il faudrait une source FFBaD distincte, avec son propre
+  parsing et ses propres règles de fraîcheur. Non prévu.
+- **Mondiaux : pas de tableau sur la page principale** -> `frenchStatus` vient du
+  PODIUM (cf. règles de lecture). Un Français sorti avant les demies n'y apparaît pas :
+  le tableau de bord dira « statut inconnu », pas « aucun ». Les draws complets sont
+  dans les sous-articles par discipline — non lus (une lecture par discipline, soit
+  5 requêtes de plus par tournoi, pour un gain marginal).
+- **`players[].lines` : pas de date pour les Mondiaux.** `LlmNet.matchTournament`
+  exige un jeton distinctif hors type d'épreuve ; « BWF World Championships » se
+  réduit à `{championships}` (« bwf »/« world » sont du bruit d'appariement) -> aucun
+  appariement, `date: null`, nom affiché « Championnats du monde » via `frenchName`.
+  Ne PAS retirer « world » de `NAME_NOISE` pour corriger ça : le calendrier contient
+  « VICTOR BWF World **Junior** Championships », qui serait alors apparié à tort.
 
 ## Quand l'IA sert — et quand non
 
@@ -504,6 +608,16 @@ cron / clic  ->  GitHub Actions  ->  collecteur  ->  commit data.json
   l'affiche en `termine` (jamais « aucun tournoi »), il sort dès le démarrage du
   suivant le 28, et la mémoire du calendrier le rend même quand la source BWF l'a
   oublié. Plus `parseChampionsToutOuRienSiPartiel` : moins de 5 disciplines → `null`.
+- **Tests anti-régression à conserver** : classe `CategoriesCalendrier` —
+  `tierOfRejetteLesVariantesJuniorsSeniorsEtEquipes` (le Mondial junior, le Mondial
+  vétérans et les épreuves par équipes ne passent JAMAIS) et
+  `isEuropeanNeGardeQueLeChampionnatEuropeen` (les championnats d'Afrique et d'Asie
+  ne passent pas). Ne pas remplacer l'appariement EXACT de ces catégories par un
+  `contains()`. Plus, dans `StatutTournoi` :
+  `matchesChampionshipRejetteLesEditionsVoisines`,
+  `matchesChampionshipRejetteLarticleDunAutreSport` (l'anti-régression tennis vaut
+  AUSSI sur un tier championnat — c'est `{{Infobox badminton event}}` qui prend le
+  relais du niveau) et `parseMedalistsNeConfondPasSimpleDamesEtSimpleMessieurs`.
 - **Une date, un fuseau** : toute logique de date passe par `Window.today()`
   (Europe/Paris) et prend son instant en paramètre pour rester testable. Pas de
   `LocalDate.now()` disséminé dans le code.
