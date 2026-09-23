@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-09-23T11:08:11.599999100Z",
+  "generatedAt" : "2026-09-23T16:29:53.762095585Z",
   "weekLabel" : "Semaine du 21 – 27 septembre 2026",
   "current" : [ {
     "name" : "LI-NING China Masters 2026",
@@ -42,23 +42,23 @@
   } ],
   "players" : [ {
     "name" : "Alex Lanier",
-    "rank" : "#7 mondial",
+    "rank" : "#8 mondial",
     "lines" : [ {
       "label" : "Dernier",
-      "date" : null,
-      "tournament" : "Championnats du monde",
-      "stage" : "Vainqueur",
-      "medal" : "🥇",
-      "tone" : "win",
-      "value" : "Championnats du monde · Vainqueur"
-    }, {
-      "label" : "Puis",
       "date" : null,
       "tournament" : "Singapore Open",
       "stage" : "Vainqueur",
       "medal" : "🥇",
       "tone" : "win",
       "value" : "Singapore Open · Vainqueur"
+    }, {
+      "label" : "Puis",
+      "date" : null,
+      "tournament" : "Championnats du monde",
+      "stage" : "Vainqueur",
+      "medal" : "🥇",
+      "tone" : "win",
+      "value" : "Championnats du monde · Vainqueur"
     }, {
       "label" : "Puis",
       "date" : null,
