@@ -1,7 +1,7 @@
 {
   "formatVersion" : 4,
-  "wikiRevisionId" : 1376271674,
-  "extractedAt" : "2026-09-23T04:06:11.674846353Z",
+  "wikiRevisionId" : 1376403426,
+  "extractedAt" : "2026-09-24T04:01:03.603707237Z",
   "rank" : "#3 mondial",
   "lines" : [ {
     "label" : "Dernier",
@@ -46,10 +46,10 @@
   }, {
     "label" : "Puis",
     "date" : null,
-    "tournament" : "India Open",
-    "stage" : "1/4 de finale",
-    "medal" : "⚫",
-    "tone" : "out",
-    "value" : "India Open · 1/4 de finale"
+    "tournament" : "Championnats d'Europe par équipes",
+    "stage" : "Vainqueur",
+    "medal" : "🥇",
+    "tone" : "win",
+    "value" : "Championnats d'Europe par équipes · Vainqueur"
   } ]
 }
