@@ -1,42 +1,21 @@
 {
-  "generatedAt" : "2026-10-05T14:06:04.232040976Z",
+  "generatedAt" : "2026-10-05T23:53:56.028874123Z",
   "weekLabel" : "Semaine du 5 – 11 octobre 2026",
   "current" : [ {
-    "name" : "LI-NING China Masters 2026",
-    "tier" : "750",
-    "location" : "Shenzhen, CHN",
-    "dates" : "1 – 6 septembre 2026",
-    "prize" : "1 250 000 $",
+    "name" : "CLASH OF CLANS Arctic Open 2026 powered by YONEX",
+    "tier" : "500",
+    "location" : "Vantaa, FIN",
+    "dates" : "6 – 11 octobre 2026",
+    "prize" : "500 000 $",
     "timezone" : "—",
-    "dayLabel" : "Terminé · 6 septembre",
-    "status" : "termine",
-    "champions" : {
-      "ms" : {
-        "name" : "Jason Gunawan",
-        "country" : "HKG"
-      },
-      "ws" : {
-        "name" : "An Se-young",
-        "country" : "KOR"
-      },
-      "md" : {
-        "name" : "Satwiksairaj Rankireddy / Chirag Shetty",
-        "country" : "IND"
-      },
-      "wd" : {
-        "name" : "Sumire Nakade / Miyu Takahashi",
-        "country" : "JPN"
-      },
-      "xd" : {
-        "name" : "Feng Yanzhe / Huang Dongping",
-        "country" : "CHN"
-      }
-    },
+    "dayLabel" : "Jour 1 / 6 · 6 octobre",
+    "status" : "en_cours",
+    "champions" : null,
     "seeds" : [ ],
     "frenchStatus" : {
       "present" : true,
       "title" : "Français au tableau",
-      "note" : "Alex Lanier — Forfait · Christo Popov — 1/2 finale · Toma Junior Popov — 2e tour",
+      "note" : "Christo Popov — encore en lice (1er tour) · Toma Junior Popov — encore en lice (1er tour)",
       "confirm" : false
     }
   } ],
@@ -138,15 +117,10 @@
     } ]
   } ],
   "upcoming" : [ {
-    "dates" : "6 – 11 octobre",
-    "name" : "CLASH OF CLANS Arctic Open 2026 powered by YONEX",
-    "tier" : "500",
-    "french" : "FR : engagés"
-  }, {
     "dates" : "13 – 18 octobre",
     "name" : "VICTOR Denmark Open 2026",
     "tier" : "750",
-    "french" : "FR : à confirmer"
+    "french" : "FR : engagés"
   }, {
     "dates" : "20 – 25 octobre",
     "name" : "YONEX French Open 2026",
