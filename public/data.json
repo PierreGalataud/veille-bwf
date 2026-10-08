@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-10-08T13:06:43.791246678Z",
+  "generatedAt" : "2026-10-08T23:07:24.044876920Z",
   "weekLabel" : "Semaine du 5 – 11 octobre 2026",
   "current" : [ {
     "name" : "CLASH OF CLANS Arctic Open 2026 powered by YONEX",
@@ -8,14 +8,14 @@
     "dates" : "6 – 11 octobre 2026",
     "prize" : "500 000 $",
     "timezone" : "—",
-    "dayLabel" : "Jour 3 / 6 · 8 octobre",
+    "dayLabel" : "Jour 4 / 6 · 9 octobre",
     "status" : "en_cours",
     "champions" : null,
     "seeds" : [ ],
     "frenchStatus" : {
       "present" : true,
       "title" : "Français au tableau",
-      "note" : "Christo Popov — encore en lice (1/4 de finale) · Toma Junior Popov — encore en lice (2e tour)",
+      "note" : "Christo Popov — encore en lice (1/4 de finale) · Toma Junior Popov — 2e tour",
       "confirm" : false
     }
   } ],
@@ -25,19 +25,19 @@
     "lines" : [ {
       "label" : "Dernier",
       "date" : null,
-      "tournament" : "Singapore Open",
-      "stage" : "Vainqueur",
-      "medal" : "🥇",
-      "tone" : "win",
-      "value" : "Singapore Open · Vainqueur"
-    }, {
-      "label" : "Puis",
-      "date" : null,
       "tournament" : "Championnats du monde",
       "stage" : "Vainqueur",
       "medal" : "🥇",
       "tone" : "win",
       "value" : "Championnats du monde · Vainqueur"
+    }, {
+      "label" : "Puis",
+      "date" : null,
+      "tournament" : "Singapore Open",
+      "stage" : "Vainqueur",
+      "medal" : "🥇",
+      "tone" : "win",
+      "value" : "Singapore Open · Vainqueur"
     }, {
       "label" : "Puis",
       "date" : null,
