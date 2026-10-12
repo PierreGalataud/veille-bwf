@@ -1,6 +1,6 @@
 {
-  "generatedAt" : "2026-10-11T21:41:06.707843567Z",
-  "weekLabel" : "Semaine du 5 – 11 octobre 2026",
+  "generatedAt" : "2026-10-12T05:14:36.720537858Z",
+  "weekLabel" : "Semaine du 12 – 18 octobre 2026",
   "current" : [ {
     "name" : "CLASH OF CLANS Arctic Open 2026 powered by YONEX",
     "tier" : "500",
@@ -8,9 +8,30 @@
     "dates" : "6 – 11 octobre 2026",
     "prize" : "500 000 $",
     "timezone" : "—",
-    "dayLabel" : "Jour 6 / 6 · 11 octobre",
-    "status" : "en_cours",
-    "champions" : null,
+    "dayLabel" : "Terminé · 11 octobre",
+    "status" : "termine",
+    "champions" : {
+      "ms" : {
+        "name" : "Anders Antonsen",
+        "country" : "DEN"
+      },
+      "ws" : {
+        "name" : "Mia Blichfeldt",
+        "country" : "DEN"
+      },
+      "md" : {
+        "name" : "Aaron Tai / Yap Roy King",
+        "country" : "MAS"
+      },
+      "wd" : {
+        "name" : "Chen Fanshutian / Luo Xumin",
+        "country" : "CHN"
+      },
+      "xd" : {
+        "name" : "Jiang Zhenbang / Wei Yaxin",
+        "country" : "CHN"
+      }
+    },
     "seeds" : [ ],
     "frenchStatus" : {
       "present" : true,
