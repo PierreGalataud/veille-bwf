@@ -1,42 +1,21 @@
 {
-  "generatedAt" : "2026-10-12T14:54:44.075613964Z",
+  "generatedAt" : "2026-10-13T00:23:17.276047099Z",
   "weekLabel" : "Semaine du 12 – 18 octobre 2026",
   "current" : [ {
-    "name" : "CLASH OF CLANS Arctic Open 2026 powered by YONEX",
-    "tier" : "500",
-    "location" : "Vantaa, FIN",
-    "dates" : "6 – 11 octobre 2026",
-    "prize" : "500 000 $",
+    "name" : "VICTOR Denmark Open 2026",
+    "tier" : "750",
+    "location" : "Odense, DEN",
+    "dates" : "13 – 18 octobre 2026",
+    "prize" : "950 000 $",
     "timezone" : "—",
-    "dayLabel" : "Terminé · 11 octobre",
-    "status" : "termine",
-    "champions" : {
-      "ms" : {
-        "name" : "Anders Antonsen",
-        "country" : "DEN"
-      },
-      "ws" : {
-        "name" : "Mia Blichfeldt",
-        "country" : "DEN"
-      },
-      "md" : {
-        "name" : "Aaron Tai / Yap Roy King",
-        "country" : "MAS"
-      },
-      "wd" : {
-        "name" : "Chen Fanshutian / Luo Xumin",
-        "country" : "CHN"
-      },
-      "xd" : {
-        "name" : "Jiang Zhenbang / Wei Yaxin",
-        "country" : "CHN"
-      }
-    },
+    "dayLabel" : "Jour 1 / 6 · 13 octobre",
+    "status" : "en_cours",
+    "champions" : null,
     "seeds" : [ ],
     "frenchStatus" : {
       "present" : true,
       "title" : "Français au tableau",
-      "note" : "Christo Popov — 1/4 de finale · Toma Junior Popov — 2e tour",
+      "note" : "Alex Lanier — encore en lice (1er tour) · Christo Popov — encore en lice (1er tour) · Toma Junior Popov — encore en lice (1er tour)",
       "confirm" : false
     }
   } ],
@@ -138,11 +117,6 @@
     } ]
   } ],
   "upcoming" : [ {
-    "dates" : "13 – 18 octobre",
-    "name" : "VICTOR Denmark Open 2026",
-    "tier" : "750",
-    "french" : "FR : engagés"
-  }, {
     "dates" : "20 – 25 octobre",
     "name" : "YONEX French Open 2026",
     "tier" : "750",
