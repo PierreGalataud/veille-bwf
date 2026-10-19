@@ -1,10 +1,18 @@
 {
   "formatVersion" : 4,
-  "wikiRevisionId" : 1380894279,
-  "extractedAt" : "2026-10-18T20:21:33.993854079Z",
+  "wikiRevisionId" : 1380946079,
+  "extractedAt" : "2026-10-19T04:00:16.320893139Z",
   "rank" : "#8 mondial",
   "lines" : [ {
     "label" : "Dernier",
+    "date" : "13 – 18 octobre",
+    "tournament" : "VICTOR Denmark Open 2026",
+    "stage" : "Vainqueur",
+    "medal" : "🥇",
+    "tone" : "win",
+    "value" : "VICTOR Denmark Open 2026 · Vainqueur"
+  }, {
+    "label" : "Puis",
     "date" : null,
     "tournament" : "Championnats du monde",
     "stage" : "Vainqueur",

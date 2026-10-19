@@ -1,6 +1,6 @@
 {
-  "generatedAt" : "2026-10-18T20:21:29.860328343Z",
-  "weekLabel" : "Semaine du 12 – 18 octobre 2026",
+  "generatedAt" : "2026-10-19T04:00:12.312145761Z",
+  "weekLabel" : "Semaine du 19 – 25 octobre 2026",
   "current" : [ {
     "name" : "VICTOR Denmark Open 2026",
     "tier" : "750",
@@ -8,9 +8,30 @@
     "dates" : "13 – 18 octobre 2026",
     "prize" : "950 000 $",
     "timezone" : "—",
-    "dayLabel" : "Jour 6 / 6 · 18 octobre",
-    "status" : "en_cours",
-    "champions" : null,
+    "dayLabel" : "Terminé · 18 octobre",
+    "status" : "termine",
+    "champions" : {
+      "ms" : {
+        "name" : "Alex Lanier",
+        "country" : "FRA"
+      },
+      "ws" : {
+        "name" : "An Se-young",
+        "country" : "KOR"
+      },
+      "md" : {
+        "name" : "Fajar Alfian / Muhammad Shohibul Fikri",
+        "country" : "INA"
+      },
+      "wd" : {
+        "name" : "Pearly Tan / Thinaah Muralitharan",
+        "country" : "MAS"
+      },
+      "xd" : {
+        "name" : "Jiang Zhenbang / Wei Yaxin",
+        "country" : "CHN"
+      }
+    },
     "seeds" : [ ],
     "frenchStatus" : {
       "present" : true,
@@ -24,6 +45,14 @@
     "rank" : "#8 mondial",
     "lines" : [ {
       "label" : "Dernier",
+      "date" : "13 – 18 octobre",
+      "tournament" : "VICTOR Denmark Open 2026",
+      "stage" : "Vainqueur",
+      "medal" : "🥇",
+      "tone" : "win",
+      "value" : "VICTOR Denmark Open 2026 · Vainqueur"
+    }, {
+      "label" : "Puis",
       "date" : null,
       "tournament" : "Championnats du monde",
       "stage" : "Vainqueur",
