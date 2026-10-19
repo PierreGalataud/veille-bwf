@@ -1,42 +1,21 @@
 {
-  "generatedAt" : "2026-10-19T12:39:08.664595076Z",
+  "generatedAt" : "2026-10-19T22:09:29.935656712Z",
   "weekLabel" : "Semaine du 19 – 25 octobre 2026",
   "current" : [ {
-    "name" : "VICTOR Denmark Open 2026",
+    "name" : "YONEX French Open 2026",
     "tier" : "750",
-    "location" : "Odense, DEN",
-    "dates" : "13 – 18 octobre 2026",
+    "location" : "Tremblay-en-France, FRA",
+    "dates" : "20 – 25 octobre 2026",
     "prize" : "950 000 $",
     "timezone" : "—",
-    "dayLabel" : "Terminé · 18 octobre",
-    "status" : "termine",
-    "champions" : {
-      "ms" : {
-        "name" : "Alex Lanier",
-        "country" : "FRA"
-      },
-      "ws" : {
-        "name" : "An Se-young",
-        "country" : "KOR"
-      },
-      "md" : {
-        "name" : "Fajar Alfian / Muhammad Shohibul Fikri",
-        "country" : "INA"
-      },
-      "wd" : {
-        "name" : "Pearly Tan / Thinaah Muralitharan",
-        "country" : "MAS"
-      },
-      "xd" : {
-        "name" : "Jiang Zhenbang / Wei Yaxin",
-        "country" : "CHN"
-      }
-    },
+    "dayLabel" : "Jour 1 / 6 · 20 octobre",
+    "status" : "en_cours",
+    "champions" : null,
     "seeds" : [ ],
     "frenchStatus" : {
       "present" : true,
       "title" : "Français au tableau",
-      "note" : "Alex Lanier — Vainqueur · Christo Popov — 1/2 finale · Toma Junior Popov — 1er tour",
+      "note" : "Alex Lanier — encore en lice (1er tour) · Christo Popov — encore en lice (1er tour) · Toma Junior Popov — encore en lice (1er tour)",
       "confirm" : false
     }
   } ],
@@ -146,11 +125,6 @@
     } ]
   } ],
   "upcoming" : [ {
-    "dates" : "20 – 25 octobre",
-    "name" : "YONEX French Open 2026",
-    "tier" : "750",
-    "french" : "FR : engagés"
-  }, {
     "dates" : "27 octobre – 1 novembre",
     "name" : "HYLO Open 2026",
     "tier" : "500",
