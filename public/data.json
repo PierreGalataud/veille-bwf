@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-10-21T11:27:27.432886260Z",
+  "generatedAt" : "2026-10-21T16:54:44.050870746Z",
   "weekLabel" : "Semaine du 19 – 25 octobre 2026",
   "current" : [ {
     "name" : "YONEX French Open 2026",
@@ -15,13 +15,13 @@
     "frenchStatus" : {
       "present" : true,
       "title" : "Français au tableau",
-      "note" : "Alex Lanier — encore en lice (1er tour) · Christo Popov — encore en lice (2e tour) · Toma Junior Popov — encore en lice (2e tour)",
+      "note" : "Alex Lanier — encore en lice (2e tour) · Christo Popov — encore en lice (2e tour) · Toma Junior Popov — encore en lice (2e tour)",
       "confirm" : false
     }
   } ],
   "players" : [ {
     "name" : "Alex Lanier",
-    "rank" : "#8 mondial",
+    "rank" : "#5 mondial",
     "lines" : [ {
       "label" : "Dernier",
       "date" : "13 – 18 octobre",
