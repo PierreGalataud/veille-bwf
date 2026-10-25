@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-10-25T15:50:07.465715138Z",
+  "generatedAt" : "2026-10-25T20:37:26.302144860Z",
   "weekLabel" : "Semaine du 19 – 25 octobre 2026",
   "current" : [ {
     "name" : "YONEX French Open 2026",
@@ -76,6 +76,22 @@
     "rank" : "#3 mondial",
     "lines" : [ {
       "label" : "Dernier",
+      "date" : "20 – 25 octobre",
+      "tournament" : "YONEX French Open 2026",
+      "stage" : "Vainqueur",
+      "medal" : "🥇",
+      "tone" : "win",
+      "value" : "YONEX French Open 2026 · Vainqueur"
+    }, {
+      "label" : "Puis",
+      "date" : null,
+      "tournament" : "Japan Open",
+      "stage" : "Vainqueur",
+      "medal" : "🥇",
+      "tone" : "win",
+      "value" : "Japan Open · Vainqueur"
+    }, {
+      "label" : "Puis",
       "date" : null,
       "tournament" : "Championnats du monde",
       "stage" : "Éliminé au 1er tour",
@@ -93,14 +109,6 @@
     }, {
       "label" : "Puis",
       "date" : null,
-      "tournament" : "Japan Open",
-      "stage" : "Vainqueur",
-      "medal" : "🥇",
-      "tone" : "win",
-      "value" : "Japan Open · Vainqueur"
-    }, {
-      "label" : "Puis",
-      "date" : null,
       "tournament" : "Championnats d'Europe",
       "stage" : "Vainqueur",
       "medal" : "🥇",
@@ -114,14 +122,6 @@
       "medal" : "🥇",
       "tone" : "win",
       "value" : "German Open · Vainqueur"
-    }, {
-      "label" : "Puis",
-      "date" : null,
-      "tournament" : "India Open",
-      "stage" : "1/4 de finale",
-      "medal" : "⚫",
-      "tone" : "out",
-      "value" : "India Open · 1/4 de finale"
     } ]
   } ],
   "upcoming" : [ {

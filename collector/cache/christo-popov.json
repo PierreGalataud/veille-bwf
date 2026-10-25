@@ -1,10 +1,26 @@
 {
   "formatVersion" : 4,
-  "wikiRevisionId" : 1381775857,
-  "extractedAt" : "2026-10-24T20:29:21.016054229Z",
+  "wikiRevisionId" : 1381944886,
+  "extractedAt" : "2026-10-25T20:37:29.145207485Z",
   "rank" : "#3 mondial",
   "lines" : [ {
     "label" : "Dernier",
+    "date" : "20 – 25 octobre",
+    "tournament" : "YONEX French Open 2026",
+    "stage" : "Vainqueur",
+    "medal" : "🥇",
+    "tone" : "win",
+    "value" : "YONEX French Open 2026 · Vainqueur"
+  }, {
+    "label" : "Puis",
+    "date" : null,
+    "tournament" : "Japan Open",
+    "stage" : "Vainqueur",
+    "medal" : "🥇",
+    "tone" : "win",
+    "value" : "Japan Open · Vainqueur"
+  }, {
+    "label" : "Puis",
     "date" : null,
     "tournament" : "Championnats du monde",
     "stage" : "Éliminé au 1er tour",
@@ -22,14 +38,6 @@
   }, {
     "label" : "Puis",
     "date" : null,
-    "tournament" : "Japan Open",
-    "stage" : "Vainqueur",
-    "medal" : "🥇",
-    "tone" : "win",
-    "value" : "Japan Open · Vainqueur"
-  }, {
-    "label" : "Puis",
-    "date" : null,
     "tournament" : "Championnats d'Europe",
     "stage" : "Vainqueur",
     "medal" : "🥇",
@@ -43,13 +51,5 @@
     "medal" : "🥇",
     "tone" : "win",
     "value" : "German Open · Vainqueur"
-  }, {
-    "label" : "Puis",
-    "date" : null,
-    "tournament" : "India Open",
-    "stage" : "1/4 de finale",
-    "medal" : "⚫",
-    "tone" : "out",
-    "value" : "India Open · 1/4 de finale"
   } ]
 }
