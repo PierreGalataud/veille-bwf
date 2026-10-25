@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-10-25T11:01:22.967142958Z",
+  "generatedAt" : "2026-10-25T15:50:07.465715138Z",
   "weekLabel" : "Semaine du 19 – 25 octobre 2026",
   "current" : [ {
     "name" : "YONEX French Open 2026",
@@ -15,7 +15,7 @@
     "frenchStatus" : {
       "present" : true,
       "title" : "Français au tableau",
-      "note" : "Alex Lanier — 1/2 finale · Christo Popov — encore en lice (finale) · Toma Junior Popov — 1/4 de finale",
+      "note" : "Alex Lanier — 1/2 finale · Christo Popov — Vainqueur · Toma Junior Popov — 1/4 de finale",
       "confirm" : false
     }
   } ],
