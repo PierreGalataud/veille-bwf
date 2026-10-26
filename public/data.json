@@ -1,6 +1,6 @@
 {
-  "generatedAt" : "2026-10-25T20:37:26.302144860Z",
-  "weekLabel" : "Semaine du 19 – 25 octobre 2026",
+  "generatedAt" : "2026-10-26T04:03:43.243330626Z",
+  "weekLabel" : "Semaine du 26 octobre – 1 novembre 2026",
   "current" : [ {
     "name" : "YONEX French Open 2026",
     "tier" : "750",
@@ -8,9 +8,30 @@
     "dates" : "20 – 25 octobre 2026",
     "prize" : "950 000 $",
     "timezone" : "—",
-    "dayLabel" : "Jour 6 / 6 · 25 octobre",
-    "status" : "en_cours",
-    "champions" : null,
+    "dayLabel" : "Terminé · 25 octobre",
+    "status" : "termine",
+    "champions" : {
+      "ms" : {
+        "name" : "Christo Popov",
+        "country" : "FRA"
+      },
+      "ws" : {
+        "name" : "An Se-young",
+        "country" : "KOR"
+      },
+      "md" : {
+        "name" : "Man Wei Chong / Tee Kai Wun",
+        "country" : "MAS"
+      },
+      "wd" : {
+        "name" : "Yuki Fukushima / Mayu Matsumoto",
+        "country" : "JPN"
+      },
+      "xd" : {
+        "name" : "Feng Yanzhe / Huang Dongping",
+        "country" : "CHN"
+      }
+    },
     "seeds" : [ ],
     "frenchStatus" : {
       "present" : true,
