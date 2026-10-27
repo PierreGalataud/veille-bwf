@@ -1,42 +1,21 @@
 {
-  "generatedAt" : "2026-10-26T22:28:07.485735470Z",
+  "generatedAt" : "2026-10-27T04:23:38.059170577Z",
   "weekLabel" : "Semaine du 26 octobre – 1 novembre 2026",
   "current" : [ {
-    "name" : "YONEX French Open 2026",
-    "tier" : "750",
-    "location" : "Tremblay-en-France, FRA",
-    "dates" : "20 – 25 octobre 2026",
-    "prize" : "950 000 $",
+    "name" : "HYLO Open 2026",
+    "tier" : "500",
+    "location" : "Saarbrücken, GER",
+    "dates" : "27 octobre – 1 novembre 2026",
+    "prize" : "500 000 $",
     "timezone" : "—",
-    "dayLabel" : "Terminé · 25 octobre",
-    "status" : "termine",
-    "champions" : {
-      "ms" : {
-        "name" : "Christo Popov",
-        "country" : "FRA"
-      },
-      "ws" : {
-        "name" : "An Se-young",
-        "country" : "KOR"
-      },
-      "md" : {
-        "name" : "Man Wei Chong / Tee Kai Wun",
-        "country" : "MAS"
-      },
-      "wd" : {
-        "name" : "Yuki Fukushima / Mayu Matsumoto",
-        "country" : "JPN"
-      },
-      "xd" : {
-        "name" : "Feng Yanzhe / Huang Dongping",
-        "country" : "CHN"
-      }
-    },
+    "dayLabel" : "Jour 1 / 6 · 27 octobre",
+    "status" : "en_cours",
+    "champions" : null,
     "seeds" : [ ],
     "frenchStatus" : {
       "present" : true,
       "title" : "Français au tableau",
-      "note" : "Alex Lanier — 1/2 finale · Christo Popov — Vainqueur · Toma Junior Popov — 1/4 de finale",
+      "note" : "Alex Lanier — Forfait · Christo Popov — Forfait · Toma Junior Popov — encore en lice (1er tour)",
       "confirm" : false
     }
   } ],
@@ -146,11 +125,6 @@
     } ]
   } ],
   "upcoming" : [ {
-    "dates" : "27 octobre – 1 novembre",
-    "name" : "HYLO Open 2026",
-    "tier" : "500",
-    "french" : "FR : engagés"
-  }, {
     "dates" : "3 – 8 novembre",
     "name" : "Korea Open 2026",
     "tier" : "500",
