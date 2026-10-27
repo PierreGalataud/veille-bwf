@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-10-27T17:45:23.691284559Z",
+  "generatedAt" : "2026-10-27T21:58:34.251321580Z",
   "weekLabel" : "Semaine du 26 octobre – 1 novembre 2026",
   "current" : [ {
     "name" : "HYLO Open 2026",
@@ -101,6 +101,14 @@
     }, {
       "label" : "Puis",
       "date" : null,
+      "tournament" : "Coupe Thomas",
+      "stage" : "Finaliste",
+      "medal" : "🥈",
+      "tone" : "out",
+      "value" : "Coupe Thomas · Finaliste"
+    }, {
+      "label" : "Puis",
+      "date" : null,
       "tournament" : "Championnats d'Europe",
       "stage" : "Vainqueur",
       "medal" : "🥇",
@@ -114,14 +122,6 @@
       "medal" : "🥇",
       "tone" : "win",
       "value" : "German Open · Vainqueur"
-    }, {
-      "label" : "Puis",
-      "date" : null,
-      "tournament" : "India Open",
-      "stage" : "1/4 de finale",
-      "medal" : "⚫",
-      "tone" : "out",
-      "value" : "India Open · 1/4 de finale"
     } ]
   } ],
   "upcoming" : [ {
