@@ -55,6 +55,13 @@
   "start" : "2026-10-27",
   "end" : "2026-11-01"
 }, {
+  "name" : "SYOG2026",
+  "tier" : "monde",
+  "location" : "",
+  "prize" : "—",
+  "start" : "2026-11-01",
+  "end" : "2026-11-05"
+}, {
   "name" : "Korea Open 2026",
   "tier" : "500",
   "location" : "Yeosu city, KOR",

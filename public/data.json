@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-10-27T04:23:38.059170577Z",
+  "generatedAt" : "2026-10-27T11:51:26.206018920Z",
   "weekLabel" : "Semaine du 26 octobre – 1 novembre 2026",
   "current" : [ {
     "name" : "HYLO Open 2026",
@@ -73,7 +73,7 @@
     } ]
   }, {
     "name" : "Christo Popov",
-    "rank" : "#3 mondial",
+    "rank" : "#1 mondial",
     "lines" : [ {
       "label" : "Dernier",
       "date" : "20 – 25 octobre",
@@ -101,14 +101,6 @@
     }, {
       "label" : "Puis",
       "date" : null,
-      "tournament" : "Coupe Thomas",
-      "stage" : "Finaliste",
-      "medal" : "🥈",
-      "tone" : "out",
-      "value" : "Coupe Thomas · Finaliste"
-    }, {
-      "label" : "Puis",
-      "date" : null,
       "tournament" : "Championnats d'Europe",
       "stage" : "Vainqueur",
       "medal" : "🥇",
@@ -122,9 +114,22 @@
       "medal" : "🥇",
       "tone" : "win",
       "value" : "German Open · Vainqueur"
+    }, {
+      "label" : "Puis",
+      "date" : null,
+      "tournament" : "India Open",
+      "stage" : "1/4 de finale",
+      "medal" : "⚫",
+      "tone" : "out",
+      "value" : "India Open · 1/4 de finale"
     } ]
   } ],
   "upcoming" : [ {
+    "dates" : "1 – 5 novembre",
+    "name" : "SYOG2026",
+    "tier" : "monde",
+    "french" : "FR : à confirmer"
+  }, {
     "dates" : "3 – 8 novembre",
     "name" : "Korea Open 2026",
     "tier" : "500",

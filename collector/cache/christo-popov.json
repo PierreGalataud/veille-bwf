@@ -1,8 +1,8 @@
 {
   "formatVersion" : 4,
-  "wikiRevisionId" : 1381944886,
-  "extractedAt" : "2026-10-25T20:37:29.145207485Z",
-  "rank" : "#3 mondial",
+  "wikiRevisionId" : 1382205654,
+  "extractedAt" : "2026-10-27T11:51:30.601283965Z",
+  "rank" : "#1 mondial",
   "lines" : [ {
     "label" : "Dernier",
     "date" : "20 – 25 octobre",
@@ -30,14 +30,6 @@
   }, {
     "label" : "Puis",
     "date" : null,
-    "tournament" : "Coupe Thomas",
-    "stage" : "Finaliste",
-    "medal" : "🥈",
-    "tone" : "out",
-    "value" : "Coupe Thomas · Finaliste"
-  }, {
-    "label" : "Puis",
-    "date" : null,
     "tournament" : "Championnats d'Europe",
     "stage" : "Vainqueur",
     "medal" : "🥇",
@@ -51,5 +43,13 @@
     "medal" : "🥇",
     "tone" : "win",
     "value" : "German Open · Vainqueur"
+  }, {
+    "label" : "Puis",
+    "date" : null,
+    "tournament" : "India Open",
+    "stage" : "1/4 de finale",
+    "medal" : "⚫",
+    "tone" : "out",
+    "value" : "India Open · 1/4 de finale"
   } ]
 }
