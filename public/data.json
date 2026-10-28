@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-10-28T04:54:36.940995056Z",
+  "generatedAt" : "2026-10-28T12:25:55.788454373Z",
   "weekLabel" : "Semaine du 26 octobre – 1 novembre 2026",
   "current" : [ {
     "name" : "HYLO Open 2026",
@@ -13,10 +13,10 @@
     "champions" : null,
     "seeds" : [ ],
     "frenchStatus" : {
-      "present" : null,
-      "title" : "Statut français inconnu",
-      "note" : "Wikipédia momentanément indisponible — statut inconnu.",
-      "confirm" : true
+      "present" : true,
+      "title" : "Français au tableau",
+      "note" : "Alex Lanier — Forfait · Christo Popov — Forfait · Toma Junior Popov — encore en lice (1er tour)",
+      "confirm" : false
     }
   } ],
   "players" : [ {
