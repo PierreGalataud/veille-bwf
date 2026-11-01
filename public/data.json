@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-10-31T21:14:23.325607079Z",
+  "generatedAt" : "2026-11-01T05:16:56.168566074Z",
   "weekLabel" : "Semaine du 26 octobre – 1 novembre 2026",
   "current" : [ {
     "name" : "HYLO Open 2026",
@@ -8,7 +8,7 @@
     "dates" : "27 octobre – 1 novembre 2026",
     "prize" : "500 000 $",
     "timezone" : "—",
-    "dayLabel" : "Jour 5 / 6 · 31 octobre",
+    "dayLabel" : "Jour 6 / 6 · 1 novembre",
     "status" : "en_cours",
     "champions" : null,
     "seeds" : [ ],
@@ -17,6 +17,23 @@
       "title" : "Français au tableau",
       "note" : "Alex Lanier — Forfait · Christo Popov — Forfait · Toma Junior Popov — 1/2 finale",
       "confirm" : false
+    }
+  }, {
+    "name" : "SYOG2026",
+    "tier" : "monde",
+    "location" : "",
+    "dates" : "1 – 5 novembre 2026",
+    "prize" : "—",
+    "timezone" : "—",
+    "dayLabel" : "Jour 1 / 5 · 1 novembre",
+    "status" : "en_cours",
+    "champions" : null,
+    "seeds" : [ ],
+    "frenchStatus" : {
+      "present" : null,
+      "title" : "Statut français inconnu",
+      "note" : "Aucun article Wikipédia vérifié (dates + niveau) pour « SYOG2026 ».",
+      "confirm" : true
     }
   } ],
   "players" : [ {
@@ -125,11 +142,6 @@
     } ]
   } ],
   "upcoming" : [ {
-    "dates" : "1 – 5 novembre",
-    "name" : "SYOG2026",
-    "tier" : "monde",
-    "french" : "FR : à confirmer"
-  }, {
     "dates" : "3 – 8 novembre",
     "name" : "Korea Open 2026",
     "tier" : "500",
