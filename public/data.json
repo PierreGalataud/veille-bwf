@@ -1,31 +1,14 @@
 {
-  "generatedAt" : "2026-11-01T21:51:41.875346374Z",
-  "weekLabel" : "Semaine du 26 octobre – 1 novembre 2026",
+  "generatedAt" : "2026-11-02T05:16:30.868135040Z",
+  "weekLabel" : "Semaine du 2 – 8 novembre 2026",
   "current" : [ {
-    "name" : "HYLO Open 2026",
-    "tier" : "500",
-    "location" : "Saarbrücken, GER",
-    "dates" : "27 octobre – 1 novembre 2026",
-    "prize" : "500 000 $",
-    "timezone" : "—",
-    "dayLabel" : "Jour 6 / 6 · 1 novembre",
-    "status" : "en_cours",
-    "champions" : null,
-    "seeds" : [ ],
-    "frenchStatus" : {
-      "present" : true,
-      "title" : "Français au tableau",
-      "note" : "Alex Lanier — Forfait · Christo Popov — Forfait · Toma Junior Popov — 1/2 finale",
-      "confirm" : false
-    }
-  }, {
     "name" : "SYOG2026",
     "tier" : "monde",
     "location" : "",
     "dates" : "1 – 5 novembre 2026",
     "prize" : "—",
     "timezone" : "—",
-    "dayLabel" : "Jour 1 / 5 · 1 novembre",
+    "dayLabel" : "Jour 2 / 5 · 2 novembre",
     "status" : "en_cours",
     "champions" : null,
     "seeds" : [ ],
