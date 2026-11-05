@@ -1,31 +1,14 @@
 {
-  "generatedAt" : "2026-11-05T14:23:22.724626188Z",
+  "generatedAt" : "2026-11-05T23:28:09.757736792Z",
   "weekLabel" : "Semaine du 2 – 8 novembre 2026",
   "current" : [ {
-    "name" : "SYOG2026",
-    "tier" : "monde",
-    "location" : "",
-    "dates" : "1 – 5 novembre 2026",
-    "prize" : "—",
-    "timezone" : "—",
-    "dayLabel" : "Jour 5 / 5 · 5 novembre",
-    "status" : "en_cours",
-    "champions" : null,
-    "seeds" : [ ],
-    "frenchStatus" : {
-      "present" : null,
-      "title" : "Statut français inconnu",
-      "note" : "Aucun article Wikipédia vérifié (dates + niveau) pour « SYOG2026 ».",
-      "confirm" : true
-    }
-  }, {
     "name" : "Korea Open 2026",
     "tier" : "500",
     "location" : "Yeosu city, KOR",
     "dates" : "3 – 8 novembre 2026",
     "prize" : "500 000 $",
     "timezone" : "—",
-    "dayLabel" : "Jour 3 / 6 · 5 novembre",
+    "dayLabel" : "Jour 4 / 6 · 6 novembre",
     "status" : "en_cours",
     "champions" : null,
     "seeds" : [ ],
@@ -42,7 +25,7 @@
     "dates" : "3 – 8 novembre 2026",
     "prize" : "500 000 $",
     "timezone" : "—",
-    "dayLabel" : "Jour 3 / 6 · 5 novembre",
+    "dayLabel" : "Jour 4 / 6 · 6 novembre",
     "status" : "en_cours",
     "champions" : null,
     "seeds" : [ ],
