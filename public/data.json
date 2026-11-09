@@ -1,33 +1,37 @@
 {
-  "generatedAt" : "2026-11-08T21:51:38.736590982Z",
-  "weekLabel" : "Semaine du 2 – 8 novembre 2026",
+  "generatedAt" : "2026-11-09T05:31:44.545178034Z",
+  "weekLabel" : "Semaine du 9 – 15 novembre 2026",
   "current" : [ {
-    "name" : "Korea Open 2026",
-    "tier" : "500",
-    "location" : "Yeosu city, KOR",
-    "dates" : "3 – 8 novembre 2026",
-    "prize" : "500 000 $",
-    "timezone" : "—",
-    "dayLabel" : "Jour 6 / 6 · 8 novembre",
-    "status" : "en_cours",
-    "champions" : null,
-    "seeds" : [ ],
-    "frenchStatus" : {
-      "present" : false,
-      "title" : "Aucun Français engagé",
-      "note" : "Aucun Français au tableau (Wikipédia).",
-      "confirm" : false
-    }
-  }, {
     "name" : "YEOSU VICTOR Korea Open 2026",
     "tier" : "500",
     "location" : "Yeosu city, KOR",
     "dates" : "3 – 8 novembre 2026",
     "prize" : "500 000 $",
     "timezone" : "—",
-    "dayLabel" : "Jour 6 / 6 · 8 novembre",
-    "status" : "en_cours",
-    "champions" : null,
+    "dayLabel" : "Terminé · 8 novembre",
+    "status" : "termine",
+    "champions" : {
+      "ms" : {
+        "name" : "Victor Lai",
+        "country" : "CAN"
+      },
+      "ws" : {
+        "name" : "An Se-young",
+        "country" : "KOR"
+      },
+      "md" : {
+        "name" : "Kim Won-ho / Seo Seung-jae",
+        "country" : "KOR"
+      },
+      "wd" : {
+        "name" : "Rui Hirokami / Sayaka Hobara",
+        "country" : "JPN"
+      },
+      "xd" : {
+        "name" : "Jiang Zhenbang / Wei Yaxin",
+        "country" : "CHN"
+      }
+    },
     "seeds" : [ ],
     "frenchStatus" : {
       "present" : false,
