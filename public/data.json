@@ -1,42 +1,21 @@
 {
-  "generatedAt" : "2026-11-09T15:42:18.804187535Z",
+  "generatedAt" : "2026-11-10T01:20:31.737395573Z",
   "weekLabel" : "Semaine du 9 – 15 novembre 2026",
   "current" : [ {
-    "name" : "YEOSU VICTOR Korea Open 2026",
+    "name" : "Kumamoto Masters Japan 2026",
     "tier" : "500",
-    "location" : "Yeosu city, KOR",
-    "dates" : "3 – 8 novembre 2026",
+    "location" : "Kumamoto, JPN",
+    "dates" : "10 – 15 novembre 2026",
     "prize" : "500 000 $",
     "timezone" : "—",
-    "dayLabel" : "Terminé · 8 novembre",
-    "status" : "termine",
-    "champions" : {
-      "ms" : {
-        "name" : "Victor Lai",
-        "country" : "CAN"
-      },
-      "ws" : {
-        "name" : "An Se-young",
-        "country" : "KOR"
-      },
-      "md" : {
-        "name" : "Kim Won-ho / Seo Seung-jae",
-        "country" : "KOR"
-      },
-      "wd" : {
-        "name" : "Rui Hirokami / Sayaka Hobara",
-        "country" : "JPN"
-      },
-      "xd" : {
-        "name" : "Jiang Zhenbang / Wei Yaxin",
-        "country" : "CHN"
-      }
-    },
+    "dayLabel" : "Jour 1 / 6 · 10 novembre",
+    "status" : "en_cours",
+    "champions" : null,
     "seeds" : [ ],
     "frenchStatus" : {
-      "present" : false,
-      "title" : "Aucun Français engagé",
-      "note" : "Aucun Français au tableau (Wikipédia).",
+      "present" : true,
+      "title" : "Français au tableau",
+      "note" : "Christo Popov — encore en lice (1er tour) · Toma Junior Popov — encore en lice (1er tour)",
       "confirm" : false
     }
   } ],
@@ -146,11 +125,6 @@
     } ]
   } ],
   "upcoming" : [ {
-    "dates" : "10 – 15 novembre",
-    "name" : "Kumamoto Masters Japan 2026",
-    "tier" : "500",
-    "french" : "FR : engagés"
-  }, {
     "dates" : "17 – 22 novembre",
     "name" : "Hong Kong Open 2026",
     "tier" : "500",
