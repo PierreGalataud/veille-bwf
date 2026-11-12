@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-11-11T13:51:21.587408129Z",
+  "generatedAt" : "2026-11-12T00:17:40.969363866Z",
   "weekLabel" : "Semaine du 9 – 15 novembre 2026",
   "current" : [ {
     "name" : "Kumamoto Masters Japan 2026",
@@ -8,7 +8,7 @@
     "dates" : "10 – 15 novembre 2026",
     "prize" : "500 000 $",
     "timezone" : "—",
-    "dayLabel" : "Jour 2 / 6 · 11 novembre",
+    "dayLabel" : "Jour 3 / 6 · 12 novembre",
     "status" : "en_cours",
     "champions" : null,
     "seeds" : [ ],
@@ -101,19 +101,11 @@
     }, {
       "label" : "Puis",
       "date" : null,
-      "tournament" : "Coupe Thomas",
-      "stage" : "Finaliste",
-      "medal" : "🥈",
-      "tone" : "out",
-      "value" : "Coupe Thomas · Finaliste"
-    }, {
-      "label" : "Puis",
-      "date" : null,
-      "tournament" : "Championnats d'Europe",
+      "tournament" : "Championnats d'Europe par équipes",
       "stage" : "Vainqueur",
       "medal" : "🥇",
       "tone" : "win",
-      "value" : "Championnats d'Europe · Vainqueur"
+      "value" : "Championnats d'Europe par équipes · Vainqueur"
     }, {
       "label" : "Puis",
       "date" : null,
@@ -122,6 +114,14 @@
       "medal" : "🥇",
       "tone" : "win",
       "value" : "German Open · Vainqueur"
+    }, {
+      "label" : "Puis",
+      "date" : null,
+      "tournament" : "Championnats d'Europe",
+      "stage" : "Vainqueur",
+      "medal" : "🥇",
+      "tone" : "win",
+      "value" : "Championnats d'Europe · Vainqueur"
     } ]
   } ],
   "upcoming" : [ {
