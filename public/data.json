@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-11-12T23:22:40.648600617Z",
+  "generatedAt" : "2026-11-13T05:53:44.303046542Z",
   "weekLabel" : "Semaine du 9 – 15 novembre 2026",
   "current" : [ {
     "name" : "Kumamoto Masters Japan 2026",
@@ -15,13 +15,13 @@
     "frenchStatus" : {
       "present" : true,
       "title" : "Français au tableau",
-      "note" : "Christo Popov — 2e tour · Toma Junior Popov — encore en lice (1/4 de finale)",
+      "note" : "Christo Popov — 2e tour · Toma Junior Popov — 1/4 de finale",
       "confirm" : false
     }
   } ],
   "players" : [ {
     "name" : "Alex Lanier",
-    "rank" : "#5 mondial",
+    "rank" : "#6 mondial",
     "lines" : [ {
       "label" : "Dernier",
       "date" : "13 – 18 octobre",
