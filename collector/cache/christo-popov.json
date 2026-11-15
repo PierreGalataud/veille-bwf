@@ -1,7 +1,7 @@
 {
   "formatVersion" : 4,
-  "wikiRevisionId" : 1385091987,
-  "extractedAt" : "2026-11-12T00:17:45.955560903Z",
+  "wikiRevisionId" : 1385836882,
+  "extractedAt" : "2026-11-15T13:43:01.155280594Z",
   "rank" : "#1 mondial",
   "lines" : [ {
     "label" : "Dernier",
@@ -30,19 +30,11 @@
   }, {
     "label" : "Puis",
     "date" : null,
-    "tournament" : "Championnats d'Europe par équipes",
-    "stage" : "Vainqueur",
-    "medal" : "🥇",
-    "tone" : "win",
-    "value" : "Championnats d'Europe par équipes · Vainqueur"
-  }, {
-    "label" : "Puis",
-    "date" : null,
-    "tournament" : "German Open",
-    "stage" : "Vainqueur",
-    "medal" : "🥇",
-    "tone" : "win",
-    "value" : "German Open · Vainqueur"
+    "tournament" : "Coupe Thomas",
+    "stage" : "Finaliste",
+    "medal" : "🥈",
+    "tone" : "out",
+    "value" : "Coupe Thomas · Finaliste"
   }, {
     "label" : "Puis",
     "date" : null,
@@ -51,5 +43,13 @@
     "medal" : "🥇",
     "tone" : "win",
     "value" : "Championnats d'Europe · Vainqueur"
+  }, {
+    "label" : "Puis",
+    "date" : null,
+    "tournament" : "German Open",
+    "stage" : "Vainqueur",
+    "medal" : "🥇",
+    "tone" : "win",
+    "value" : "German Open · Vainqueur"
   } ]
 }
