@@ -1,6 +1,6 @@
 {
-  "generatedAt" : "2026-11-15T22:38:48.203388294Z",
-  "weekLabel" : "Semaine du 9 – 15 novembre 2026",
+  "generatedAt" : "2026-11-16T05:41:53.449527968Z",
+  "weekLabel" : "Semaine du 16 – 22 novembre 2026",
   "current" : [ {
     "name" : "Kumamoto Masters Japan 2026",
     "tier" : "500",
@@ -8,9 +8,30 @@
     "dates" : "10 – 15 novembre 2026",
     "prize" : "500 000 $",
     "timezone" : "—",
-    "dayLabel" : "Jour 6 / 6 · 15 novembre",
-    "status" : "en_cours",
-    "champions" : null,
+    "dayLabel" : "Terminé · 15 novembre",
+    "status" : "termine",
+    "champions" : {
+      "ms" : {
+        "name" : "Lakshya Sen",
+        "country" : "IND"
+      },
+      "ws" : {
+        "name" : "Akane Yamaguchi",
+        "country" : "JPN"
+      },
+      "md" : {
+        "name" : "Aaron Tai / Yap Roy King",
+        "country" : "MAS"
+      },
+      "wd" : {
+        "name" : "Rin Iwanaga / Kie Nakanishi",
+        "country" : "JPN"
+      },
+      "xd" : {
+        "name" : "Jiang Zhenbang / Wei Yaxin",
+        "country" : "CHN"
+      }
+    },
     "seeds" : [ ],
     "frenchStatus" : {
       "present" : true,
