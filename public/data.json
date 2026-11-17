@@ -1,42 +1,38 @@
 {
-  "generatedAt" : "2026-11-16T15:17:21.554028945Z",
+  "generatedAt" : "2026-11-17T01:45:11.337990774Z",
   "weekLabel" : "Semaine du 16 – 22 novembre 2026",
   "current" : [ {
-    "name" : "Kumamoto Masters Japan 2026",
+    "name" : "Hong Kong Open 2026",
     "tier" : "500",
-    "location" : "Kumamoto, JPN",
-    "dates" : "10 – 15 novembre 2026",
+    "location" : "Kowloon, HKG",
+    "dates" : "17 – 22 novembre 2026",
     "prize" : "500 000 $",
     "timezone" : "—",
-    "dayLabel" : "Terminé · 15 novembre",
-    "status" : "termine",
-    "champions" : {
-      "ms" : {
-        "name" : "Lakshya Sen",
-        "country" : "IND"
-      },
-      "ws" : {
-        "name" : "Akane Yamaguchi",
-        "country" : "JPN"
-      },
-      "md" : {
-        "name" : "Aaron Tai / Yap Roy King",
-        "country" : "MAS"
-      },
-      "wd" : {
-        "name" : "Rin Iwanaga / Kie Nakanishi",
-        "country" : "JPN"
-      },
-      "xd" : {
-        "name" : "Jiang Zhenbang / Wei Yaxin",
-        "country" : "CHN"
-      }
-    },
+    "dayLabel" : "Jour 1 / 6 · 17 novembre",
+    "status" : "en_cours",
+    "champions" : null,
     "seeds" : [ ],
     "frenchStatus" : {
       "present" : true,
       "title" : "Français au tableau",
-      "note" : "Christo Popov — 2e tour · Toma Junior Popov — 1/4 de finale",
+      "note" : "Christo Popov — Forfait · Toma Junior Popov — encore en lice (1er tour)",
+      "confirm" : false
+    }
+  }, {
+    "name" : "LI-NING Hong Kong Open 2026",
+    "tier" : "500",
+    "location" : "Kowloon, HKG",
+    "dates" : "17 – 22 novembre 2026",
+    "prize" : "500 000 $",
+    "timezone" : "—",
+    "dayLabel" : "Jour 1 / 6 · 17 novembre",
+    "status" : "en_cours",
+    "champions" : null,
+    "seeds" : [ ],
+    "frenchStatus" : {
+      "present" : true,
+      "title" : "Français au tableau",
+      "note" : "Christo Popov — Forfait · Toma Junior Popov — encore en lice (1er tour)",
       "confirm" : false
     }
   } ],
@@ -146,16 +142,6 @@
     } ]
   } ],
   "upcoming" : [ {
-    "dates" : "17 – 22 novembre",
-    "name" : "Hong Kong Open 2026",
-    "tier" : "500",
-    "french" : "FR : engagés"
-  }, {
-    "dates" : "17 – 22 novembre",
-    "name" : "LI-NING Hong Kong Open 2026",
-    "tier" : "500",
-    "french" : "FR : engagés"
-  }, {
     "dates" : "24 – 29 novembre",
     "name" : "Syed Modi India International 2026",
     "tier" : "300",
