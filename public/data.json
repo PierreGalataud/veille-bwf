@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-11-19T00:03:59.275930427Z",
+  "generatedAt" : "2026-11-19T15:29:23.103192499Z",
   "weekLabel" : "Semaine du 16 – 22 novembre 2026",
   "current" : [ {
     "name" : "Hong Kong Open 2026",
@@ -15,7 +15,7 @@
     "frenchStatus" : {
       "present" : true,
       "title" : "Français au tableau",
-      "note" : "Christo Popov — Forfait · Toma Junior Popov — encore en lice (2e tour)",
+      "note" : "Christo Popov — Forfait · Toma Junior Popov — encore en lice (1/4 de finale)",
       "confirm" : false
     }
   }, {
@@ -32,7 +32,7 @@
     "frenchStatus" : {
       "present" : true,
       "title" : "Français au tableau",
-      "note" : "Christo Popov — Forfait · Toma Junior Popov — encore en lice (2e tour)",
+      "note" : "Christo Popov — Forfait · Toma Junior Popov — encore en lice (1/4 de finale)",
       "confirm" : false
     }
   } ],
