@@ -1,42 +1,21 @@
 {
-  "generatedAt" : "2026-11-23T06:44:41.668402972Z",
+  "generatedAt" : "2026-11-23T23:37:48.914485700Z",
   "weekLabel" : "Semaine du 23 – 29 novembre 2026",
   "current" : [ {
-    "name" : "LI-NING Hong Kong Open 2026",
-    "tier" : "500",
-    "location" : "Kai Tak, HKG",
-    "dates" : "17 – 22 novembre 2026",
-    "prize" : "500 000 $",
+    "name" : "Syed Modi India International 2026",
+    "tier" : "300",
+    "location" : "Lucknow, IND",
+    "dates" : "24 – 29 novembre 2026",
+    "prize" : "250 000 $",
     "timezone" : "—",
-    "dayLabel" : "Terminé · 22 novembre",
-    "status" : "termine",
-    "champions" : {
-      "ms" : {
-        "name" : "Anders Antonsen",
-        "country" : "DEN"
-      },
-      "ws" : {
-        "name" : "Wang Zhiyi",
-        "country" : "CHN"
-      },
-      "md" : {
-        "name" : "Man Wei Chong / Tee Kai Wun",
-        "country" : "MAS"
-      },
-      "wd" : {
-        "name" : "Pearly Tan / Thinaah Muralitharan",
-        "country" : "MAS"
-      },
-      "xd" : {
-        "name" : "Feng Yanzhe / Huang Dongping",
-        "country" : "CHN"
-      }
-    },
+    "dayLabel" : "Jour 1 / 6 · 24 novembre",
+    "status" : "en_cours",
+    "champions" : null,
     "seeds" : [ ],
     "frenchStatus" : {
-      "present" : true,
-      "title" : "Français au tableau",
-      "note" : "Christo Popov — Forfait · Toma Junior Popov — 1/4 de finale",
+      "present" : false,
+      "title" : "Aucun Français engagé",
+      "note" : "Aucun Français au tableau (Wikipédia).",
       "confirm" : false
     }
   } ],
@@ -146,11 +125,6 @@
     } ]
   } ],
   "upcoming" : [ {
-    "dates" : "24 – 29 novembre",
-    "name" : "Syed Modi India International 2026",
-    "tier" : "300",
-    "french" : "FR : à confirmer"
-  }, {
     "dates" : "9 – 13 décembre",
     "name" : "HSBC BWF World Tour Finals 2026",
     "tier" : "wtf",
