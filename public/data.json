@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-11-27T20:54:46.922183958Z",
+  "generatedAt" : "2026-11-28T07:04:38.860375331Z",
   "weekLabel" : "Semaine du 23 – 29 novembre 2026",
   "current" : [ {
     "name" : "Syed Modi India International 2026",
@@ -8,7 +8,7 @@
     "dates" : "24 – 29 novembre 2026",
     "prize" : "250 000 $",
     "timezone" : "—",
-    "dayLabel" : "Jour 4 / 6 · 27 novembre",
+    "dayLabel" : "Jour 5 / 6 · 28 novembre",
     "status" : "en_cours",
     "champions" : null,
     "seeds" : [ ],
@@ -73,7 +73,7 @@
     } ]
   }, {
     "name" : "Christo Popov",
-    "rank" : "#1 mondial",
+    "rank" : "#2 mondial",
     "lines" : [ {
       "label" : "Dernier",
       "date" : "20 – 25 octobre",
